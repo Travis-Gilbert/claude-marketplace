@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next Tailwind UX Review"
+  short_description: "Audit UI quality, flow, and states"
+  default_prompt: "Use $next-tailwind-ux-review to review a React or Next.js interface for UX issues, accessibility gaps, state coverage, and responsive behavior."

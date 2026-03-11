@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next Tailwind UI Builder"
+  short_description: "Build polished React and Next.js UI"
+  default_prompt: "Use $next-tailwind-ui-builder to build or refactor a polished React or Next.js interface with Tailwind, accessible primitives, and production-ready states."
