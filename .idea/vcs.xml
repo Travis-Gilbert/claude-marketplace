@@ -3,6 +3,13 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/agent-skills" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/bencium-marketplace" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/motion" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sonner" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/tailwindcss-radix-colors" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/themes" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/vaul" vcs="Git" />
   </component>
 </project>
