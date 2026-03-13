@@ -1,51 +1,63 @@
 ---
 name: scipy-pro
-description: Scientific Python and data science implementation skill with source-verified workflows for NumPy, SciPy, pandas, scikit-learn, statistics, NLP, embeddings, vector search, graph science, and knowledge-system engineering. Use when Codex needs to build, debug, benchmark, refactor, or review scientific Python, data analysis, ML pipelines, semantic search, knowledge graphs, research tooling, or data-intensive backends, especially when verifying behavior against upstream library source or the research_api/CommonPlace architecture matters.
+description: Epistemic engineering skill for building, debugging, and evolving Index/CommonPlace/research_api from a graph-centered notebook into an epistemic engine. Use when tasks involve evidence intake, claim extraction, contradiction or tension analysis, model comparison, method DSL and execution, promotion pipelines, domain packs, retrieval/embedding/NLI tuning, self-organization loops, or two-mode (Railway vs local/dev) architecture decisions.
 ---
 
-# SciPy Pro
+# SciPy Pro v4
 
-## Workflow
-1. Classify the task by tier.
-- Tier 1: general scientific Python or data science technique.
-- Tier 2: applying the technique to a knowledge system, connection engine, graph pipeline, semantic search stack, or claim-analysis workflow.
-- Tier 3: research_api or CommonPlace product, API, ingestion, or deployment work.
+## Prime Directive
+- Read live source before writing code.
+- Read `refs/` or local framework source before trusting memory for library behavior.
+- Treat specs as intent; reconcile with current implementation before editing.
 
-2. Prefer source over memory.
-- Run `scripts/bootstrap_refs.sh --dry-run` to inspect the default reference set.
-- Clone or update refs only when the task depends on concrete library behavior.
-- Grep actual implementations before writing framework-specific code.
+## Route by Workflow
+1. Run `/reason` for text-to-claim reasoning work.
+- Use for claim decomposition, NLI, contradiction detection, epistemic status, and question/model evidence graphs.
+- Read `references/routing.md`, then `references/agents/claim-analysis.md`, `references/agents/nlp-pipeline.md`, and `references/agents/knowledge-representation.md`.
 
-3. Load only the relevant reference file.
-- Routing and reference selection: `references/routing.md`
-- Numerical, statistical, NLP, embedding, and graph work: `references/scientific-python.md`
-- Connection engines, KGE, claims, resurfacing, and self-organization: `references/knowledge-systems.md`
-- Deployment, API, ingestion, and graceful degradation: `references/product-and-ops.md`
+2. Run `/graph` for structure and lineage work.
+- Use for community detection, gap analysis, influence DAGs, resurfacing, and self-organization loops.
+- Read `references/routing.md`, then `references/agents/graph-theory.md`, `references/agents/causal-inference.md`, and `references/agents/self-organization.md`.
 
-4. Read the target codebase.
-- For `research_api`, the live source is authoritative, not the spec.
-- Confirm dependency versions from lockfiles, `pyproject.toml`, or `requirements` before relying on APIs.
+3. Run `/encode` for executable-knowledge work.
+- Use for promotion queue, method DSL, method compilation, method runs, and provenance-safe automation.
+- Read `references/routing.md`, then `references/agents/program-synthesis.md`, `references/agents/knowledge-representation.md`, and `references/patterns/PATTERNS-promotion.md`.
 
-5. Implement with production discipline.
-- Prefer vectorized and numerically stable code.
-- Separate exploratory notebooks from importable production modules.
-- Add benchmarks, sampling strategy, and evaluation criteria for model or data work.
-- Add fallback paths when advanced ML dependencies may be absent.
+4. Run `/gather` for corpus and learning work.
+- Use for Firecrawl/web ingestion, training corpus construction, triplet generation, SBERT/KGE training, and retrieval evaluation.
+- Read `references/routing.md`, then `references/agents/web-acquisition.md`, `references/agents/training-pipeline.md`, and `references/patterns/PATTERNS-firecrawl-corpus.md`.
 
-6. Validate.
-- Run tests, micro-benchmarks, or small fixture checks.
-- On data or ML tasks, state assumptions about scale, sparsity, class balance, latency, and memory.
+## Always Enforce These Invariants
+- Keep `Edge.reason` plain English.
+- Use `Edge.from_object` and `Edge.to_object`.
+- Keep timeline history append-only.
+- Keep objects soft-deleted (`is_deleted=True`) instead of hard delete.
+- Keep SHA lineage and provenance intact.
+- Keep `compose_engine.py` stateless.
+- Keep `engine.py` stateful for persisted graph mutations.
+- Keep LLM output reviewable; do not auto-promote machine suggestions to canon.
 
-## Guardrails
-- Do not guess upstream library behavior when the source is available.
-- Do not introduce GPU-only or PyTorch-only paths without a CPU-safe fallback when the environment may be constrained.
-- Do not replace deterministic or interpretable methods with heavy ML unless the quality gain is justified.
-- Do not treat architecture docs as canonical without reading the live files they describe.
+## Keep Two-Mode Deployment Safe
+- Keep production/Railway operational without PyTorch-only features.
+- Keep local/dev free to use full NLP stack (SBERT, NLI, FAISS, KGE).
+- Dispatch heavy batch jobs to workers or Modal.
+- Degrade gracefully instead of failing a full pipeline when advanced features are unavailable.
 
-## Quick Triggers
-Use this skill for requests such as:
-- "Build a scientific Python pipeline for feature extraction and clustering."
-- "Tune FAISS or sentence-transformers for semantic search."
-- "Add a new pass to a connection or compose engine."
-- "Review a data science or graph algorithm implementation."
-- "Make this research pipeline production-safe on limited hardware."
+## Use Transition-Plan References
+- Read `references/product/epistemic-status.md` for built vs planned capabilities.
+- Read `references/product/promotion-pipeline.md` for `captured -> learned_from` flow.
+- Read `references/product/method-dsl-design.md` for executable-knowledge boundaries.
+- Read `references/product/domain-pack-spec.md` for pack-level architecture.
+- Read `references/product/learning-roadmap.md` for staged learning rollout.
+
+## Delivery Checklist
+1. Reconcile code vs spec and state mismatches explicitly.
+2. Implement smallest safe slice that preserves invariants.
+3. Add or update tests/fixtures for new behavior.
+4. Validate runtime and degradation paths.
+5. Report using:
+- Initial condition
+- Reconciliation findings
+- Changes made
+- Validation performed
+- Remaining issues / next steps

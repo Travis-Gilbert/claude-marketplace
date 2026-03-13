@@ -1,34 +1,31 @@
 # Routing
 
-## Tier Guide
-| Tier | Use when | Load first |
+## Workflow-to-Agent Map
+| Workflow | Use when | Primary agent references |
 | --- | --- | --- |
-| Tier 1 | The task is about a scientific Python, statistics, NLP, embedding, or graph technique in general | `scientific-python.md` |
-| Tier 2 | The task applies those techniques to a knowledge system, connection engine, semantic graph, or discovery workflow | `knowledge-systems.md` |
-| Tier 3 | The task is about product constraints, API shape, ingestion, queues, or deployment in `research_api` or CommonPlace | `product-and-ops.md` |
+| `/reason` | Turn artifacts or text into claims, tensions, and model evidence | `agents/claim-analysis.md`, `agents/nlp-pipeline.md`, `agents/knowledge-representation.md`, `agents/probabilistic-reasoning.md` |
+| `/graph` | Turn objects and edges into structure, lineage, and gaps | `agents/graph-theory.md`, `agents/causal-inference.md`, `agents/self-organization.md`, `agents/probabilistic-reasoning.md` |
+| `/encode` | Turn reviewed evidence into executable methods and evaluators | `agents/program-synthesis.md`, `agents/knowledge-representation.md`, `agents/causal-inference.md`, `agents/software-architecture.md` |
+| `/gather` | Build corpora and improve retrieval/extraction models from web + product feedback | `agents/web-acquisition.md`, `agents/training-pipeline.md`, `agents/information-retrieval.md`, `agents/software-architecture.md` |
 
-## Domain Routing
-| Task | Refs to read | Source repos to inspect after bootstrap |
+## Transition-Phase Routing (Index Epistemic Engine)
+| Phase | Goal | Read first |
 | --- | --- | --- |
-| NumPy, SciPy, arrays, numerical stability | `scientific-python.md` | `numpy`, `scipy` |
-| pandas data prep, feature engineering, tabular analysis | `scientific-python.md` | `pandas`, `scikit-learn` |
-| TF-IDF, BM25, clustering, classical ML | `scientific-python.md` | `scikit-learn`, `rank-bm25` |
-| spaCy, tokenization, NER, text pipelines | `scientific-python.md` | `spacy` |
-| sentence-transformers, FAISS, semantic retrieval | `scientific-python.md` | `sentence-transformers`, `faiss` |
-| Graph algorithms, PageRank, communities | `scientific-python.md` | `networkx` |
-| Bayesian or probabilistic modeling | `scientific-python.md` | `scipy`, `pymc` |
-| 7-pass engine, compose engine, pass design | `knowledge-systems.md` | `research_api`, plus the relevant Tier 1 repo |
-| KGE, PyKEEN, entity alignment | `knowledge-systems.md` | `pykeen`, `faiss`, `research_api` |
-| API, Railway, Modal, RQ, ingestion | `product-and-ops.md` | `research_api`, plus the relevant Tier 1 repo |
+| Phase 0 | Stabilize epistemic primitives | `agents/knowledge-representation.md`, `product/epistemic-status.md` |
+| Phase 1 | Build promotion pipeline | `patterns/PATTERNS-promotion.md`, `product/promotion-pipeline.md` |
+| Phase 2 | Ship inquiry-first surfaces | `product/epistemic-status.md`, `agents/claim-analysis.md`, `agents/graph-theory.md` |
+| Phase 3 | Ship executable knowledge | `patterns/PATTERNS-method-dsl.md`, `product/method-dsl-design.md` |
+| Phase 4 | Add domain packs | `product/domain-pack-spec.md`, `agents/program-synthesis.md` |
+| Phase 5 | Add learning and evaluation loops | `product/learning-roadmap.md`, `agents/training-pipeline.md` |
 
-## Source-First Rules
-- If a library repo is available, grep it before relying on memory.
-- If the task mentions `research_api`, `CommonPlace`, or engine file names, read the live code before the references.
-- If the task spans multiple tiers, start with Tier 1 for the science, then Tier 2 for application architecture, then Tier 3 for deployment constraints.
+## Load Order
+1. Read this file.
+2. Read only the agents needed for the active workflow.
+3. Read one pattern file that matches the implementation move.
+4. Read product file(s) when the task changes roadmap behavior, status semantics, or promotion policy.
+5. Read code and refs before editing.
 
-## Grep Starting Points
-- `rg "SentenceTransformer|CrossEncoder" "$HOME/.codex/cache/scipy-pro-refs/sentence-transformers"`
-- `rg "IndexFlat|IndexIVF|HNSW" "$HOME/.codex/cache/scipy-pro-refs/faiss"`
-- `rg "PageRank|community|betweenness" "$HOME/.codex/cache/scipy-pro-refs/networkx"`
-- `rg "TfidfVectorizer|HashingVectorizer|TruncatedSVD" "$HOME/.codex/cache/scipy-pro-refs/scikit-learn"`
-- `rg "Doc|EntityRuler|PhraseMatcher" "$HOME/.codex/cache/scipy-pro-refs/spacy"`
+## Source-First Reminders
+- Read the target `research_api` module before applying any pattern.
+- Verify framework behavior in source repos when API details matter.
+- Prefer graceful degradation and explicit pass states over hidden failures.

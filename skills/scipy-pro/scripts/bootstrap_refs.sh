@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 Usage:
   bootstrap_refs.sh [--dry-run] [dest_dir] [research_api_path]
 
@@ -13,7 +13,7 @@ Examples:
   bootstrap_refs.sh --dry-run
   bootstrap_refs.sh "$HOME/.codex/cache/scipy-pro-refs"
   bootstrap_refs.sh "$HOME/.codex/cache/scipy-pro-refs" "/path/to/research_api"
-EOF
+USAGE
 }
 
 dry_run=0
@@ -45,6 +45,8 @@ repos=(
   "altair https://github.com/vega/altair.git"
   "rank-bm25 https://github.com/dorianbrown/rank_bm25.git"
   "pymc https://github.com/pymc-devs/pymc.git"
+  "firecrawl https://github.com/firecrawl/firecrawl.git"
+  "tree-sitter https://github.com/tree-sitter/tree-sitter.git"
 )
 
 clone_or_update() {
@@ -91,11 +93,13 @@ if [[ -n "$research_api_path" ]]; then
   fi
 fi
 
-cat <<EOF
+cat <<EOF2
 
 Reference root: $dest_dir
 Suggested next commands:
   rg "SentenceTransformer|CrossEncoder" "$dest_dir/sentence-transformers"
   rg "PageRank|community|louvain" "$dest_dir/networkx"
   rg "TfidfVectorizer|TruncatedSVD" "$dest_dir/scikit-learn"
-EOF
+  rg "crawl|extract|markdown" "$dest_dir/firecrawl"
+  rg "parser|tree|node" "$dest_dir/tree-sitter"
+EOF2
