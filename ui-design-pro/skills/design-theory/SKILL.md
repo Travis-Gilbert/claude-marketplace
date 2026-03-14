@@ -11,6 +11,8 @@ description: >-
   measure, spacing systems, modular ratios, Gestalt principles, Fitts's
   Law, Hick's Law, progressive disclosure, affordances, signifiers,
   behavioral design, attention economics, and polymorphic object rendering.
+  Also covers screen archetypes (monitoring, triage, authoring,
+  configuration, exploration) that set density and interaction expectations.
   Always consult this skill before building new layouts or reviewing
   existing ones.
 ---
@@ -27,10 +29,17 @@ description: >-
 - Rendering collections of mixed content: `references/object-rendering.md`
 - Evaluating or improving accessibility: `references/accessibility.md`
 - Handling responsive or mobile concerns: `references/responsive-strategy.md`
+- Identifying the screen's purpose and density: `references/screen-archetypes.md`
+- Deciding when and how to animate: `references/animation-and-motion-principles.md`
 
 ## Quick Decision Framework
 
 Before writing any UI code, answer these questions:
+
+0. **What archetype is this screen?** (monitoring, triage, authoring,
+   configuration, or exploration). Load `references/screen-archetypes.md`
+   to understand the density, interaction, and state expectations for
+   this archetype.
 
 1. **What is the user trying to accomplish on this screen?**
    The answer determines hierarchy: the primary task gets the most visual

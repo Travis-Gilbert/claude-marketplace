@@ -68,6 +68,18 @@ Do NOT rely on training data for library internals. Instead:
 
 ## Agent System
 
+Seven commands available:
+
+| Command | Agent | What It Does |
+|---------|-------|--------------|
+| `/design-review` | design-critic | Reviews for principle violations |
+| `/ui-build` | component-builder | Builds with the right libraries |
+| `/design-system` | visual-architect | Plans or extends token systems |
+| `/a11y-audit` | a11y-auditor | WCAG 2.2 conformance audit |
+| `/animate` | animation-engineer | Motion with perf + a11y awareness |
+| `/detect-stack` | stack-detector | Maps existing UI layer |
+| `/design-rationale` | visual-architect | Structured design reasoning document |
+
 Six agents, each with a distinct role:
 
 | Agent | Role | When to Use |
@@ -86,6 +98,8 @@ Six agents, each with a distinct role:
 - ALWAYS run design-critic after component-builder on completed work.
 - ALWAYS run a11y-auditor on any interactive component.
 - animation-engineer is invoked when motion is relevant, not by default.
+- Run /design-rationale BEFORE major UI changes to document intent.
+- Run /design-review AFTER changes to verify the rationale was followed.
 
 ### Cross-Reference with Other Plugins
 
