@@ -66,9 +66,22 @@ Do NOT rely on training data for library internals. Instead:
 - **DaisyUI patterns**: grep `refs/daisyui/` for Tailwind-native component
   class composition and theme system internals.
 
+## Plugin Installation
+
+This plugin is registered at `~/.claude/plugins/marketplaces/local-desktop-app-uploads/ui-design-pro/`.
+Claude Code resolves plugins via `installed_plugins.json` — only the path in that file is read.
+Copying to `~/.claude/plugins/ui-design-pro/` (without the marketplace namespace) has NO effect.
+
+To update the global install:
+```bash
+rm -rf ~/.claude/plugins/marketplaces/local-desktop-app-uploads/ui-design-pro
+cp -R /path/to/source/ui-design-pro ~/.claude/plugins/marketplaces/local-desktop-app-uploads/ui-design-pro
+```
+Then bump the version in `~/.claude/plugins/installed_plugins.json`.
+
 ## Agent System
 
-Seven commands available:
+Seven slash commands available, plus a Claude.ai chat-skill companion:
 
 | Command | Agent | What It Does |
 |---------|-------|--------------|

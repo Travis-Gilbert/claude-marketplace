@@ -1,0 +1,29 @@
+{
+  "name": "scipy-pro",
+  "version": "4.0.0",
+  "description": "Epistemic engineering plugin organized around the CS disciplines required to build systems for structured understanding — grounded in framework source code and the research_api epistemic engine. Provides 4 workflow commands (/reason, /graph, /encode, /gather) and 12 domain-expert agents across information retrieval, NLP, knowledge representation, graph theory, causal inference, probabilistic reasoning, self-organization, program synthesis, and software architecture.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "epistemic-engine",
+    "research-api",
+    "nlp",
+    "knowledge-graph",
+    "information-retrieval",
+    "claim-analysis",
+    "nli",
+    "graph-theory",
+    "causal-inference",
+    "self-organization",
+    "program-synthesis",
+    "sbert",
+    "faiss",
+    "bm25",
+    "pykeen",
+    "networkx",
+    "spacy",
+    "django",
+    "two-mode-deployment"
+  ]
+}

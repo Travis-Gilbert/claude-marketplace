@@ -1,4 +1,0 @@
-interface:
-  display_name: "SciPy Pro v4"
-  short_description: "Epistemic engineering for Index"
-  default_prompt: "Use $scipy-pro to implement or review epistemic-engine workflows in Index/research_api, including promotion, methods, and learning loops."
