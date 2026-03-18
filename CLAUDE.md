@@ -15,8 +15,14 @@ The canonical path is in `~/.claude/plugins/installed_plugins.json` — only tha
 | ui-design-pro | 1.1.0 | `ui-design-pro/` |
 | scipy-pro | 4.0.0 | `scipy-pro/` |
 | django-design | 4.0.0 | `django-design/` |
+| d3-pro | 1.0.0 | `d3-pro/` |
+| three-pro | 1.0.0 | `three-pro/` |
+
+## Sync
+
+Run `./sync-plugins.sh` to symlink all plugins to the Claude Code install path.
+Run `./sync-plugins.sh --status` to check which plugins are linked.
 
 ## Remote
 
-GitHub has renamed this repo to `Plugins-building.git`. Update local remote:
-`git remote set-url origin https://github.com/Travis-Gilbert/Plugins-building.git`
+Remote: `https://github.com/Travis-Gilbert/Plugins-building.git`

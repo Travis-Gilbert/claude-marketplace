@@ -1,0 +1,164 @@
+{
+  "nodes": [
+    {
+      "id": "t1",
+      "objectSlug": "jacobs-death-life",
+      "objectType": "source",
+      "title": "Jane Jacobs, The Death and Life of Great American Cities",
+      "summary": "The classic text on urban vitality, sidewalk ballet, and the conditions that make neighborhoods thrive.",
+      "capturedAt": "2025-03-15T09:23:00Z",
+      "edgeCount": 3,
+      "edges": [
+        { "id": "e1", "sourceId": "t1", "targetId": "t3", "edge_type": "supports", "reason": "Jacobs's diversity thesis directly supports this hunch" },
+        { "id": "e2", "sourceId": "t1", "targetId": "t5", "edge_type": "informs", "reason": "Mixed-use concept originates in this text" },
+        { "id": "e3", "sourceId": "t1", "targetId": "t12", "edge_type": "quoted_in", "reason": "Source of the quote" }
+      ]
+    },
+    {
+      "id": "t2",
+      "objectSlug": "lynch-image-city",
+      "objectType": "source",
+      "title": "Kevin Lynch, The Image of the City",
+      "summary": "How people perceive and navigate urban environments through paths, edges, districts, nodes, and landmarks.",
+      "capturedAt": "2025-03-15T10:05:00Z",
+      "edgeCount": 2,
+      "edges": [
+        { "id": "e4", "sourceId": "t2", "targetId": "t5", "edge_type": "informs", "reason": "Lynch's legibility framework applies to mixed-use districts" },
+        { "id": "e5", "sourceId": "t2", "targetId": "t11", "edge_type": "informs", "reason": "Tactical urbanism as a way to rebuild imageability" }
+      ]
+    },
+    {
+      "id": "t3",
+      "objectSlug": "diversity-resilience-hunch",
+      "objectType": "hunch",
+      "title": "Street-level diversity correlates with economic resilience",
+      "summary": "Areas with more varied ground-floor uses seem to weather economic shocks better than monoculture zones.",
+      "capturedAt": "2025-03-16T14:30:00Z",
+      "edgeCount": 4,
+      "edges": [
+        { "id": "e1", "sourceId": "t1", "targetId": "t3", "edge_type": "supports", "reason": "Jacobs's diversity thesis directly supports this hunch" },
+        { "id": "e6", "sourceId": "t3", "targetId": "t4", "edge_type": "evidence", "reason": "Corner stores as surviving commercial nodes" },
+        { "id": "e7", "sourceId": "t3", "targetId": "t5", "edge_type": "related", "reason": "Mixed-use zoning enables street-level diversity" },
+        { "id": "e8", "sourceId": "t3", "targetId": "t8", "edge_type": "tension", "reason": "Concentrated poverty undermines diversity even in mixed-use zones" }
+      ]
+    },
+    {
+      "id": "t4",
+      "objectSlug": "flint-east-side-stores",
+      "objectType": "note",
+      "title": "Flint's east side has three remaining corner stores",
+      "summary": "Field observation from 2025-03-17 drive-through. All three are at major intersections.",
+      "capturedAt": "2025-03-17T11:45:00Z",
+      "edgeCount": 2,
+      "edges": [
+        { "id": "e6", "sourceId": "t3", "targetId": "t4", "edge_type": "evidence", "reason": "Corner stores as surviving commercial nodes" },
+        { "id": "e9", "sourceId": "t4", "targetId": "t7", "edge_type": "located_in", "reason": "Properties managed by GCLBA" }
+      ]
+    },
+    {
+      "id": "t5",
+      "objectSlug": "mixed-use-zoning",
+      "objectType": "concept",
+      "title": "Mixed-use zoning",
+      "summary": "Zoning that allows residential, commercial, and institutional uses within the same area or building.",
+      "capturedAt": "2025-03-17T15:00:00Z",
+      "edgeCount": 3,
+      "edges": [
+        { "id": "e2", "sourceId": "t1", "targetId": "t5", "edge_type": "informs", "reason": "Mixed-use concept originates in this text" },
+        { "id": "e4", "sourceId": "t2", "targetId": "t5", "edge_type": "informs", "reason": "Lynch's legibility framework applies to mixed-use districts" },
+        { "id": "e7", "sourceId": "t3", "targetId": "t5", "edge_type": "related", "reason": "Mixed-use zoning enables street-level diversity" }
+      ]
+    },
+    {
+      "id": "t6",
+      "objectSlug": "dan-kildee",
+      "objectType": "person",
+      "title": "Dan Kildee",
+      "summary": "Former Genesee County Treasurer who conceived the land bank model. Later U.S. Representative.",
+      "capturedAt": "2025-03-18T08:15:00Z",
+      "edgeCount": 2,
+      "edges": [
+        { "id": "e10", "sourceId": "t6", "targetId": "t7", "edge_type": "founded", "reason": "Kildee created the land bank concept in Genesee County" },
+        { "id": "e11", "sourceId": "t6", "targetId": "t10", "edge_type": "related", "reason": "Land bank as a response to shrinking city dynamics" }
+      ]
+    },
+    {
+      "id": "t7",
+      "objectSlug": "gclba",
+      "objectType": "place",
+      "title": "Genesee County Land Bank",
+      "summary": "The nation's first land bank authority, managing thousands of tax-reverted properties in Flint.",
+      "capturedAt": "2025-03-18T09:30:00Z",
+      "edgeCount": 3,
+      "edges": [
+        { "id": "e9", "sourceId": "t4", "targetId": "t7", "edge_type": "located_in", "reason": "Properties managed by GCLBA" },
+        { "id": "e10", "sourceId": "t6", "targetId": "t7", "edge_type": "founded", "reason": "Kildee created the land bank concept" },
+        { "id": "e12", "sourceId": "t7", "targetId": "t9", "edge_type": "evidence", "reason": "Disposition data supports this hunch" }
+      ]
+    },
+    {
+      "id": "t8",
+      "objectSlug": "concentrated-poverty",
+      "objectType": "concept",
+      "title": "Concentrated poverty",
+      "summary": "Geographic clustering of low-income households, leading to compounding disadvantages.",
+      "capturedAt": "2025-03-19T13:20:00Z",
+      "edgeCount": 2,
+      "edges": [
+        { "id": "e8", "sourceId": "t3", "targetId": "t8", "edge_type": "tension", "reason": "Concentrated poverty undermines diversity even in mixed-use zones" },
+        { "id": "e13", "sourceId": "t8", "targetId": "t10", "edge_type": "related", "reason": "Shrinking cities concentrate poverty spatially" }
+      ]
+    },
+    {
+      "id": "t9",
+      "objectSlug": "disposition-corridors-hunch",
+      "objectType": "hunch",
+      "title": "Land bank disposition patterns mirror pre-decline commercial corridors",
+      "summary": "Properties being sold or rehabbed by the land bank cluster along streets that were commercial centers before population loss.",
+      "capturedAt": "2025-03-20T16:00:00Z",
+      "edgeCount": 2,
+      "edges": [
+        { "id": "e12", "sourceId": "t7", "targetId": "t9", "edge_type": "evidence", "reason": "Disposition data supports this hunch" },
+        { "id": "e14", "sourceId": "t9", "targetId": "t10", "edge_type": "related", "reason": "Shrinking city patterns shape where reuse happens" }
+      ]
+    },
+    {
+      "id": "t10",
+      "objectSlug": "shrinking-cities",
+      "objectType": "concept",
+      "title": "Shrinking cities",
+      "summary": "Cities experiencing sustained population and economic decline, requiring new planning paradigms.",
+      "capturedAt": "2025-03-21T10:45:00Z",
+      "edgeCount": 3,
+      "edges": [
+        { "id": "e11", "sourceId": "t6", "targetId": "t10", "edge_type": "related", "reason": "Land bank as response to shrinking city dynamics" },
+        { "id": "e13", "sourceId": "t8", "targetId": "t10", "edge_type": "related", "reason": "Shrinking cities concentrate poverty spatially" },
+        { "id": "e14", "sourceId": "t9", "targetId": "t10", "edge_type": "related", "reason": "Shrinking city patterns shape where reuse happens" }
+      ]
+    },
+    {
+      "id": "t11",
+      "objectSlug": "tactical-urbanism",
+      "objectType": "concept",
+      "title": "Tactical urbanism",
+      "summary": "Low-cost, temporary interventions that test permanent changes to the built environment.",
+      "capturedAt": "2025-03-22T14:10:00Z",
+      "edgeCount": 1,
+      "edges": [
+        { "id": "e5", "sourceId": "t2", "targetId": "t11", "edge_type": "informs", "reason": "Tactical urbanism as a way to rebuild imageability" }
+      ]
+    },
+    {
+      "id": "t12",
+      "objectSlug": "jacobs-cities-capability-quote",
+      "objectType": "quote",
+      "title": "Cities have the capability of providing something for everybody",
+      "summary": "From The Death and Life of Great American Cities, Chapter 1.",
+      "capturedAt": "2025-03-22T15:30:00Z",
+      "edgeCount": 1,
+      "edges": [
+        { "id": "e3", "sourceId": "t1", "targetId": "t12", "edge_type": "quoted_in", "reason": "Source of the quote" }
+      ]
+    }
+  ]
+}

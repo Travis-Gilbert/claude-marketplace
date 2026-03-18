@@ -1,0 +1,9 @@
+{
+  "name": "three-pro",
+  "version": "1.0.0",
+  "description": "Three.js, React Three Fiber, and D3+Three.js hybrid visualization plugin. NPR sketch rendering, instanced data viz, scroll-driven cameras, and the pmndrs ecosystem.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": ["three.js", "r3f", "react-three-fiber", "drei", "webgl", "3d", "npr", "shader", "d3-three", "postprocessing"]
+}
