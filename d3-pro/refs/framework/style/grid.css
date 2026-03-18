@@ -1,0 +1,45 @@
+/* Observable Framework — Dashboard grid layout (excerpt for D3-Pro) */
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid-colspan-2 { grid-column: span 2; }
+.grid-colspan-3 { grid-column: span 3; }
+.grid-colspan-4 { grid-column: span 4; }
+.grid-rowspan-2 { grid-row: span 2; }
+.grid-rowspan-3 { grid-row: span 3; }
+
+/* Container query breakpoints */
+@container (max-width: 640px) {
+  .grid-cols-2,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container (max-width: 720px) {
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  padding: 1rem;
+  border-radius: 8px;
+  background: var(--theme-background-alt);
+}

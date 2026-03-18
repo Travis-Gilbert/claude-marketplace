@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hierarchy Explorer</title>
+<style>
+:root {
+  --theme-foreground: #1b1e23;
+  --theme-background: #ffffff;
+  --theme-foreground-faint: color-mix(in srgb, #1b1e23 50%, #ffffff);
+}
+body { margin: 20px; font-family: -apple-system, sans-serif; }
+.controls { margin-bottom: 10px; }
+button { margin-right: 8px; padding: 4px 12px; cursor: pointer; }
+button.active { background: #333; color: #fff; }
+</style>
+</head>
+<body>
+<div class="controls">
+  <button data-layout="tree" class="active">Tree</button>
+  <button data-layout="cluster">Cluster</button>
+  <button data-layout="treemap">Treemap</button>
+  <button data-layout="pack">Circle Pack</button>
+</div>
+<div id="chart"></div>
+<script type="module">
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+const width = 928;
+const height = 600;
+const data = await d3.json("flare-2.json");
+
+let currentLayout = "tree";
+
+function render(layout) {
+  d3.select("#chart").selectAll("*").remove();
+  currentLayout = layout;
+
+  // Update button states
+  document.querySelectorAll("button").forEach(b =>
+    b.classList.toggle("active", b.dataset.layout === layout));
+
+  const root = d3.hierarchy(data)
+      .sum(d => d.value)
+      .sort((a, b) => b.value - a.value);
+
+  if (layout === "treemap") {
+    renderTreemap(root);
+  } else if (layout === "pack") {
+    renderPack(root);
+  } else {
+    renderTree(root, layout === "cluster");
+  }
+}
+
+function renderTree(root, isCluster) {
+  const layout = (isCluster ? d3.cluster() : d3.tree()).size([height - 20, width - 160]);
+  layout(root);
+
+  const svg = d3.create("svg")
+      .attr("width", width).attr("height", height)
+      .attr("viewBox", [0, 0, width, height])
+      .attr("style", "max-width: 100%; height: auto;");
+
+  svg.append("g").attr("transform", "translate(80,10)")
+    .selectAll("path")
+    .data(root.links())
+    .join("path")
+      .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x))
+      .attr("fill", "none")
+      .attr("stroke", "var(--theme-foreground-faint)");
+
+  const node = svg.append("g").attr("transform", "translate(80,10)")
+    .selectAll("g")
+    .data(root.descendants())
+    .join("g")
+      .attr("transform", d => `translate(${d.y},${d.x})`);
+
+  node.append("circle")
+      .attr("r", d => d.children ? 3.5 : 2.5)
+      .attr("fill", d => d.children ? "#fff" : "#000")
+      .attr("stroke", d => d.children ? "#000" : "#fff")
+      .attr("stroke-width", 1.5);
+
+  node.append("text")
+      .attr("x", d => d.children ? -8 : 8)
+      .attr("dy", "0.35em")
+      .attr("text-anchor", d => d.children ? "end" : "start")
+      .attr("font-size", "10px")
+      .text(d => d.data.name);
+
+  document.getElementById("chart").appendChild(svg.node());
+}
+
+function renderTreemap(root) {
+  d3.treemap().size([width, height]).padding(1).round(true)(root);
+  const color = d3.scaleOrdinal(d3.schemeObservable10);
+
+  const svg = d3.create("svg")
+      .attr("width", width).attr("height", height)
+      .attr("viewBox", [0, 0, width, height])
+      .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
+
+  const cell = svg.selectAll("g")
+    .data(root.leaves()).join("g")
+      .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+  cell.append("rect")
+      .attr("width", d => d.x1 - d.x0)
+      .attr("height", d => d.y1 - d.y0)
+      .attr("fill", d => { let p = d; while (p.depth > 1) p = p.parent; return color(p.data.name); })
+      .attr("fill-opacity", 0.6);
+
+  cell.append("title").text(d => d.data.name);
+
+  document.getElementById("chart").appendChild(svg.node());
+}
+
+function renderPack(root) {
+  d3.pack().size([width, height]).padding(3)(root);
+  const color = d3.scaleLinear().domain([0, 5]).range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"]).interpolate(d3.interpolateHcl);
+
+  const svg = d3.create("svg")
+      .attr("width", width).attr("height", height)
+      .attr("viewBox", [0, 0, width, height])
+      .attr("style", "max-width: 100%; height: auto;");
+
+  svg.selectAll("circle")
+    .data(root.descendants())
+    .join("circle")
+      .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", d => d.r)
+      .attr("fill", d => d.children ? color(d.depth) : "white")
+      .attr("stroke", "var(--theme-foreground-faint)")
+      .attr("stroke-opacity", d => d.children ? 0.3 : 0);
+
+  svg.selectAll("circle").append("title").text(d => d.data.name);
+
+  document.getElementById("chart").appendChild(svg.node());
+}
+
+// Button handlers
+document.querySelectorAll("button").forEach(b =>
+  b.addEventListener("click", () => render(b.dataset.layout)));
+
+render("tree");
+</script>
+</body>
+</html>

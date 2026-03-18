@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Canvas Force Graph (Large Graphs)</title>
+<style>
+body { margin: 0; display: flex; justify-content: center; }
+canvas { cursor: grab; }
+canvas:active { cursor: grabbing; }
+</style>
+</head>
+<body>
+<script type="module">
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+const width = 928;
+const height = 600;
+const data = await d3.json("miserables.json");
+
+const nodes = data.nodes.map(d => ({...d}));
+const links = data.links.map(d => ({...d}));
+
+const color = d3.scaleOrdinal(d3.schemeObservable10);
+
+const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id))
+    .force("charge", d3.forceManyBody())
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+const canvas = d3.select("body").append("canvas")
+    .attr("width", width)
+    .attr("height", height);
+const context = canvas.node().getContext("2d");
+
+// Render loop
+simulation.on("tick", () => {
+  context.clearRect(0, 0, width, height);
+
+  // Draw links
+  context.beginPath();
+  context.strokeStyle = "rgba(153, 153, 153, 0.6)";
+  context.lineWidth = 0.5;
+  for (const link of links) {
+    context.moveTo(link.source.x, link.source.y);
+    context.lineTo(link.target.x, link.target.y);
+  }
+  context.stroke();
+
+  // Draw nodes
+  for (const node of nodes) {
+    context.beginPath();
+    context.arc(node.x, node.y, 5, 0, 2 * Math.PI);
+    context.fillStyle = color(node.group);
+    context.fill();
+    context.strokeStyle = "#fff";
+    context.lineWidth = 1.5;
+    context.stroke();
+  }
+});
+
+// Canvas drag via simulation.find()
+canvas.call(d3.drag()
+    .subject((event) => simulation.find(event.x, event.y, 20))
+    .on("start", (event, d) => {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      event.subject.fx = event.subject.x;
+      event.subject.fy = event.subject.y;
+    })
+    .on("drag", (event) => {
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+    })
+    .on("end", (event) => {
+      if (!event.active) simulation.alphaTarget(0);
+      event.subject.fx = null;
+      event.subject.fy = null;
+    }));
+
+// Canvas tooltip via simulation.find()
+canvas.on("mousemove", (event) => {
+  const [mx, my] = d3.pointer(event);
+  const node = simulation.find(mx, my, 20);
+  canvas.node().title = node ? node.id : "";
+});
+</script>
+</body>
+</html>

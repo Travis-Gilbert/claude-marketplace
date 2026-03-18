@@ -1,0 +1,9 @@
+{
+  "name": "d3-pro",
+  "version": "1.0.0",
+  "description": "Makes Claude Code extraordinarily good at building D3 visualizations that are mathematically accurate, physically believable, and aesthetically grounded in the Mike Bostock / Observable canon.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": ["d3", "visualization", "observable", "force", "hierarchy", "clustering", "svg", "canvas"]
+}

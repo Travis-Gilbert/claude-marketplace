@@ -1,0 +1,24 @@
+/* Observable Framework — Global CSS (excerpt for D3-Pro)
+   Font stacks, base typography, and semantic color variables. */
+
+:root {
+  --serif: "Source Serif 4", "Iowan Old Style", "Apple Garamond",
+    "Palatino Linotype", "Times New Roman", serif;
+  --sans-serif: -apple-system, BlinkMacSystemFont, "avenir next",
+    avenir, helvetica, "helvetica neue", ubuntu, roboto, noto,
+    "segoe ui", arial, sans-serif;
+  --monospace: Menlo, Consolas, monospace;
+}
+
+/* Light theme (default) */
+:root {
+  --theme-foreground: #1b1e23;
+  --theme-background: #ffffff;
+  --theme-foreground-focus: #3b5fc0;
+  --theme-foreground-alt: color-mix(in srgb, var(--theme-foreground) 90%, var(--theme-background));
+  --theme-foreground-muted: color-mix(in srgb, var(--theme-foreground) 60%, var(--theme-background));
+  --theme-foreground-faint: color-mix(in srgb, var(--theme-foreground) 50%, var(--theme-background));
+  --theme-foreground-fainter: color-mix(in srgb, var(--theme-foreground) 30%, var(--theme-background));
+  --theme-foreground-faintest: color-mix(in srgb, var(--theme-foreground) 14%, var(--theme-background));
+  --theme-background-alt: color-mix(in srgb, var(--theme-foreground) 4%, var(--theme-background));
+}
