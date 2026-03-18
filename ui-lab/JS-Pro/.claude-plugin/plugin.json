@@ -1,0 +1,33 @@
+{
+  "name": "js-pro",
+  "version": "2.0.0",
+  "description": "JavaScript expertise plugin with 27 specialist agents covering frontend frameworks, D3.js visualization (force tuning, hierarchy, annotations, clustering, interaction, labels, style presets), Three.js / React Three Fiber / Drei 3D development, and access to real framework source code. Includes skills for JS design patterns, D3 standards, Three.js design, component APIs, and framework migration.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "javascript",
+    "typescript",
+    "react",
+    "nextjs",
+    "d3",
+    "alpine",
+    "htmx",
+    "angular",
+    "frontend",
+    "components",
+    "framework",
+    "migration",
+    "three.js",
+    "r3f",
+    "react-three-fiber",
+    "drei",
+    "webgl",
+    "3d",
+    "visualization",
+    "force-layout",
+    "hierarchy",
+    "annotation",
+    "clustering"
+  ]
+}
