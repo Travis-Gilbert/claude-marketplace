@@ -1,0 +1,8 @@
+# Reference repos are large (~270MB) and distributed via tarball
+refs/
+
+# OS files
+.DS_Store
+
+# Local settings
+.claude/*.local.md

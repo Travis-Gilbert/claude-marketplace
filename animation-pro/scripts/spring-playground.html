@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Physics Playground</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #1a1a1d; color: #e8e4de; padding: 2rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    .layout { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .controls { flex: 1; min-width: 280px; }
+    .preview { flex: 1; min-width: 280px; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .slider-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; color: #a0a0a0; margin-bottom: 0.25rem; }
+    .slider-row { display: flex; align-items: center; gap: 0.75rem; }
+    input[type="range"] { flex: 1; accent-color: #4ecdc4; }
+    .value { font-family: monospace; font-size: 0.9rem; min-width: 3rem; text-align: right; }
+    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+    .preset-btn { padding: 0.5rem; border: 1px solid #333; background: #222; color: #e8e4de; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: border-color 0.15s; }
+    .preset-btn:hover { border-color: #4ecdc4; }
+    .preset-btn.active { border-color: #4ecdc4; background: #2a3a38; }
+    .track { width: 100%; height: 80px; background: #222; border-radius: 8px; position: relative; overflow: hidden; }
+    .ball { width: 40px; height: 40px; background: #4ecdc4; border-radius: 50%; position: absolute; top: 20px; left: 20px; }
+    .trigger-btn { padding: 0.75rem 2rem; background: #4ecdc4; color: #1a1a1d; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .trigger-btn:hover { background: #45b7b0; }
+    .config-output { background: #222; padding: 1rem; border-radius: 6px; font-family: monospace; font-size: 0.85rem; margin-top: 1rem; white-space: pre; color: #4ecdc4; width: 100%; }
+    .section-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Spring Physics Playground</h1>
+  <div class="layout">
+    <div class="controls">
+      <div class="section-label">Presets</div>
+      <div class="preset-grid">
+        <button class="preset-btn" onclick="setPreset('snappy')">Snappy</button>
+        <button class="preset-btn" onclick="setPreset('natural')">Natural</button>
+        <button class="preset-btn" onclick="setPreset('gentle')">Gentle</button>
+        <button class="preset-btn" onclick="setPreset('bouncy')">Bouncy</button>
+        <button class="preset-btn" onclick="setPreset('critical')">Critical</button>
+        <button class="preset-btn" onclick="setPreset('heavy')">Heavy</button>
+      </div>
+      <div class="section-label">Parameters</div>
+      <div class="slider-group">
+        <label>Stiffness (restoring force)</label>
+        <div class="slider-row">
+          <input type="range" id="stiffness" min="50" max="800" value="300" oninput="update()">
+          <span class="value" id="stiffness-val">300</span>
+        </div>
+      </div>
+      <div class="slider-group">
+        <label>Damping (resistance)</label>
+        <div class="slider-row">
+          <input type="range" id="damping" min="1" max="60" value="25" oninput="update()">
+          <span class="value" id="damping-val">25</span>
+        </div>
+      </div>
+      <div class="slider-group">
+        <label>Mass (inertia)</label>
+        <div class="slider-row">
+          <input type="range" id="mass" min="0.1" max="5" value="1" step="0.1" oninput="update()">
+          <span class="value" id="mass-val">1.0</span>
+        </div>
+      </div>
+      <div class="config-output" id="config-output"></div>
+    </div>
+    <div class="preview">
+      <div class="section-label">Preview</div>
+      <div class="track" id="track">
+        <div class="ball" id="ball"></div>
+      </div>
+      <button class="trigger-btn" onclick="triggerAnimation()">Trigger Spring</button>
+    </div>
+  </div>
+
+  <script>
+    const presets = {
+      snappy:   { stiffness: 400, damping: 30, mass: 1 },
+      natural:  { stiffness: 300, damping: 25, mass: 1 },
+      gentle:   { stiffness: 200, damping: 20, mass: 1 },
+      bouncy:   { stiffness: 500, damping: 15, mass: 1 },
+      critical: { stiffness: 400, damping: 40, mass: 1 },
+      heavy:    { stiffness: 150, damping: 25, mass: 1.5 },
+    };
+
+    let animating = false;
+    let position = 20;
+    let velocity = 0;
+    let target = 20;
+
+    function setPreset(name) {
+      const p = presets[name];
+      document.getElementById('stiffness').value = p.stiffness;
+      document.getElementById('damping').value = p.damping;
+      document.getElementById('mass').value = p.mass;
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === name);
+      });
+      update();
+    }
+
+    function update() {
+      const s = document.getElementById('stiffness').value;
+      const d = document.getElementById('damping').value;
+      const m = parseFloat(document.getElementById('mass').value).toFixed(1);
+      document.getElementById('stiffness-val').textContent = s;
+      document.getElementById('damping-val').textContent = d;
+      document.getElementById('mass-val').textContent = m;
+
+      const motionConfig = `// Motion (motion/react)\n{ stiffness: ${s}, damping: ${d}${m !== '1.0' ? ', mass: ' + m : ''} }`;
+      const springConfig = `// react-spring\n{ tension: ${s}, friction: ${d}${m !== '1.0' ? ', mass: ' + m : ''} }`;
+      document.getElementById('config-output').textContent = motionConfig + '\n\n' + springConfig;
+    }
+
+    function triggerAnimation() {
+      const track = document.getElementById('track');
+      const maxX = track.offsetWidth - 60;
+      target = target <= 30 ? maxX : 20;
+      velocity = 0;
+      if (!animating) {
+        animating = true;
+        animate();
+      }
+    }
+
+    function animate() {
+      const stiffness = parseFloat(document.getElementById('stiffness').value);
+      const damping = parseFloat(document.getElementById('damping').value);
+      const mass = parseFloat(document.getElementById('mass').value);
+      const dt = 1 / 60;
+
+      const springForce = -stiffness * (position - target);
+      const dampingForce = -damping * velocity;
+      const acceleration = (springForce + dampingForce) / mass;
+
+      velocity += acceleration * dt;
+      position += velocity * dt;
+
+      document.getElementById('ball').style.left = position + 'px';
+
+      if (Math.abs(position - target) < 0.5 && Math.abs(velocity) < 0.5) {
+        position = target;
+        document.getElementById('ball').style.left = position + 'px';
+        animating = false;
+        return;
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    setPreset('natural');
+    update();
+  </script>
+</body>
+</html>

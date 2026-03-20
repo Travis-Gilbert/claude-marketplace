@@ -1,0 +1,9 @@
+{
+  "name": "animation-pro",
+  "version": "0.1.0",
+  "description": "Animation & motion expertise across four domains: UI motion, creative/generative, 3D animation, and programmatic video. Backed by 21 reference source repos and specialized agents grounded in real implementations.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": ["animation", "motion", "spring-physics", "three-js", "remotion", "p5js", "creative-coding", "accessibility"]
+}

@@ -1,0 +1,8 @@
+# Reference repos are large (~2-3GB) and installed via install.sh
+refs/
+
+# OS files
+.DS_Store
+
+# Local settings
+.claude/*.local.md

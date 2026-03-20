@@ -1,0 +1,9 @@
+{
+  "name": "ux-pro",
+  "version": "0.1.0",
+  "description": "UX expertise plugin covering research, information architecture, interaction design, accessibility, usability testing, content design, and service design. Backed by 15 reference source repos from real design systems and accessibility tools.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": ["ux", "accessibility", "wcag", "aria", "usability", "research", "information-architecture", "interaction-design", "service-design", "content-design"]
+}
