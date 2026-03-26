@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.urls import path
 
 from api.router import api
-from api.mcp import mcp_sse, mcp_messages
+from api.mcp import mcp_streamable, mcp_sse, mcp_messages
 
 
 def health(request):
@@ -15,6 +15,9 @@ urlpatterns = [
     path("health/", health, name="health"),
     path("admin/", admin.site.urls),
     path("api/", api.urls),
-    path("mcp/", mcp_sse, name="mcp-sse"),
-    path("mcp/messages/", mcp_messages, name="mcp-messages"),
+    # Streamable HTTP — primary MCP endpoint (claude.ai, modern clients)
+    path("mcp/", mcp_streamable, name="mcp"),
+    # Legacy SSE transport (Claude Code with --transport sse)
+    path("mcp/sse/", mcp_sse, name="mcp-sse"),
+    path("mcp/sse/messages/", mcp_messages, name="mcp-messages"),
 ]

@@ -403,69 +403,20 @@ TOOL_HANDLERS = {
 }
 
 
-# ---------- SSE Transport ----------
-
-# In-memory session store (production would use Redis)
-_sessions: dict[str, dict] = {}
+# ---------- JSON-RPC Handler (shared by both transports) ----------
 
 
-def _sse_event(event_type: str, data: dict) -> str:
-    """Format an SSE event."""
-    return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
-
-
-@require_GET
-def mcp_sse(request):
-    """SSE endpoint. Opens a session and streams the endpoint URL."""
-    session_id = str(uuid.uuid4())
-    _sessions[session_id] = {"initialized": False}
-
-    def event_stream():
-        # Send the endpoint URL for the client to POST messages to
-        yield _sse_event(
-            "endpoint",
-            f"/mcp/messages/?session_id={session_id}",
-        )
-        # Keep connection alive — client will POST to messages endpoint
-        # In production, this would use async generators with proper
-        # event dispatching. For Phase 1, we rely on request-response
-        # via the messages endpoint.
-
-    response = StreamingHttpResponse(
-        event_stream(),
-        content_type="text/event-stream",
-    )
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"
-    return response
-
-
-@csrf_exempt
-@require_POST
-def mcp_messages(request):
-    """Handle MCP JSON-RPC messages."""
-    session_id = request.GET.get("session_id", "")
-    if session_id not in _sessions:
-        return JsonResponse(
-            {"jsonrpc": "2.0", "error": {"code": -32000, "message": "Invalid session"}},
-            status=400,
-        )
-
-    try:
-        body = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}},
-            status=400,
-        )
-
+def _handle_jsonrpc(body):
+    """Process a single JSON-RPC message. Returns a Django JsonResponse."""
     method = body.get("method", "")
     msg_id = body.get("id")
     params = body.get("params", {})
 
-    # Handle MCP protocol methods
+    # Notifications (no id) — acknowledge silently
+    if msg_id is None:
+        return JsonResponse({}, status=202)
+
     if method == "initialize":
-        _sessions[session_id]["initialized"] = True
         return JsonResponse({
             "jsonrpc": "2.0",
             "id": msg_id,
@@ -531,3 +482,122 @@ def mcp_messages(request):
         "id": msg_id,
         "error": {"code": -32601, "message": f"Unknown method: {method}"},
     })
+
+
+# ---------- Streamable HTTP Transport (claude.ai, modern clients) ----------
+
+
+@csrf_exempt
+def mcp_streamable(request):
+    """
+    Streamable HTTP MCP endpoint.
+
+    - POST: Accepts JSON-RPC messages, returns JSON responses.
+             Stateless — no session management needed.
+    - GET:  Returns SSE stream (for server-initiated messages, currently unused).
+    - DELETE: Session cleanup (no-op, stateless).
+    """
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}},
+                status=400,
+            )
+
+        # Handle batch requests (array of JSON-RPC messages)
+        if isinstance(body, list):
+            responses = []
+            for msg in body:
+                resp = _handle_jsonrpc(msg)
+                if resp.status_code != 202:  # Skip notifications
+                    responses.append(json.loads(resp.content))
+            return JsonResponse(responses, safe=False) if responses else JsonResponse({}, status=202)
+
+        # Single request
+        response = _handle_jsonrpc(body)
+        # Set Mcp-Session-Id header for clients that track sessions
+        session_id = request.headers.get("Mcp-Session-Id", str(uuid.uuid4()))
+        response["Mcp-Session-Id"] = session_id
+        return response
+
+    elif request.method == "GET":
+        # SSE stream for server-initiated messages (keep-alive)
+        def event_stream():
+            yield f"event: open\ndata: {json.dumps({'status': 'connected'})}\n\n"
+
+        response = StreamingHttpResponse(
+            event_stream(),
+            content_type="text/event-stream",
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
+
+    elif request.method == "DELETE":
+        return JsonResponse({"status": "ok"}, status=200)
+
+    elif request.method == "OPTIONS":
+        response = JsonResponse({}, status=204)
+        response["Allow"] = "GET, POST, DELETE, OPTIONS"
+        return response
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+
+
+# ---------- Legacy SSE Transport (Claude Code, older clients) ----------
+
+# In-memory session store
+_sessions: dict[str, dict] = {}
+
+
+def _sse_event(event_type: str, data) -> str:
+    """Format an SSE event."""
+    return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+
+
+@require_GET
+def mcp_sse(request):
+    """Legacy SSE endpoint. Opens a session and streams the messages URL."""
+    session_id = str(uuid.uuid4())
+    _sessions[session_id] = {"initialized": False}
+
+    def event_stream():
+        yield _sse_event(
+            "endpoint",
+            f"/mcp/sse/messages/?session_id={session_id}",
+        )
+
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type="text/event-stream",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+@csrf_exempt
+@require_POST
+def mcp_messages(request):
+    """Legacy SSE message handler (requires session_id)."""
+    session_id = request.GET.get("session_id", "")
+    if session_id not in _sessions:
+        return JsonResponse(
+            {"jsonrpc": "2.0", "error": {"code": -32000, "message": "Invalid session"}},
+            status=400,
+        )
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}},
+            status=400,
+        )
+
+    if body.get("method") == "initialize":
+        _sessions[session_id]["initialized"] = True
+
+    return _handle_jsonrpc(body)
