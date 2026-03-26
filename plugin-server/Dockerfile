@@ -16,10 +16,11 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput 2>/dev/null || true
 
-# Railway sets $PORT dynamically (typically 8080).
-# Do NOT use EXPOSE with a hardcoded port — it conflicts with Railway's proxy.
+# Railway sets PORT=8080. EXPOSE must match so Railway's proxy knows where to route.
+EXPOSE 8080
+
 CMD gunicorn plugin_server.wsgi:application \
-    --bind "0.0.0.0:${PORT:-8000}" \
+    --bind "0.0.0.0:${PORT:-8080}" \
     --workers 2 \
     --threads 4 \
     --timeout 120
