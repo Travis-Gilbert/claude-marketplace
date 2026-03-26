@@ -1,0 +1,11 @@
+# Plugin files are ingested via GitHub API, not from the Docker image.
+# Exclude everything outside plugin-server/ to keep build context small.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+db.sqlite3
+staticfiles/
+repo_cache/
+.venv/
+.git/
