@@ -487,6 +487,16 @@ def _handle_jsonrpc(body):
 # ---------- Streamable HTTP Transport (claude.ai, modern clients) ----------
 
 
+def _add_cors(response):
+    """Add CORS headers for browser-based MCP clients (claude.ai)."""
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Mcp-Session-Id, Authorization"
+    response["Access-Control-Expose-Headers"] = "Mcp-Session-Id"
+    response["Access-Control-Max-Age"] = "86400"
+    return response
+
+
 @csrf_exempt
 def mcp_streamable(request):
     """
@@ -496,34 +506,38 @@ def mcp_streamable(request):
              Stateless — no session management needed.
     - GET:  Returns SSE stream (for server-initiated messages, currently unused).
     - DELETE: Session cleanup (no-op, stateless).
+    - OPTIONS: CORS preflight.
     """
+    # Handle CORS preflight first
+    if request.method == "OPTIONS":
+        return _add_cors(JsonResponse({}, status=204))
+
     if request.method == "POST":
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse(
+            return _add_cors(JsonResponse(
                 {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}},
                 status=400,
-            )
+            ))
 
         # Handle batch requests (array of JSON-RPC messages)
         if isinstance(body, list):
             responses = []
             for msg in body:
                 resp = _handle_jsonrpc(msg)
-                if resp.status_code != 202:  # Skip notifications
+                if resp.status_code != 202:
                     responses.append(json.loads(resp.content))
-            return JsonResponse(responses, safe=False) if responses else JsonResponse({}, status=202)
+            result = JsonResponse(responses, safe=False) if responses else JsonResponse({}, status=202)
+            return _add_cors(result)
 
         # Single request
         response = _handle_jsonrpc(body)
-        # Set Mcp-Session-Id header for clients that track sessions
         session_id = request.headers.get("Mcp-Session-Id", str(uuid.uuid4()))
         response["Mcp-Session-Id"] = session_id
-        return response
+        return _add_cors(response)
 
     elif request.method == "GET":
-        # SSE stream for server-initiated messages (keep-alive)
         def event_stream():
             yield f"event: open\ndata: {json.dumps({'status': 'connected'})}\n\n"
 
@@ -533,17 +547,12 @@ def mcp_streamable(request):
         )
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
-        return response
+        return _add_cors(response)
 
     elif request.method == "DELETE":
-        return JsonResponse({"status": "ok"}, status=200)
+        return _add_cors(JsonResponse({"status": "ok"}, status=200))
 
-    elif request.method == "OPTIONS":
-        response = JsonResponse({}, status=204)
-        response["Allow"] = "GET, POST, DELETE, OPTIONS"
-        return response
-
-    return JsonResponse({"error": "Method not allowed"}, status=405)
+    return _add_cors(JsonResponse({"error": "Method not allowed"}, status=405))
 
 
 # ---------- Legacy SSE Transport (Claude Code, older clients) ----------
