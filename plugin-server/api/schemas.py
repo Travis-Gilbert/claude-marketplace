@@ -138,6 +138,7 @@ class SearchResult(Schema):
     slug: str
     snippet: str
     rank: float = 0.0
+    distance: float | None = None
 
 
 # ---------- Admin ----------

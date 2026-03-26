@@ -20,6 +20,9 @@ from plugins.models import (
     Template,
 )
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from pgvector.django import CosineDistance
+
+from plugins.embeddings import generate_embedding
 
 # ---------- MCP Tool Definitions ----------
 
@@ -208,6 +211,28 @@ def _handle_get_source_file(args):
     }
 
 
+def _mcp_semantic_search(qs, query_text, query_embedding, limit):
+    """Try semantic search for MCP handlers. Returns list of results or None."""
+    if not query_embedding:
+        return None
+    return list(
+        qs.filter(embedding__isnull=False)
+        .annotate(distance=CosineDistance("embedding", query_embedding))
+        .order_by("distance")[:limit]
+    )
+
+
+def _mcp_fulltext_search(qs, fields, query_text, limit):
+    """Full-text search fallback for MCP handlers."""
+    sv = SearchVector(*fields)
+    sq = SearchQuery(query_text)
+    return list(
+        qs.annotate(rank=SearchRank(sv, sq))
+        .filter(rank__gte=0.01)
+        .order_by("-rank")[:limit]
+    )
+
+
 def _handle_search_knowledge(args):
     query_text = args["query"]
     plugin = args.get("plugin")
@@ -215,51 +240,96 @@ def _handle_search_knowledge(args):
     limit = args.get("limit", 20)
     results = []
 
+    # Pre-compute embedding once
+    query_embedding = generate_embedding(query_text)
+    use_semantic = bool(query_embedding)
+
     if content_type in (None, "agent"):
         qs = AgentDefinition.objects.filter(is_deleted=False)
         if plugin:
             qs = qs.filter(plugin__slug=plugin)
-        sv = SearchVector("content", "name")
-        sq = SearchQuery(query_text)
-        for a in qs.annotate(rank=SearchRank(sv, sq)).filter(rank__gte=0.01).order_by("-rank")[:limit]:
-            results.append({
-                "type": "agent",
-                "plugin": a.plugin.slug if hasattr(a, "plugin") else "",
-                "title": a.name,
-                "slug": a.slug,
-                "snippet": a.content[:300],
-            })
+        if use_semantic:
+            hits = _mcp_semantic_search(qs, query_text, query_embedding, limit)
+        else:
+            hits = None
+        if hits is not None:
+            for a in hits:
+                results.append({
+                    "type": "agent",
+                    "plugin": a.plugin.slug if hasattr(a, "plugin") else "",
+                    "title": a.name,
+                    "slug": a.slug,
+                    "snippet": a.content[:300],
+                    "distance": float(a.distance),
+                })
+        else:
+            for a in _mcp_fulltext_search(qs, ["content", "name"], query_text, limit):
+                results.append({
+                    "type": "agent",
+                    "plugin": a.plugin.slug if hasattr(a, "plugin") else "",
+                    "title": a.name,
+                    "slug": a.slug,
+                    "snippet": a.content[:300],
+                })
 
     if content_type in (None, "reference"):
         qs = ReferenceDoc.objects.filter(is_deleted=False)
         if plugin:
             qs = qs.filter(plugin__slug=plugin)
-        sv = SearchVector("content", "title")
-        sq = SearchQuery(query_text)
-        for r in qs.annotate(rank=SearchRank(sv, sq)).filter(rank__gte=0.01).order_by("-rank")[:limit]:
-            results.append({
-                "type": "reference",
-                "plugin": r.plugin.slug if hasattr(r, "plugin") else "",
-                "title": r.title,
-                "slug": r.slug,
-                "snippet": r.content[:300],
-            })
+        if use_semantic:
+            hits = _mcp_semantic_search(qs, query_text, query_embedding, limit)
+        else:
+            hits = None
+        if hits is not None:
+            for r in hits:
+                results.append({
+                    "type": "reference",
+                    "plugin": r.plugin.slug if hasattr(r, "plugin") else "",
+                    "title": r.title,
+                    "slug": r.slug,
+                    "snippet": r.content[:300],
+                    "distance": float(r.distance),
+                })
+        else:
+            for r in _mcp_fulltext_search(qs, ["content", "title"], query_text, limit):
+                results.append({
+                    "type": "reference",
+                    "plugin": r.plugin.slug if hasattr(r, "plugin") else "",
+                    "title": r.title,
+                    "slug": r.slug,
+                    "snippet": r.content[:300],
+                })
 
     if content_type in (None, "source"):
         qs = SourceChunk.objects.filter(is_deleted=False)
         if plugin:
             qs = qs.filter(plugin__slug=plugin)
-        sv = SearchVector("content", "symbol_name")
-        sq = SearchQuery(query_text)
-        for s in qs.annotate(rank=SearchRank(sv, sq)).filter(rank__gte=0.01).order_by("-rank")[:limit]:
-            results.append({
-                "type": "source",
-                "plugin": s.plugin.slug if hasattr(s, "plugin") else "",
-                "title": f"{s.ref_library}::{s.symbol_name or s.file_path}",
-                "slug": s.file_path,
-                "snippet": s.content[:300],
-            })
+        if use_semantic:
+            hits = _mcp_semantic_search(qs, query_text, query_embedding, limit)
+        else:
+            hits = None
+        if hits is not None:
+            for s in hits:
+                results.append({
+                    "type": "source",
+                    "plugin": s.plugin.slug if hasattr(s, "plugin") else "",
+                    "title": f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                    "slug": s.file_path,
+                    "snippet": s.content[:300],
+                    "distance": float(s.distance),
+                })
+        else:
+            for s in _mcp_fulltext_search(qs, ["content", "symbol_name"], query_text, limit):
+                results.append({
+                    "type": "source",
+                    "plugin": s.plugin.slug if hasattr(s, "plugin") else "",
+                    "title": f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                    "slug": s.file_path,
+                    "snippet": s.content[:300],
+                })
 
+    if use_semantic:
+        results.sort(key=lambda r: r.get("distance", float("inf")))
     return results[:limit]
 
 
@@ -274,17 +344,33 @@ def _handle_search_source(args):
     if args.get("language"):
         qs = qs.filter(language=args["language"])
 
-    sv = SearchVector("content", "symbol_name")
-    sq = SearchQuery(query_text)
+    query_embedding = generate_embedding(query_text)
     results = []
-    for s in qs.annotate(rank=SearchRank(sv, sq)).filter(rank__gte=0.01).order_by("-rank")[:limit]:
-        results.append({
-            "type": "source",
-            "plugin": s.plugin.slug if hasattr(s, "plugin") else "",
-            "title": f"{s.ref_library}::{s.symbol_name or s.file_path}",
-            "file_path": s.file_path,
-            "snippet": s.content[:300],
-        })
+
+    if query_embedding:
+        hits = _mcp_semantic_search(qs, query_text, query_embedding, limit)
+    else:
+        hits = None
+
+    if hits is not None:
+        for s in hits:
+            results.append({
+                "type": "source",
+                "plugin": s.plugin.slug if hasattr(s, "plugin") else "",
+                "title": f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                "file_path": s.file_path,
+                "snippet": s.content[:300],
+                "distance": float(s.distance),
+            })
+    else:
+        for s in _mcp_fulltext_search(qs, ["content", "symbol_name"], query_text, limit):
+            results.append({
+                "type": "source",
+                "plugin": s.plugin.slug if hasattr(s, "plugin") else "",
+                "title": f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                "file_path": s.file_path,
+                "snippet": s.content[:300],
+            })
     return results
 
 

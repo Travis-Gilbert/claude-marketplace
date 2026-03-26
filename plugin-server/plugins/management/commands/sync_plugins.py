@@ -20,6 +20,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.text import slugify
 
 from plugins.chunkers import chunk_source, detect_language
+from plugins.embeddings import generate_embeddings
 from plugins.models import (
     AgentDefinition,
     IngestionRun,
@@ -93,15 +94,21 @@ class Command(BaseCommand):
                 chunks = self._sync_plugin(plugin_dir, repo_path)
                 total_chunks += chunks
 
+            # Generate embeddings for content missing them
+            embeddings_count = 0
+            if not options.get("skip_embeddings"):
+                embeddings_count = self._generate_embeddings()
+
             run.status = "completed"
             run.plugins_synced = len(plugin_dirs)
             run.chunks_created = total_chunks
+            run.embeddings_generated = embeddings_count
             run.duration_seconds = time.time() - start
             run.save()
 
             self.stdout.write(self.style.SUCCESS(
-                f"Synced {len(plugin_dirs)} plugins, {total_chunks} chunks "
-                f"in {run.duration_seconds:.1f}s"
+                f"Synced {len(plugin_dirs)} plugins, {total_chunks} chunks, "
+                f"{embeddings_count} embeddings in {run.duration_seconds:.1f}s"
             ))
 
         except Exception as e:
@@ -420,3 +427,79 @@ class Command(BaseCommand):
         """Soft-delete any content whose source files no longer exist."""
         # Already handled per-type in the sync methods above
         pass
+
+    def _generate_embeddings(self) -> int:
+        """Batch-generate embeddings for content that has embedding=None.
+
+        Returns the total number of embeddings generated. Skips silently
+        if OPENAI_API_KEY is not set.
+        """
+        from plugins.embeddings import get_openai_api_key
+
+        if not get_openai_api_key():
+            self.stdout.write(
+                "  OPENAI_API_KEY not set, skipping embedding generation"
+            )
+            return 0
+
+        total = 0
+        batch_size = 50  # smaller than API max to stay within token limits
+
+        # AgentDefinition — embed the full content
+        total += self._embed_model_batch(
+            AgentDefinition.objects.filter(is_deleted=False, embedding__isnull=True),
+            text_fn=lambda obj: obj.content[:8000],
+            label="agents",
+            batch_size=batch_size,
+        )
+
+        # ReferenceDoc — embed title + truncated content
+        total += self._embed_model_batch(
+            ReferenceDoc.objects.filter(is_deleted=False, embedding__isnull=True),
+            text_fn=lambda obj: f"{obj.title}\n\n{obj.content[:8000]}",
+            label="references",
+            batch_size=batch_size,
+        )
+
+        # SourceChunk — embed symbol_name + content
+        total += self._embed_model_batch(
+            SourceChunk.objects.filter(is_deleted=False, embedding__isnull=True),
+            text_fn=lambda obj: (
+                f"{obj.symbol_name}\n\n{obj.content[:8000]}"
+                if obj.symbol_name
+                else obj.content[:8000]
+            ),
+            label="source chunks",
+            batch_size=batch_size,
+        )
+
+        return total
+
+    def _embed_model_batch(self, queryset, text_fn, label, batch_size) -> int:
+        """Generate and save embeddings for a queryset in batches."""
+        items = list(queryset)
+        if not items:
+            return 0
+
+        self.stdout.write(f"  Generating embeddings for {len(items)} {label}...")
+        count = 0
+
+        for i in range(0, len(items), batch_size):
+            batch = items[i:i + batch_size]
+            texts = [text_fn(obj) for obj in batch]
+            embeddings = generate_embeddings(texts)
+
+            to_update = []
+            for obj, emb in zip(batch, embeddings):
+                if emb:  # non-empty embedding
+                    obj.embedding = emb
+                    to_update.append(obj)
+
+            if to_update:
+                queryset.model.objects.bulk_update(
+                    to_update, ["embedding"], batch_size=100
+                )
+                count += len(to_update)
+
+        self.stdout.write(f"    -> {count} {label} embeddings saved")
+        return count

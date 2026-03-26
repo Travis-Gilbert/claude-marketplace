@@ -9,6 +9,9 @@ from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, Query
 from ninja.errors import HttpError
 from ninja.throttling import AnonRateThrottle
+from pgvector.django import CosineDistance
+
+from plugins.embeddings import generate_embedding
 
 from plugins.models import (
     AgentDefinition,
@@ -293,62 +296,135 @@ def _fulltext_search(qs, fields, query_text, limit):
     )
 
 
+def _semantic_search(qs, query_text, limit):
+    """Semantic search using pgvector cosine distance.
+
+    Returns a queryset annotated with ``distance``, or None if embeddings
+    are unavailable (no API key or empty query embedding) so the caller
+    can fall back to full-text search.
+    """
+    query_embedding = generate_embedding(query_text)
+    if not query_embedding:
+        return None
+    return (
+        qs.filter(embedding__isnull=False)
+        .annotate(distance=CosineDistance("embedding", query_embedding))
+        .order_by("distance")[:limit]
+    )
+
+
 @api.post("/search/", response=list[SearchResult], tags=["search"])
 def search_all(request, body: SearchRequest):
-    """Search across all content types."""
+    """Search across all content types. Uses semantic search when embeddings
+    are available, falling back to PostgreSQL full-text search otherwise."""
     results = []
+
+    # Pre-compute the query embedding once for all content types
+    query_embedding = generate_embedding(body.query)
+    use_semantic = bool(query_embedding)
 
     if body.content_type in (None, "agent"):
         qs = AgentDefinition.objects.filter(is_deleted=False)
         if body.plugin:
             qs = qs.filter(plugin__slug=body.plugin)
-        for a in _fulltext_search(qs, ["content", "name"], body.query, body.limit):
-            results.append(SearchResult(
-                content_type="agent",
-                plugin_slug=a.plugin.slug,
-                title=a.name,
-                slug=a.slug,
-                snippet=a.content[:300],
-                rank=a.rank,
-            ))
+        if use_semantic:
+            semantic = (
+                qs.filter(embedding__isnull=False)
+                .annotate(distance=CosineDistance("embedding", query_embedding))
+                .order_by("distance")[:body.limit]
+            )
+            for a in semantic:
+                results.append(SearchResult(
+                    content_type="agent",
+                    plugin_slug=a.plugin.slug,
+                    title=a.name,
+                    slug=a.slug,
+                    snippet=a.content[:300],
+                    distance=a.distance,
+                ))
+        else:
+            for a in _fulltext_search(qs, ["content", "name"], body.query, body.limit):
+                results.append(SearchResult(
+                    content_type="agent",
+                    plugin_slug=a.plugin.slug,
+                    title=a.name,
+                    slug=a.slug,
+                    snippet=a.content[:300],
+                    rank=a.rank,
+                ))
 
     if body.content_type in (None, "reference"):
         qs = ReferenceDoc.objects.filter(is_deleted=False)
         if body.plugin:
             qs = qs.filter(plugin__slug=body.plugin)
-        for r in _fulltext_search(qs, ["content", "title"], body.query, body.limit):
-            results.append(SearchResult(
-                content_type="reference",
-                plugin_slug=r.plugin.slug,
-                title=r.title,
-                slug=r.slug,
-                snippet=r.content[:300],
-                rank=r.rank,
-            ))
+        if use_semantic:
+            semantic = (
+                qs.filter(embedding__isnull=False)
+                .annotate(distance=CosineDistance("embedding", query_embedding))
+                .order_by("distance")[:body.limit]
+            )
+            for r in semantic:
+                results.append(SearchResult(
+                    content_type="reference",
+                    plugin_slug=r.plugin.slug,
+                    title=r.title,
+                    slug=r.slug,
+                    snippet=r.content[:300],
+                    distance=r.distance,
+                ))
+        else:
+            for r in _fulltext_search(qs, ["content", "title"], body.query, body.limit):
+                results.append(SearchResult(
+                    content_type="reference",
+                    plugin_slug=r.plugin.slug,
+                    title=r.title,
+                    slug=r.slug,
+                    snippet=r.content[:300],
+                    rank=r.rank,
+                ))
 
     if body.content_type in (None, "source"):
         qs = SourceChunk.objects.filter(is_deleted=False)
         if body.plugin:
             qs = qs.filter(plugin__slug=body.plugin)
-        for s in _fulltext_search(
-            qs, ["content", "symbol_name"], body.query, body.limit
-        ):
-            results.append(SearchResult(
-                content_type="source",
-                plugin_slug=s.plugin.slug,
-                title=f"{s.ref_library}::{s.symbol_name or s.file_path}",
-                slug=s.file_path,
-                snippet=s.content[:300],
-                rank=s.rank,
-            ))
+        if use_semantic:
+            semantic = (
+                qs.filter(embedding__isnull=False)
+                .annotate(distance=CosineDistance("embedding", query_embedding))
+                .order_by("distance")[:body.limit]
+            )
+            for s in semantic:
+                results.append(SearchResult(
+                    content_type="source",
+                    plugin_slug=s.plugin.slug,
+                    title=f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                    slug=s.file_path,
+                    snippet=s.content[:300],
+                    distance=s.distance,
+                ))
+        else:
+            for s in _fulltext_search(
+                qs, ["content", "symbol_name"], body.query, body.limit
+            ):
+                results.append(SearchResult(
+                    content_type="source",
+                    plugin_slug=s.plugin.slug,
+                    title=f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                    slug=s.file_path,
+                    snippet=s.content[:300],
+                    rank=s.rank,
+                ))
 
-    results.sort(key=lambda r: r.rank, reverse=True)
+    if use_semantic:
+        results.sort(key=lambda r: r.distance if r.distance is not None else float("inf"))
+    else:
+        results.sort(key=lambda r: r.rank, reverse=True)
     return results[: body.limit]
 
 
 @api.post("/search/source/", response=list[SearchResult], tags=["search"])
 def search_source(request, body: SourceSearchRequest):
-    """Search source chunks only."""
+    """Search source chunks only. Semantic-first with full-text fallback."""
     qs = SourceChunk.objects.filter(is_deleted=False)
     if body.plugin:
         qs = qs.filter(plugin__slug=body.plugin)
@@ -358,35 +434,59 @@ def search_source(request, body: SourceSearchRequest):
         qs = qs.filter(language=body.language)
 
     results = []
-    for s in _fulltext_search(qs, ["content", "symbol_name"], body.query, body.limit):
-        results.append(SearchResult(
-            content_type="source",
-            plugin_slug=s.plugin.slug,
-            title=f"{s.ref_library}::{s.symbol_name or s.file_path}",
-            slug=s.file_path,
-            snippet=s.content[:300],
-            rank=s.rank,
-        ))
+    semantic_results = _semantic_search(qs, body.query, body.limit)
+    if semantic_results is not None:
+        for s in semantic_results:
+            results.append(SearchResult(
+                content_type="source",
+                plugin_slug=s.plugin.slug,
+                title=f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                slug=s.file_path,
+                snippet=s.content[:300],
+                distance=s.distance,
+            ))
+    else:
+        for s in _fulltext_search(qs, ["content", "symbol_name"], body.query, body.limit):
+            results.append(SearchResult(
+                content_type="source",
+                plugin_slug=s.plugin.slug,
+                title=f"{s.ref_library}::{s.symbol_name or s.file_path}",
+                slug=s.file_path,
+                snippet=s.content[:300],
+                rank=s.rank,
+            ))
     return results
 
 
 @api.post("/search/agents/", response=list[SearchResult], tags=["search"])
 def search_agents(request, body: SearchRequest):
-    """Search agent definitions only."""
+    """Search agent definitions only. Semantic-first with full-text fallback."""
     qs = AgentDefinition.objects.filter(is_deleted=False)
     if body.plugin:
         qs = qs.filter(plugin__slug=body.plugin)
 
     results = []
-    for a in _fulltext_search(qs, ["content", "name"], body.query, body.limit):
-        results.append(SearchResult(
-            content_type="agent",
-            plugin_slug=a.plugin.slug,
-            title=a.name,
-            slug=a.slug,
-            snippet=a.content[:300],
-            rank=a.rank,
-        ))
+    semantic_results = _semantic_search(qs, body.query, body.limit)
+    if semantic_results is not None:
+        for a in semantic_results:
+            results.append(SearchResult(
+                content_type="agent",
+                plugin_slug=a.plugin.slug,
+                title=a.name,
+                slug=a.slug,
+                snippet=a.content[:300],
+                distance=a.distance,
+            ))
+    else:
+        for a in _fulltext_search(qs, ["content", "name"], body.query, body.limit):
+            results.append(SearchResult(
+                content_type="agent",
+                plugin_slug=a.plugin.slug,
+                title=a.name,
+                slug=a.slug,
+                snippet=a.content[:300],
+                rank=a.rank,
+            ))
     return results
 
 

@@ -1,4 +1,5 @@
 from django.db import models
+from pgvector.django import VectorField
 
 from core.models import TimestampedModel
 
@@ -37,7 +38,7 @@ class AgentDefinition(TimestampedModel):
     slug = models.SlugField(max_length=100)
     name = models.CharField(max_length=200)
     content = models.TextField()
-    # Phase 2: embedding = VectorField(dimensions=1536, null=True, blank=True)
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     class Meta:
         unique_together = [("plugin", "slug")]
@@ -70,7 +71,7 @@ class ReferenceDoc(TimestampedModel):
             ("readme", "README"),
         ],
     )
-    # Phase 2: embedding = VectorField(dimensions=1536, null=True, blank=True)
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     class Meta:
         unique_together = [("plugin", "file_path")]
@@ -120,7 +121,7 @@ class SourceChunk(TimestampedModel):
     content = models.TextField()
     start_line = models.IntegerField(default=0)
     end_line = models.IntegerField(default=0)
-    # Phase 2: embedding = VectorField(dimensions=1536, null=True, blank=True)
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     class Meta:
         indexes = [
