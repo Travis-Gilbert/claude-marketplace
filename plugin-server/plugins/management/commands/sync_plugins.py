@@ -192,12 +192,12 @@ class Command(BaseCommand):
         claude_md = ""
         claude_md_path = plugin_dir / "CLAUDE.md"
         if claude_md_path.exists():
-            claude_md = claude_md_path.read_text()
+            claude_md = claude_md_path.read_text(errors="replace").replace("\x00", "")
 
         agents_md = ""
         agents_md_path = plugin_dir / "AGENTS.md"
         if agents_md_path.exists():
-            agents_md = agents_md_path.read_text()
+            agents_md = agents_md_path.read_text(errors="replace").replace("\x00", "")
 
         # Upsert plugin
         plugin, _ = Plugin.all_objects.update_or_create(
@@ -243,7 +243,7 @@ class Command(BaseCommand):
         for md_file in sorted(agents_dir.glob("*.md")):
             agent_slug = md_file.stem
             seen_slugs.add(agent_slug)
-            content = md_file.read_text()
+            content = md_file.read_text(errors="replace").replace("\x00", "")
             name = _extract_frontmatter_name(content) or agent_slug.replace("-", " ").title()
 
             AgentDefinition.all_objects.update_or_create(
@@ -279,7 +279,12 @@ class Command(BaseCommand):
                     continue
                 try:
                     content = file_path.read_text(errors="replace")
+                    # Strip NUL bytes — PostgreSQL text fields reject them
+                    content = content.replace("\x00", "")
                 except Exception:
+                    continue
+
+                if not content.strip():
                     continue
 
                 rel_path = str(file_path.relative_to(plugin_dir))
@@ -307,7 +312,7 @@ class Command(BaseCommand):
         if readme.exists():
             rel_path = "README.md"
             seen_paths.add(rel_path)
-            content = readme.read_text()
+            content = readme.read_text(errors="replace").replace("\x00", "")
             ReferenceDoc.all_objects.update_or_create(
                 plugin=plugin,
                 file_path=rel_path,
@@ -337,8 +342,11 @@ class Command(BaseCommand):
             if not file_path.is_file():
                 continue
             try:
-                content = file_path.read_text(errors="replace")
+                content = file_path.read_text(errors="replace").replace("\x00", "")
             except Exception:
+                continue
+
+            if not content.strip():
                 continue
 
             rel_path = str(file_path.relative_to(plugin_dir))
@@ -395,7 +403,7 @@ class Command(BaseCommand):
                     continue
 
                 try:
-                    content = file_path.read_text(errors="replace")
+                    content = file_path.read_text(errors="replace").replace("\x00", "")
                 except Exception:
                     continue
 
