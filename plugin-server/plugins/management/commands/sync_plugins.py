@@ -130,6 +130,13 @@ class Command(BaseCommand):
         clone_dir.mkdir(parents=True, exist_ok=True)
         repo_dir = clone_dir / "Plugins-building"
 
+        # Use GITHUB_TOKEN for private repos
+        github_token = os.environ.get("GITHUB_TOKEN", "")
+        if github_token:
+            repo_url = f"https://x-access-token:{github_token}@github.com/{settings.GITHUB_REPO}.git"
+        else:
+            repo_url = f"https://github.com/{settings.GITHUB_REPO}.git"
+
         if repo_dir.exists():
             self.stdout.write("Pulling latest changes...")
             subprocess.run(
@@ -138,13 +145,15 @@ class Command(BaseCommand):
             )
         else:
             self.stdout.write("Cloning repository...")
-            repo_url = f"https://github.com/{settings.GITHUB_REPO}.git"
-            subprocess.run(
+            result = subprocess.run(
                 ["git", "clone", "--depth", "1",
-                 "-c", "GIT_LFS_SKIP_SMUDGE=1",
                  repo_url, str(repo_dir)],
-                check=True, capture_output=True,
+                check=False, capture_output=True, text=True,
+                env={**os.environ, "GIT_LFS_SKIP_SMUDGE": "1"},
             )
+            if result.returncode != 0:
+                self.stderr.write(f"git clone stderr: {result.stderr}")
+                result.check_returncode()  # raise CalledProcessError
 
         return repo_dir
 
