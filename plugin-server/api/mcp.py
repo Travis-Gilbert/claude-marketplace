@@ -500,17 +500,42 @@ def _add_cors(response):
 @csrf_exempt
 def mcp_streamable(request):
     """
-    Streamable HTTP MCP endpoint.
+    Universal MCP endpoint — handles both transports at a single URL.
 
-    - POST: Accepts JSON-RPC messages, returns JSON responses.
-             Stateless — no session management needed.
-    - GET:  Returns SSE stream (for server-initiated messages, currently unused).
-    - DELETE: Session cleanup (no-op, stateless).
+    - GET:     SSE transport (claude.ai, older clients). Creates a session
+               and sends an 'endpoint' event with the POST URL.
+    - POST:    Streamable HTTP (modern clients) OR SSE message handler
+               (when ?session_id= is present).
+    - DELETE:  Session cleanup.
     - OPTIONS: CORS preflight.
     """
     # Handle CORS preflight first
     if request.method == "OPTIONS":
         return _add_cors(JsonResponse({}, status=204))
+
+    if request.method == "GET":
+        # SSE transport: create session, send endpoint URL for POSTing messages
+        session_id = str(uuid.uuid4())
+        _sessions[session_id] = {"initialized": False}
+
+        def event_stream():
+            yield _sse_event(
+                "endpoint",
+                f"/mcp/?session_id={session_id}",
+            )
+            # Keep connection alive with periodic comments
+            import time
+            for _ in range(600):  # ~10 min max
+                time.sleep(1)
+                yield ": keepalive\n\n"
+
+        response = StreamingHttpResponse(
+            event_stream(),
+            content_type="text/event-stream",
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return _add_cors(response)
 
     if request.method == "POST":
         try:
@@ -520,6 +545,17 @@ def mcp_streamable(request):
                 {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}},
                 status=400,
             ))
+
+        # SSE transport: session_id in query string
+        session_id = request.GET.get("session_id")
+        if session_id:
+            if session_id not in _sessions:
+                return _add_cors(JsonResponse(
+                    {"jsonrpc": "2.0", "error": {"code": -32000, "message": "Invalid session"}},
+                    status=400,
+                ))
+            if isinstance(body, dict) and body.get("method") == "initialize":
+                _sessions[session_id]["initialized"] = True
 
         # Handle batch requests (array of JSON-RPC messages)
         if isinstance(body, list):
@@ -533,23 +569,15 @@ def mcp_streamable(request):
 
         # Single request
         response = _handle_jsonrpc(body)
-        session_id = request.headers.get("Mcp-Session-Id", str(uuid.uuid4()))
+        if not session_id:
+            session_id = request.headers.get("Mcp-Session-Id", str(uuid.uuid4()))
         response["Mcp-Session-Id"] = session_id
         return _add_cors(response)
 
-    elif request.method == "GET":
-        def event_stream():
-            yield f"event: open\ndata: {json.dumps({'status': 'connected'})}\n\n"
-
-        response = StreamingHttpResponse(
-            event_stream(),
-            content_type="text/event-stream",
-        )
-        response["Cache-Control"] = "no-cache"
-        response["X-Accel-Buffering"] = "no"
-        return _add_cors(response)
-
     elif request.method == "DELETE":
+        session_id = request.GET.get("session_id") or request.headers.get("Mcp-Session-Id")
+        if session_id and session_id in _sessions:
+            del _sessions[session_id]
         return _add_cors(JsonResponse({"status": "ok"}, status=200))
 
     return _add_cors(JsonResponse({"error": "Method not allowed"}, status=405))
