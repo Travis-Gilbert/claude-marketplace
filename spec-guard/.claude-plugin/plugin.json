@@ -1,0 +1,8 @@
+{
+  "name": "spec-guard",
+  "version": "1.0.0",
+  "description": "Enforce specification compliance via PreToolUse hooks. Checks every edit against the active spec document and blocks deviations before they land.",
+  "author": {
+    "name": "Travis Gilbert"
+  }
+}

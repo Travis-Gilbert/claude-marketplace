@@ -22,6 +22,7 @@ PLUGINS: dict[str, str] = {
     "app-pro": "app-pro",
     "app-forge": "app-forge",
     "swift-pro": "swift-pro",
+    "spec-guard": "spec-guard",
 }
 
 KNOWLEDGE_DIR = "knowledge"
@@ -375,6 +376,22 @@ HEADING_DOMAIN_MAP: dict[str, str] = {
     "spm": "architecture.spm",
     "swift package": "architecture.spm",
     "dual target": "architecture.dual_target",
+    # spec-guard specific
+    "spec compliance": "compliance",
+    "deviation": "compliance.deviation",
+    "substitution": "compliance.substitution",
+    "additive": "compliance.additive",
+    "omission": "compliance.omission",
+    "layout reinterpretation": "compliance.layout",
+    "tool substitution": "compliance.tool_substitution",
+    "protected": "enforcement.protected_paths",
+    "grind": "grind",
+    "iteration": "grind.iteration",
+    "verification": "grind.verification",
+    "promise": "grind.completion",
+    "hook": "hooks",
+    "pretooluse": "hooks.pretooluse",
+    "stop hook": "hooks.stop",
 }
 
 
