@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "plugin": "spec-compliance",
+  "last_updated": "2026-03-29",
+  "stats": {
+    "total_claims": 27,
+    "active_claims": 27,
+    "draft_claims": 0,
+    "tensions": 0,
+    "methods": 0,
+    "questions": 0,
+    "preferences": 0,
+    "avg_confidence": 0.667
+  },
+  "model_versions": {
+    "schema": "1.0.0",
+    "seeder": "1.0.0"
+  },
+  "update_log": [
+    {
+      "date": "2026-03-29",
+      "action": "seed",
+      "details": "Manual seed from spec-compliance-system.md: 27 claims (5 deviation modes, 4 statement types, spec structure, conversion process, enforcement protocol, integration)"
+    }
+  ]
+}

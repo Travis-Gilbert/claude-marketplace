@@ -23,6 +23,7 @@ PLUGINS: dict[str, str] = {
     "app-forge": "app-forge",
     "swift-pro": "swift-pro",
     "spec-guard": "spec-guard",
+    "spec-compliance": "spec-compliance",
 }
 
 KNOWLEDGE_DIR = "knowledge"
@@ -392,6 +393,22 @@ HEADING_DOMAIN_MAP: dict[str, str] = {
     "hook": "hooks",
     "pretooluse": "hooks.pretooluse",
     "stop hook": "hooks.stop",
+    # spec-compliance specific
+    "must statement": "format.must",
+    "must not": "format.must_not",
+    "if conflict": "format.if_conflict",
+    "verify statement": "format.verify",
+    "deviation mode": "deviation",
+    "reasonable substitution": "deviation.substitution",
+    "additive deviation": "deviation.additive",
+    "silent omission": "deviation.omission",
+    "layout reinterpretation": "deviation.layout",
+    "tool substitution": "deviation.tool_substitution",
+    "locked spec": "structure.meta",
+    "scope section": "structure.scope",
+    "conflict protocol": "format.if_conflict",
+    "compliance protocol": "protocol",
+    "deviation reporting": "protocol.reporting",
 }
 
 

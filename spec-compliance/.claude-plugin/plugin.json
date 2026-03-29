@@ -1,0 +1,8 @@
+{
+  "name": "spec-compliance",
+  "version": "1.0.0",
+  "description": "Convert natural-language specs into deviation-resistant MUST/MUST NOT/VERIFY format and enforce compliance protocol during implementation sessions.",
+  "author": {
+    "name": "Travis Gilbert"
+  }
+}
