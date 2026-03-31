@@ -26,6 +26,7 @@ Write one JSON line per event. Include:
 {"event":"suggestion","suggestion_id":"sug-001","file":"public/sw.ts","claim_refs":["claim-007"]}
 {"event":"suggestion_outcome","suggestion_id":"sug-001","outcome":"accepted"}
 {"event":"candidate_claim","description":"Serwist is preferred over next-pwa for Next.js 14+ PWA setup"}
+{"event":"auto_capture","claims_added":["a1b2c3d4e5f6"],"solution_file":"knowledge/solutions/app-pwa-2026-03-30.md","domain":"app.pwa","project":"myproject"}
 {"event":"session_end","timestamp":"...","duration_minutes":25,"files_changed":["public/sw.ts","app/manifest.ts"]}
 ```
 
@@ -92,6 +93,24 @@ Observed pattern:
 
 If yes, append to `knowledge/claims.jsonl` as a new claim with
 status "active" and default confidence (0.67).
+
+### Auto-Captured Claims
+Check `knowledge/claims.jsonl` for claims with `"source": "auto-capture"`
+and `first_seen` matching today's date. These were captured during the
+session by the compound learning layer.
+
+For each, present:
+
+```
+Auto-captured this session:
+  [1] "Use Serwist over next-pwa for Next.js 14+ service worker setup"
+      Domain: app.pwa | Confidence: 0.67
+      Source: knowledge/solutions/app-pwa-2026-03-30.md
+      Actions: [keep / edit / retire]
+```
+
+If the user edits a claim, update it in claims.jsonl. If they retire it,
+set status to "retired". If they keep it, no action needed.
 
 ### Attention Needed
 Show claims that need human judgment.

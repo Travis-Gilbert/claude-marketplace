@@ -23,6 +23,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from .config import (
+    EXTERNAL_PLUGINS,
     MANIFEST_FILE,
     PLUGINS,
     TENSIONS_FILE,
@@ -352,7 +353,7 @@ def main() -> None:
     parser.add_argument(
         "plugin",
         nargs="?",
-        choices=list(PLUGINS.keys()),
+        choices=list(PLUGINS.keys()) + list(EXTERNAL_PLUGINS.keys()),
         help="Plugin to learn for",
     )
     parser.add_argument(
@@ -370,7 +371,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.all:
-        for name in PLUGINS:
+        for name in {**PLUGINS, **EXTERNAL_PLUGINS}:
             ppath = plugin_path(name)
             if ppath.exists() and (knowledge_path(name)).exists():
                 learn(name)

@@ -26,6 +26,7 @@ Write one JSON line per event. Include:
 {"event":"suggestion","suggestion_id":"sug-001","file":"api/serializers.py","claim_refs":["claim-007"]}
 {"event":"suggestion_outcome","suggestion_id":"sug-001","outcome":"accepted"}
 {"event":"candidate_claim","description":"DRF nested write serializers should always split read/write serializer classes"}
+{"event":"auto_capture","claims_added":["a1b2c3d4e5f6"],"solution_file":"knowledge/solutions/engine-api-serializers-2026-03-30.md","domain":"engine.api.serializers","project":"myproject"}
 {"event":"session_end","timestamp":"...","duration_minutes":25,"files_changed":["api/serializers.py","api/views.py"]}
 ```
 
@@ -92,6 +93,24 @@ Observed pattern:
 
 If yes, append to `knowledge/claims.jsonl` as a new claim with
 status "active" and default confidence (0.67).
+
+### Auto-Captured Claims
+Check `knowledge/claims.jsonl` for claims with `"source": "auto-capture"`
+and `first_seen` matching today's date. These were captured during the
+session by the compound learning layer.
+
+For each, present:
+
+```
+Auto-captured this session:
+  [1] "Split read/write serializer classes when endpoint supports both POST and PATCH"
+      Domain: engine.api.serializers | Confidence: 0.67
+      Source: knowledge/solutions/engine-api-serializers-2026-03-30.md
+      Actions: [keep / edit / retire]
+```
+
+If the user edits a claim, update it in claims.jsonl. If they retire it,
+set status to "retired". If they keep it, no action needed.
 
 ### Attention Needed
 Show claims that need human judgment.

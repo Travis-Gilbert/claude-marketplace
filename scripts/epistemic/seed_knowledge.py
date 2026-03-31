@@ -25,6 +25,7 @@ from .config import (
     INITIAL_STATUS,
     MAX_CLAIM_LENGTH,
     MIN_CLAIM_LENGTH,
+    EXTERNAL_PLUGINS,
     PLUGINS,
     SKILL_GLOB,
     knowledge_path,
@@ -440,7 +441,7 @@ def main() -> None:
     parser.add_argument(
         "plugin",
         nargs="?",
-        choices=list(PLUGINS.keys()),
+        choices=list(PLUGINS.keys()) + list(EXTERNAL_PLUGINS.keys()),
         help="Plugin to seed (omit with --all to seed everything)",
     )
     parser.add_argument(
@@ -457,7 +458,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.all:
-        for name in PLUGINS:
+        for name in {**PLUGINS, **EXTERNAL_PLUGINS}:
             ppath = plugin_path(name)
             if ppath.exists():
                 seed_plugin(name, dry_run=args.dry_run)

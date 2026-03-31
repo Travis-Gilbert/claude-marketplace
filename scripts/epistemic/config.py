@@ -1,8 +1,11 @@
 """Central configuration for the epistemic knowledge layer.
 
 All paths are relative to REPO_ROOT so the scripts work from any cwd.
+External plugins (e.g. theseus-pro in Index-API) are resolved via
+EXTERNAL_PLUGINS with env-var overrides.
 """
 
+import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -24,6 +27,14 @@ PLUGINS: dict[str, str] = {
     "swift-pro": "swift-pro",
     "spec-guard": "spec-guard",
     "spec-compliance": "spec-compliance",
+}
+
+# Plugins in external repos (absolute paths, resolved from env or default)
+EXTERNAL_PLUGINS: dict[str, str] = {
+    "theseus-pro": os.environ.get(
+        "THESEUS_PRO_PATH",
+        str(Path.home() / "Tech Dev Local" / "Creative" / "Website" / "Index-API" / "theseus-pro"),
+    ),
 }
 
 KNOWLEDGE_DIR = "knowledge"
@@ -156,6 +167,31 @@ AGENT_DOMAIN_MAP: dict[str, str] = {
     "sync-engineer": "forge.sync",
     "tauri-builder": "forge.tauri",
     "swift-planner": "forge.swift",
+    # theseus-pro
+    "causal-inference": "theseus.causal",
+    "claim-analysis": "theseus.claims",
+    "counterfactual-simulation": "theseus.counterfactual",
+    "domain-specialization": "theseus.domains",
+    "evolutionary-optimization": "theseus.evolution",
+    "graph-neural-networks": "theseus.gnn",
+    "graph-theory": "theseus.graph_theory",
+    "information-retrieval": "theseus.retrieval",
+    "knowledge-representation": "theseus.knowledge_rep",
+    "language-model-training": "theseus.lm_training",
+    "learned-scoring": "theseus.scoring",
+    "multi-agent-reasoning": "theseus.multi_agent",
+    "multimodal-networks": "theseus.multimodal",
+    "nlp-pipeline": "theseus.nlp",
+    "probabilistic-reasoning": "theseus.probabilistic",
+    "program-synthesis": "theseus.synthesis",
+    "reinforcement-learning": "theseus.rl",
+    "self-organization": "theseus.self_org",
+    "software-architecture": "theseus.architecture",
+    "symbolic-reasoning": "theseus.symbolic",
+    "systems-theory": "theseus.systems",
+    "temporal-graph-memory": "theseus.temporal",
+    "training-pipeline": "theseus.training",
+    "web-acquisition": "theseus.web",
     # swift-pro
     "swift-architect": "swift.architecture",
     "swiftui-builder": "swift.swiftui",
@@ -417,7 +453,13 @@ HEADING_DOMAIN_MAP: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 def plugin_path(plugin_name: str) -> Path:
-    """Absolute path to a plugin directory."""
+    """Absolute path to a plugin directory.
+
+    Checks EXTERNAL_PLUGINS first (for cross-repo plugins like theseus-pro),
+    then falls back to PLUGINS (relative to REPO_ROOT).
+    """
+    if plugin_name in EXTERNAL_PLUGINS:
+        return Path(EXTERNAL_PLUGINS[plugin_name])
     return REPO_ROOT / PLUGINS[plugin_name]
 
 

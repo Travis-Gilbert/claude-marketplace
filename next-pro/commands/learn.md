@@ -26,6 +26,7 @@ Write one JSON line per event. Include:
 {"event":"suggestion","suggestion_id":"sug-001","file":"app/products/page.tsx","claim_refs":["claim-007"]}
 {"event":"suggestion_outcome","suggestion_id":"sug-001","outcome":"accepted"}
 {"event":"candidate_claim","description":"In this project, product images need priority flag for LCP"}
+{"event":"auto_capture","claims_added":["a1b2c3d4e5f6"],"solution_file":"knowledge/solutions/next-rendering-2026-03-30.md","domain":"next.rendering","project":"myproject"}
 {"event":"session_end","timestamp":"...","duration_minutes":25,"files_changed":["app/products/page.tsx","app/actions.ts"]}
 ```
 
@@ -93,6 +94,24 @@ Observed pattern:
 
 If yes, append to `knowledge/claims.jsonl` as a new claim with
 status "active" and default confidence (0.67).
+
+### Auto-Captured Claims
+Check `knowledge/claims.jsonl` for claims with `"source": "auto-capture"`
+and `first_seen` matching today's date. These were captured during the
+session by the compound learning layer.
+
+For each, present:
+
+```
+Auto-captured this session:
+  [1] "Use force-dynamic for search pages that depend on searchParams"
+      Domain: next.rendering | Confidence: 0.67
+      Source: knowledge/solutions/next-rendering-2026-03-30.md
+      Actions: [keep / edit / retire]
+```
+
+If the user edits a claim, update it in claims.jsonl. If they retire it,
+set status to "retired". If they keep it, no action needed.
 
 ### Attention Needed
 Show claims that need human judgment.

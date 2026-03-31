@@ -239,6 +239,7 @@ EventType = Literal[
     "suggestion_outcome",
     "tension_surfaced",
     "candidate_claim",
+    "auto_capture",
 ]
 
 SuggestionOutcome = Literal[
@@ -288,3 +289,8 @@ class SessionEvent(BaseModel):
     description: str = ""
     related_claims: list[str] = Field(default_factory=list)
     priority: str = "medium"
+
+    # auto_capture fields
+    claims_added: list[str] = Field(default_factory=list)
+    solution_file: str = ""
+    domain: str = ""
