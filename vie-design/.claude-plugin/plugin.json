@@ -1,0 +1,15 @@
+{
+  "name": "vie-design",
+  "version": "2.0.0",
+  "description": "Visual design system plugin for Theseus VIE. Enforces the VIE design language across the D3 layout -> TF.js intelligence -> R3F rendering pipeline. Manages the datadot grid, engine heat gradient, Mantine-sourced material tokens, borrowed Ink UI interaction patterns, and design primitives (Sonner, Vaul, CMDK). Ensures answer construction sequences are beautiful and interactive.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "theseus", "vie", "design-system", "visual-intelligence",
+    "scene-directive", "d3-layout", "r3f-rendering", "tfjs",
+    "datadot-grid", "mantine", "sonner", "vaul", "cmdk",
+    "construction-sequence", "answer-model", "knowledge-graph",
+    "vega-lite", "observable-framework"
+  ]
+}
