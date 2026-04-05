@@ -60,6 +60,24 @@ Observable Framework. When generating D3 code:
 - If the target is standalone HTML, inline the `:root` CSS variables
   from refs/framework/style/ so the semantic tokens resolve correctly
 
+## Text Measurement
+
+D3 label placement traditionally requires DOM measurement
+(`getBoundingClientRect`, `getComputedTextLength`), which forces layout
+reflow and breaks performance in force simulations and animated layouts.
+
+Use pretext (`refs/pretext/`) for all text dimension computation:
+- Force-directed layouts: size nodes to fit labels without DOM reads
+- Hierarchical layouts: compute label width for collision avoidance
+- Annotation layers: wrap and position annotation text
+- Axis tick labels: pre-compute width for dynamic margin calculation
+
+Call `prepare()` once per text+font pair (cache the result), then call
+`layout()` freely during simulation ticks or resize handlers.
+
+See `skills/standards-d3/references/pretext-text-measurement.md` for the
+full API and D3-specific integration patterns.
+
 ## Anti-Patterns (Never Do These)
 
 - Never use default force parameters without tuning for the data shape

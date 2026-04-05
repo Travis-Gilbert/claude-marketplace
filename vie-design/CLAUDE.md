@@ -35,6 +35,9 @@ Any work on the Theseus UI in travisgilbert.me: components in
 - ALWAYS use Mantine tokens for shadow/elevation (see skills/vie-system/references/material-tokens.md)
 - ALWAYS consider Vega-Lite for declarative charts and Observable Framework for layout patterns
 - NEVER make the UI feel like a research control panel
+- ALWAYS use pretext for text measurement in construction sequences, datadot
+  labels, and any canvas/R3F text positioning. Never trigger DOM reflow
+  during answer construction animations.
 - NEVER bypass the D3 -> TF.js -> R3F pipeline
 - NEVER treat text as subordinate to visual or visual as subordinate to text; they are co-equal modalities
 - NEVER render the datadot grid without binary data (0s and 1s)
@@ -46,6 +49,7 @@ Any work on the Theseus UI in travisgilbert.me: components in
 - For backend reasoning, epistemic model, scene intelligence: Theseus-Pro
 - For React internals and Next.js routing: JS-Pro
 - For animation implementation (springs, Motion API): Animation-Pro
+- For DOM-free text measurement in renderers: Pretext (refs/pretext/)
 - This plugin owns: visual design judgment, design tokens, material
   vocabulary (Mantine + Radix + custom), construction animation design,
   datadot grid, engine heat gradient, and the overall visual identity

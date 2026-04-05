@@ -120,6 +120,10 @@ if [ -z "$TARBALL" ]; then
   echo "   ${BOLD}Production Motion${NC}"
   clone_ref "remotion-dev/remotion"            "remotion"
   clone_ref "motion-canvas/motion-canvas"      "motion-canvas"
+
+  # Pretext: text measurement without reflow during animation frames
+  echo "   ${BOLD}Text Measurement${NC}"
+  clone_ref "chenglou/pretext"                 "pretext"
 fi
 
 echo ""

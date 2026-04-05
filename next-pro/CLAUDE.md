@@ -106,6 +106,24 @@ When diagnosing errors, always search errors/ first:
 3. Read references/ when an issue or feature spans subsystems.
 4. Check package.json for Next.js version. Behavior differs across 13/14/15.
 
+## DOM-Free Text Measurement
+
+Server components cannot access the DOM. When a server component or shared
+utility needs to pre-compute text layout (for virtualized lists, OG image
+generation, or streaming layout hints), use pretext instead of deferring
+all measurement to the client.
+
+**Source:** `refs/pretext/`
+**Reference:** `references/pretext-text-measurement.md`
+
+Key patterns:
+- OG image text layout: `prepare()` + `layout()` to wrap text in `@vercel/og`
+  or canvas-based OG generators without a browser DOM
+- Virtualized list height estimation: pre-compute row heights on the server
+  to reduce layout shift on hydration
+- Streaming layout: compute text dimensions in a server action or route
+  handler, send as data alongside the content
+
 ## Cross-Plugin References
 
 - **JS-Pro**: General JavaScript, React, TypeScript. Hand off React-level work.

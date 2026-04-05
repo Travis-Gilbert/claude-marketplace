@@ -28,5 +28,6 @@ clone_if_missing "cmdk"                 "https://github.com/pacocoursey/cmdk.git
 clone_if_missing "ink-ui"               "https://github.com/vadimdemedes/ink-ui.git" &
 clone_if_missing "vega-lite"            "https://github.com/vega/vega-lite.git" &
 clone_if_missing "observable-framework" "https://github.com/observablehq/framework.git" &
+clone_if_missing "pretext"                "https://github.com/chenglou/pretext.git" &
 wait
 echo "vie-design: done."

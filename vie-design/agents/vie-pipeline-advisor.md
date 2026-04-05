@@ -169,3 +169,22 @@ Consult `skills/vie-system/references/renderer-pipeline.md` for the full pipelin
 Consult `skills/vie-system/references/data-viz-answers.md` for data-viz specific configuration.
 Grep `refs/vega-lite/` for Vega-Lite spec patterns.
 Grep `refs/observable-framework/` for Observable layout patterns.
+
+## Text Measurement in the Pipeline
+
+The D3 -> TF.js -> R3F pipeline must not trigger DOM reflow during
+layout computation. Use pretext for all text measurement:
+
+- D3 layout phase: `prepare()` + `layout()` to size text nodes before
+  force simulation starts
+- TF.js scene intelligence: text dimensions as input features for scene
+  composition decisions
+- R3F rendering: `useMemo` with pretext to compute label positions
+  without DOM reads
+
+The `inline-flow` API is particularly relevant for answer text panels
+where mixed-font runs (bold terms, inline citations, styled fragments)
+need accurate width computation for the construction animation.
+
+See `skills/vie-system/references/pretext-text-measurement.md` for
+the full API reference.

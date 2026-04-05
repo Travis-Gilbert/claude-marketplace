@@ -66,6 +66,12 @@ Do NOT rely on training data for library internals. Instead:
 - **DaisyUI patterns**: grep `refs/daisyui/` for Tailwind-native component
   class composition and theme system internals.
 
+- **Text measurement without reflow**: grep `refs/pretext/src/` for the
+  measurement and layout internals. Use pretext when computing text
+  dimensions for polymorphic renderers, virtualized lists, canvas overlays,
+  or any layout that needs text size before DOM render. See
+  `skills/ui-engineering/references/pretext-text-measurement.md`.
+
 ## Plugin Installation
 
 This plugin is registered at `~/.claude/plugins/marketplaces/local-desktop-app-uploads/ui-design-pro/`.

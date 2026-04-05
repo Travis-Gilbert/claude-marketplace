@@ -74,6 +74,21 @@ Do NOT rely on training data for animation library internals. Instead:
 - **react-spring questions**: grep `refs/react-spring/packages/` for
   useSpring, useTrail, useChain, animated.
 
+## Text Measurement During Animation
+
+Measuring text via DOM (`getBoundingClientRect`, `offsetWidth`) during
+animation frames triggers forced synchronous layout, which drops frames.
+Use pretext (`refs/pretext/`) when animation code needs text dimensions:
+
+- Typographic animations (text reveal, character-by-character build)
+- Label transitions in data visualizations
+- Canvas/WebGL text rendering during animation loops
+- Mixed-font-run layouts that animate (styled text fragments)
+
+`prepare()` is the expensive call (canvas measurement). Run it once and
+cache the handle. `layout()` is pure math; call it every frame if the
+container width changes.
+
 ## Rules
 
 1. Always verify animation library APIs against source code in refs/ before

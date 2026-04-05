@@ -79,6 +79,7 @@ clone_ref "saadeghi/daisyui"                "daisyui"
 clone_ref "motiondivision/motion"           "motion"
 clone_ref "tailwindlabs/tailwindcss"        "tailwindcss"
 clone_ref "argyleink/open-props"            "open-props"
+clone_ref "chenglou/pretext"               "pretext"
 
 echo ""
 

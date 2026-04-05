@@ -183,11 +183,17 @@ if [ -d ".agents/skills" ]; then
   done
 fi
 
-# 5. Cleanup
+# 5. Pretext: DOM-free text measurement for SSR-safe layout
+echo "Cloning pretext..."
+git clone --depth 1 --single-branch \
+  "https://github.com/chenglou/pretext.git" "$INSTALL_DIR/refs/pretext" 2>/dev/null || true
+rm -rf "$INSTALL_DIR/refs/pretext/.git"
+
+# 6. Cleanup
 cd /
 rm -rf "$TEMP_DIR"
 
-# 6. Report
+# 7. Report
 echo ""
 echo -e "${BOLD}${GREEN}Installation Summary${NC}"
 echo "  Location:    $INSTALL_DIR"

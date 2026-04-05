@@ -54,6 +54,24 @@ it. Read the relevant example BEFORE writing code for that pattern.
 - Designing how a scene looks and feels (lighting, materials, camera,
   NPR effects): read `agents/3d-scene-designer.md`
 
+## Text in 3D Scenes
+
+Three.js and R3F have no native text layout engine. Libraries like
+`troika-three-text` handle rendering, but pre-computing text dimensions
+for positioning and collision avoidance requires a measurement step.
+
+Use pretext (`refs/pretext/`) to compute text width, height, and line
+count without DOM access:
+- Billboard label sizing and positioning
+- HUD/overlay text layout
+- Text-as-geometry bounding box estimation
+- Mixed-font labels (name + badge + metadata in one label)
+
+The `inline-flow` API handles mixed runs where a label combines styled
+fragments (bold name, muted metadata, colored status pill).
+
+See `references/pretext-text-measurement.md` for the full API reference.
+
 ## Rules
 
 1. Verify Three.js/R3F/Drei APIs against source in refs/ before writing

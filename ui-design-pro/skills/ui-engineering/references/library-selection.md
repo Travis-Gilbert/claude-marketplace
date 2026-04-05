@@ -176,6 +176,24 @@ See `skills/ui-engineering/references/animation-patterns.md` for detailed Motion
 
 ---
 
+## Text Measurement
+
+### Pretext
+
+**When to use:** Computing text dimensions without DOM reflow. Needed for
+D3 node sizing, canvas label rendering, R3F text positioning, polymorphic
+content card sizing, and virtualized list height calculation.
+
+**When NOT to use:** Standard CSS text layout (flexbox, grid, block flow).
+If the browser's own line-breaking handles it, skip pretext.
+
+**Source:** `refs/pretext/`
+
+See `skills/ui-engineering/references/pretext-text-measurement.md` for
+full API reference and integration patterns.
+
+---
+
 ## Color System
 
 ### Radix Colors
@@ -247,6 +265,7 @@ v4 changed significantly from v3. Key differences:
 | Data table | TanStack Table + shadcn DataTable | — |
 | Form management | React Hook Form + Zod | — |
 | Animation | motion/react | CSS transitions (for simple cases) |
+| Text measurement | Pretext | Canvas measureText (single line only) |
 
 ---
 
