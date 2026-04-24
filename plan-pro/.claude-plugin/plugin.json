@@ -1,0 +1,17 @@
+{
+  "name": "plan-pro",
+  "version": "1.0.0",
+  "description": "Planning plugin. Turns intent into elegant implementation plans grounded in the codebase, then executes them with domain-plugin delegation and compound learning. Methodology: superpowers + Double Diamond + INCOSE functional decomposition + C4/ADR + Walking Skeleton + mycelium contract-first. Independence-discipline and conciseness-discipline baked into CLAUDE.md.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "planning",
+    "brainstorming",
+    "spec",
+    "implementation-plan",
+    "compound-learning",
+    "independence",
+    "concise"
+  ]
+}

@@ -1,1 +1,5 @@
 .DS_Store
+
+# Plugin refs/ directories contain shallow clones of upstream repos.
+# They're populated by each plugin's install.sh, not committed.
+*/refs/*/

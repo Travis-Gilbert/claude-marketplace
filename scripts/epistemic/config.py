@@ -27,6 +27,7 @@ PLUGINS: dict[str, str] = {
     "swift-pro": "swift-pro",
     "spec-guard": "spec-guard",
     "spec-compliance": "spec-compliance",
+    "plan-pro": "plan-pro",
 }
 
 # Plugins in external repos (absolute paths, resolved from env or default)
