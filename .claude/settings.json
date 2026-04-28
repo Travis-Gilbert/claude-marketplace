@@ -1,0 +1,31 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "Travis-Gilbert/claude-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "animation-pro@claude-marketplace": true,
+    "app-forge@claude-marketplace": true,
+    "app-pro@claude-marketplace": true,
+    "cosmos-pro@claude-marketplace": true,
+    "d3-pro@claude-marketplace": true,
+    "django-design@claude-marketplace": true,
+    "django-engine-pro@claude-marketplace": true,
+    "ml-pro@claude-marketplace": true,
+    "next-pro@claude-marketplace": true,
+    "plan-pro@claude-marketplace": true,
+    "scipy-pro@claude-marketplace": true,
+    "shipit@claude-marketplace": true,
+    "spec-compliance@claude-marketplace": true,
+    "spec-guard@claude-marketplace": true,
+    "swift-pro@claude-marketplace": true,
+    "three-pro@claude-marketplace": true,
+    "ui-design-pro@claude-marketplace": true,
+    "ux-pro@claude-marketplace": true,
+    "vie-design@claude-marketplace": true
+  }
+}

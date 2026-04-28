@@ -1,0 +1,29 @@
+{
+  "name": "claude-marketplace",
+  "version": "1.0.0",
+  "description": "Travis Gilbert's plugin marketplace. Domain-specialist Claude Code plugins for planning, design, ML, Django, Next.js, Three.js, mobile, and visual answer engines.",
+  "owner": {
+    "name": "Travis Gilbert"
+  },
+  "plugins": [
+    { "name": "animation-pro",     "version": "0.1.0", "source": "./animation-pro" },
+    { "name": "app-forge",         "version": "1.0.0", "source": "./app-forge" },
+    { "name": "app-pro",           "version": "1.0.0", "source": "./app-pro" },
+    { "name": "cosmos-pro",        "version": "1.0.0", "source": "./cosmos-pro" },
+    { "name": "d3-pro",            "version": "1.0.0", "source": "./d3-pro" },
+    { "name": "django-design",     "version": "3.0.0", "source": "./django-design" },
+    { "name": "django-engine-pro", "version": "1.0.0", "source": "./django-engine-pro" },
+    { "name": "ml-pro",            "version": "1.0.0", "source": "./ml-pro" },
+    { "name": "next-pro",          "version": "1.0.0", "source": "./next-pro" },
+    { "name": "plan-pro",          "version": "1.0.0", "source": "./plan-pro" },
+    { "name": "scipy-pro",         "version": "4.0.0", "source": "./scipy-pro" },
+    { "name": "shipit",            "version": "1.0.0", "source": "./shipit" },
+    { "name": "spec-compliance",   "version": "1.0.0", "source": "./spec-compliance" },
+    { "name": "spec-guard",        "version": "1.0.0", "source": "./spec-guard" },
+    { "name": "swift-pro",         "version": "1.0.0", "source": "./swift-pro" },
+    { "name": "three-pro",         "version": "1.0.0", "source": "./three-pro" },
+    { "name": "ui-design-pro",     "version": "1.1.0", "source": "./ui-design-pro" },
+    { "name": "ux-pro",            "version": "0.1.0", "source": "./ux-pro" },
+    { "name": "vie-design",        "version": "2.0.0", "source": "./vie-design" }
+  ]
+}

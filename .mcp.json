@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "theseus-mcp": {
+      "type": "http",
+      "url": "https://theseus-mcp-production.up.railway.app/mcp"
+    },
+    "r3f-mcp": {
+      "type": "http",
+      "url": "https://r3f-mcp-production.up.railway.app/mcp"
+    },
+    "github-mcp": {
+      "type": "http",
+      "url": "https://github-mcp-production-c8d0.up.railway.app/mcp"
+    },
+    "modal-mcp": {
+      "type": "http",
+      "url": "https://modal-mcp-production.up.railway.app/mcp"
+    },
+    "deepseek-mcp": {
+      "type": "http",
+      "url": "https://deepseek-mcp-production.up.railway.app/mcp"
+    },
+    "tpu-commander": {
+      "type": "http",
+      "url": "https://tpu-commander-production.up.railway.app/mcp"
+    },
+    "plugin-server": {
+      "type": "http",
+      "url": "https://plugins-building-production.up.railway.app/mcp/"
+    },
+    "railway-mcp": {
+      "type": "http",
+      "url": "https://mcp.railway.com/mcp"
+    },
+    "unsloth-documentation": {
+      "type": "http",
+      "url": "https://unsloth.ai/docs/~gitbook/mcp"
+    },
+    "tavily": {
+      "type": "http",
+      "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"
+    }
+  }
+}
