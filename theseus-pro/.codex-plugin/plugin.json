@@ -1,0 +1,40 @@
+{
+  "name": "theseus-pro",
+  "version": "1.1.0",
+  "description": "Intelligence engineering plugin for building Theseus (Index-API): compound learning, enrichment pipelines, and multi-agent reasoning workflows.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "theseus",
+    "index-api",
+    "epistemic-engine",
+    "compound-learning",
+    "learned-scoring",
+    "gnn",
+    "kge",
+    "sbert",
+    "gl-fusion",
+    "multi-agent-reasoning",
+    "counterfactual-simulation",
+    "django"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Theseus Pro",
+    "shortDescription": "Build and evolve the Theseus intelligence engine.",
+    "longDescription": "Expert workflows for Index-API/Theseus across epistemic retrieval, learned scoring, GNN/KGE/SBERT enrichment, compound learning, and systems-level orchestration.",
+    "developerName": "Travis Gilbert",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Analyze"
+    ],
+    "defaultPrompt": [
+      "Implement the next Theseus roadmap slice with code/spec reconciliation.",
+      "Run a focused /train plan for EpiGNN, KGE, or SBERT enrichment.",
+      "Apply /learn to capture session knowledge and update confidence."
+    ]
+  }
+}

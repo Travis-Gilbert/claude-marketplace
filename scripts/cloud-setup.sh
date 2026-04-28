@@ -18,7 +18,7 @@ PLUGINS=(
   animation-pro app-forge app-pro cosmos-pro d3-pro
   django-design django-engine-pro ml-pro next-pro plan-pro
   scipy-pro shipit spec-compliance spec-guard swift-pro
-  three-pro ui-design-pro ux-pro vie-design
+  theseus-pro three-pro ui-design-pro ux-pro vie-design
 )
 
 echo "[cloud-setup] adding marketplace ${MARKETPLACE_NAME} from github:${MARKETPLACE_REPO}"

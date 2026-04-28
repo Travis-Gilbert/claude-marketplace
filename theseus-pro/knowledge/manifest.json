@@ -1,0 +1,18 @@
+{
+  "plugin": "theseus-pro",
+  "version": "1.0.0",
+  "created": "2026-03-30",
+  "last_updated": "2026-04-23",
+  "stats": {
+    "total_claims": 670,
+    "active_claims": 657,
+    "retired_claims": 0,
+    "pending_review": 0,
+    "tensions": 4,
+    "methods": 0,
+    "questions": 0,
+    "solutions": 0,
+    "sessions_logged": 4,
+    "avg_confidence": 0.668
+  }
+}

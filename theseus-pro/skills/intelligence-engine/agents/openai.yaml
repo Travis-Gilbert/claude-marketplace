@@ -1,0 +1,4 @@
+interface:
+  display_name: "Theseus Intelligence Engine"
+  short_description: "Build and evolve the Index-API / Theseus intelligence stack."
+  default_prompt: "Use $intelligence-engine to implement the next Theseus roadmap slice with code/spec reconciliation and validation."

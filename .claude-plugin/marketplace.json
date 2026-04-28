@@ -82,6 +82,11 @@
       "source": "./swift-pro"
     },
     {
+      "name": "theseus-pro",
+      "version": "1.1.0",
+      "source": "./theseus-pro"
+    },
+    {
       "name": "three-pro",
       "version": "1.0.0",
       "source": "./three-pro"

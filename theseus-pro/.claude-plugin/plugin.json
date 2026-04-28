@@ -1,0 +1,33 @@
+{
+  "name": "theseus-pro",
+  "version": "1.1.0",
+  "description": "Intelligence engineering plugin for building systems that learn from their own operation. Successor to SciPy-Pro v4. Provides 7 workflow commands (/reason, /graph, /train, /architect, /simulate, /measure, /learn), 24 domain-expert agents across three tiers, and compound-learning + enrichment-pipeline guidance for EpiGNN, KGE RotatE, SBERT, GL-Fusion, model-swarm routing, and network effects.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "intelligence-engineering",
+    "theseus",
+    "index-api",
+    "epistemic-engine",
+    "knowledge-graph",
+    "learned-scoring",
+    "graph-neural-networks",
+    "temporal-graph-memory",
+    "multi-agent-reasoning",
+    "counterfactual-simulation",
+    "reinforcement-learning",
+    "evolutionary-optimization",
+    "symbolic-reasoning",
+    "self-organization",
+    "nlp",
+    "nli",
+    "sbert",
+    "faiss",
+    "bm25",
+    "pykeen",
+    "django",
+    "two-mode-deployment",
+    "iq-tracker"
+  ]
+}
