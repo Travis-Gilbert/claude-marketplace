@@ -1,0 +1,17 @@
+# cloned reference repos are populated by install.sh, not committed
+refs/cosmos-gl/
+refs/mosaic/
+refs/duckdb-wasm/
+refs/luma-gl/
+# but keep the synced types and the README placeholders
+!refs/theseus-viz-types/
+
+# scraped examples populated by a separate scrape step
+examples/raw/
+
+# session logs are personal/ephemeral; per-session JSONL files only,
+# the dir itself is tracked via .gitkeep
+knowledge/session_log/*.jsonl
+
+# OS junk
+.DS_Store

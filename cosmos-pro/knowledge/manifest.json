@@ -1,0 +1,31 @@
+{
+  "plugin": "cosmos-pro",
+  "version": "1.0.0",
+  "schema_version": 1,
+  "active_claims": 12,
+  "avg_confidence": 0.71,
+  "last_learn_run": null,
+  "confidence_thresholds": {
+    "override_static": 0.8,
+    "advisory": 0.5,
+    "attention": 0.3
+  },
+  "decay": {
+    "interval_days": 30,
+    "factor": 0.95
+  },
+  "domain_map": {
+    "cosmos.foundations": "cosmos-foundations",
+    "cosmos.data": "cosmos-mosaic-duckdb",
+    "cosmos.scene-directive": "cosmos-scene-directive",
+    "cosmos.performance": "cosmos-performance",
+    "cosmos.chart": "cosmos-mosaic-duckdb",
+    "cosmos.recipes": "cosmos-recipes",
+    "cosmos.tokens": "cross-cutting (cosmos-render + vie-design)"
+  },
+  "external_plugins": {
+    "vie-design": "~/Tech Dev Local/codex-plugins/vie-design",
+    "d3-pro": "~/Tech Dev Local/codex-plugins/d3-pro",
+    "theseus-pro": "~/code/Index-API/theseus-pro"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "cosmos-pro",
+  "version": "1.0.0",
+  "description": "Makes Claude Code genuinely good at designing knowledge-graph answer experiences with cosmos.gl on top of DuckDB-WASM, Mosaic, and vgplot. Owns the SceneDirective adapter, the three-picker ControlDock (Position, Weight, Edges), and the recipe library that turns novel ideas into usable images.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "cosmos.gl",
+    "cosmosgl",
+    "mosaic",
+    "duckdb-wasm",
+    "vgplot",
+    "force-graph",
+    "knowledge-graph",
+    "scene-directive",
+    "theseus",
+    "webgl"
+  ]
+}
