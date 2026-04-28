@@ -3,3 +3,6 @@
 # Plugin refs/ directories contain shallow clones of upstream repos.
 # They're populated by each plugin's install.sh, not committed.
 */refs/*/
+
+# Graphify scratch outputs and staging dirs.
+graphify-out/
