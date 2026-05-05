@@ -1,0 +1,5 @@
+theorem-context-ts/dist/
+theorem-context-ts/node_modules/
+theorem-context-py/.pytest_cache/
+theorem-context-py/**/__pycache__/
+*.pyc
