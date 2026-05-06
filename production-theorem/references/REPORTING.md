@@ -58,9 +58,9 @@ Every execution should propose candidate learnings when relevant:
 - retrieval hint
 - routing rule
 
-## THG / Database Harness Reporting
+## SDK Harness Reporting
 
-If the harness is available, the report should be compatible with these lifecycle moments:
+If the SDK harness product is available, the report should be compatible with these lifecycle moments:
 
 - `RUN.CREATED`
 - `TASK.RESOLVED`

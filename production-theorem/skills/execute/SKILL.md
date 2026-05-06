@@ -32,7 +32,7 @@ If no plan exists, create a minimal execution checklist first, then execute it.
 - identify touched files and nearby tests
 - read the relevant plan, docs, and code seams
 - record target behavior and main risks
-- if the task touches THG, Database Harness, ToolGraph, ContextArtifact, replay, fork, compare, `THG_MODE`, or native THG, consult `thg-harness-awareness` before editing
+- if the task touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, or tenant-scoped product graph routes, consult `codex-sdk-harness-product` before editing
 
 ### 2. Checklist Loop
 
@@ -95,14 +95,14 @@ Run the narrowest checks that prove the work:
 
 If something cannot run, state exactly why and preserve whatever evidence is still available.
 
-## THG / Database Harness Rule
+## SDK Harness Product Rule
 
-For THG or harness work:
+For SDK harness product work:
 
-- preserve the distinction between reusable artifacts and canonical memory
-- do not bypass ToolGraph or permission gates
-- do not describe Redis or cache as the canonical graph runtime without evidence
-- reconcile runtime claims against `apps/notebook/harness/`, `apps/notebook/api/harness.py`, `apps/notebook/graph_kernel/thg/`, `theseus_native/`, and current tests
+- preserve the distinction between typed client contract, reusable artifacts, and backend implementation
+- do not describe product behavior from backend assumptions alone
+- reconcile contract claims against `theorem-context-sdk/README.md`, the TS/Python READMEs, `src/client.ts`, `src/product.ts`, and the Python client modules
+- verify whether a behavior belongs to the default harness SDK client, the harness namespace, or the tenant-scoped product graph client
 
 ## Output Contract
 

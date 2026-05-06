@@ -10,9 +10,9 @@
     "tdd",
     "code-review",
     "production-readiness",
-    "thg",
-    "database-harness",
-    "theseus"
+    "harness-sdk",
+    "workflow-orchestration",
+    "execution-reporting"
   ],
   "interface": {
     "displayName": "Production-Theorem",
@@ -29,7 +29,7 @@
       "Use theorize to interrogate a vague implementation idea before we plan it.",
       "Use planning-theorem to create a production-grade plan with checklist IDs and validation.",
       "Use execute to carry an approved plan through implementation, testing, simplification, and reporting.",
-      "If the work touches THG or the Database Harness, consult the thg-harness-awareness agent first."
+      "If the work touches the paired harness SDK product or product graph client, consult the codex-sdk-harness-product agent first."
     ]
   }
 }

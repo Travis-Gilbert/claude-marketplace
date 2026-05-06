@@ -35,25 +35,28 @@ These are phases inside one of the three canonical skills.
 2. If the user asks for a plan, checklist, spec, migration plan, or retrofit artifact, use `planning-theorem`.
 3. If the user asks to modify files, run checks, fix a bug, simplify code, or ship, use `execute`.
 4. If execution reveals unresolved ambiguity, route briefly through `theorize`, then return to the checklist.
-5. If work touches THG or Database Harness, consult `thg-harness-awareness` before locking decisions or editing.
+5. If work touches the paired harness SDK product or product graph client, consult `codex-sdk-harness-product` before locking decisions or editing.
 
-## THG / Database Harness Escalation
+## SDK Harness Product Escalation
 
-Use `thg-harness-awareness` when work references any of these:
+Use `codex-sdk-harness-product` when work references any of these:
 
-- `apps/notebook/harness/`
-- `apps/notebook/api/harness.py`
-- `apps/notebook/graph_kernel/thg/`
-- `theseus_native/`
-- THG commands or debug Cypher
-- ToolGraph permissions
+- `theorem-context-sdk/README.md`
+- `theorem-context-sdk/theorem-context-ts/src/client.ts`
+- `theorem-context-sdk/theorem-context-ts/src/product.ts`
+- `theorem-context-sdk/theorem-context-py/theorem_context/client.py`
+- `theorem-context-sdk/theorem-context-py/theorem_context/product.py`
+- `TheoremContextClient`
+- `TheoremHotGraphClient`
+- harness begin/get/step/search/context/patch/replay/fork/compare
+- THG product `command`, `batch`, `run`, `contextPack`, or `graphQuery`
 - `ContextArtifact`
-- replay, fork, compare, or patch flows
-- `THG_MODE=in_process` vs `THG_MODE=remote_http`
+- TypeScript/Python SDK parity
+- default base URL vs tenant-scoped product base URL
 
 ## Harness Event Mapping
 
-When a THG or Database Harness is available for writeback, map workflow phases onto the harness event model:
+When the SDK harness product is available for writeback, map workflow phases onto the harness event model:
 
 - `RUN.CREATED`
 - `TASK.RESOLVED`
