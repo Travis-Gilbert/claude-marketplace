@@ -1,0 +1,35 @@
+{
+  "name": "production-theorem",
+  "version": "0.1.0",
+  "description": "Production-grade theorem workflow for brainstorming, planning, execution, TDD, review, and execution reporting.",
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "keywords": [
+    "planning",
+    "execution",
+    "tdd",
+    "code-review",
+    "production-readiness",
+    "thg",
+    "database-harness",
+    "theseus"
+  ],
+  "interface": {
+    "displayName": "Production-Theorem",
+    "shortDescription": "Production-shaped brainstorming, planning, and execution.",
+    "longDescription": "Controlled production workflow that turns ambiguity into grounded decisions, plans into auditable checklists, and execution into validated reports with explicit reconciliation and learning.",
+    "developerName": "Travis Gilbert",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Analyze"
+    ],
+    "defaultPrompt": [
+      "Use theorize to interrogate a vague implementation idea before we plan it.",
+      "Use planning-theorem to create a production-grade plan with checklist IDs and validation.",
+      "Use execute to carry an approved plan through implementation, testing, simplification, and reporting.",
+      "If the work touches THG or the Database Harness, consult the thg-harness-awareness agent first."
+    ]
+  }
+}
