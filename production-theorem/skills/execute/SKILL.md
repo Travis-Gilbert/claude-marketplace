@@ -5,6 +5,9 @@ description: This skill should be used when the user asks to "execute the plan",
 
 # Execute
 
+Compatibility note: this skill is now an internal execution mode of Orchestrate.
+Prefer `/orchestrate mode=execute` for new workflows.
+
 Implement like the change is heading toward production. Reconcile every action against a checklist, validate behavior through public interfaces, and produce a report that makes gaps impossible to hide.
 
 ## User-Facing Role
