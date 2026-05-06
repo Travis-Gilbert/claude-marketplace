@@ -1,6 +1,6 @@
 # theorem-context (Python)
 
-Python SDK for the Theorem Context Compiler.
+Python SDK for the Context Theorem Compiler.
 
 ```python
 import asyncio

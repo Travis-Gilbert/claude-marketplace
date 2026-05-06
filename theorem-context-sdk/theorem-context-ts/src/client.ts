@@ -1,5 +1,5 @@
 /**
- * TheoremContextClient: typed client around the Context Compiler HTTP API.
+ * TheoremContextClient: typed client around the Context Theorem HTTP API.
  *
  * Surface mirrors the plan's specification:
  *   cc.context.compile()

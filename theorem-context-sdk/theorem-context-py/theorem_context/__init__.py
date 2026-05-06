@@ -1,4 +1,4 @@
-"""Theorem Context Python SDK.
+"""Context Theorem Python SDK.
 
 Mirrors the TypeScript package surface with Pythonic async generators::
 

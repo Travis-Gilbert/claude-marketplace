@@ -1,5 +1,5 @@
 /**
- * Theorem Context SDK: typed contracts.
+ * Context Theorem SDK: typed contracts.
  *
  * These mirror the shape returned by POST /api/v2/theseus/context/compile/
  * and the SSE stage events. Keeping them stable is part of the SDK's

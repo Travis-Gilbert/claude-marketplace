@@ -1,0 +1,33 @@
+personality = "friendly"
+
+[mcp_servers]
+
+[mcp_servers.theseus-mcp]
+url = "https://theseus-mcp-production.up.railway.app/mcp"
+
+[mcp_servers.r3f-mcp]
+url = "https://r3f-mcp-production.up.railway.app/mcp"
+
+[mcp_servers.github-mcp]
+url = "https://github-mcp-production-c8d0.up.railway.app/mcp"
+
+[mcp_servers.modal-mcp]
+url = "https://modal-mcp-production.up.railway.app/mcp"
+
+[mcp_servers.deepseek-mcp]
+url = "https://deepseek-mcp-production.up.railway.app/mcp"
+
+[mcp_servers.tpu-commander]
+url = "https://tpu-commander-production.up.railway.app/mcp"
+
+[mcp_servers.plugin-server]
+url = "https://plugins-building-production.up.railway.app/mcp/"
+
+[mcp_servers.railway-mcp]
+url = "https://mcp.railway.com/mcp"
+
+[mcp_servers.unsloth-documentation]
+url = "https://unsloth.ai/docs/~gitbook/mcp"
+
+[mcp_servers.tavily]
+url = "https://mcp.tavily.com/mcp/"

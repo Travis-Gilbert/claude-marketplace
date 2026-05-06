@@ -1,4 +1,4 @@
-"""Pydantic v2 contracts for the Theorem Context Python SDK.
+"""Pydantic v2 contracts for the Context Theorem Python SDK.
 
 Mirrors the TypeScript types in the npm package. Using pydantic models
 gives us free validation when consumers parse responses.

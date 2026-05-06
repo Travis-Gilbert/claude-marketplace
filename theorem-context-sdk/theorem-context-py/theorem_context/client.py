@@ -1,4 +1,4 @@
-"""TheoremContextClient: async client for the Context Compiler API."""
+"""TheoremContextClient: async client for the Context Theorem API."""
 
 from __future__ import annotations
 
@@ -184,7 +184,7 @@ class _HarnessNamespace:
 
 
 class TheoremContextClient:
-    """Async HTTP client for the Theorem Context Compiler.
+    """Async HTTP client for the Context Theorem Compiler.
 
     Surface mirrors the TypeScript SDK::
 

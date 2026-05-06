@@ -1,6 +1,6 @@
 # @theorem/context (TypeScript)
 
-TypeScript / JavaScript SDK for the Theorem Context Compiler.
+TypeScript / JavaScript SDK for the Context Theorem Compiler.
 
 ```ts
 import { TheoremContextClient } from '@theorem/context';
