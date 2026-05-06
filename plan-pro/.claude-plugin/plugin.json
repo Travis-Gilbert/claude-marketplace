@@ -1,17 +1,16 @@
 {
   "name": "plan-pro",
-  "version": "1.0.0",
-  "description": "Planning plugin. Turns intent into elegant implementation plans grounded in the codebase, then executes them with domain-plugin delegation and compound learning. Methodology: superpowers + Double Diamond + INCOSE functional decomposition + C4/ADR + Walking Skeleton + mycelium contract-first. Independence-discipline and conciseness-discipline baked into CLAUDE.md.",
+  "version": "1.1.0",
+  "description": "SDK-driven planning and execution orchestrator. /plan produces a complete implementation plan in a single call with codebase grounding and Pydantic validation; /execute runs the plan with parallel spec + quality reviewers via the Claude Agent SDK.",
   "author": {
     "name": "Travis Gilbert"
   },
   "keywords": [
     "planning",
-    "brainstorming",
-    "spec",
     "implementation-plan",
-    "compound-learning",
-    "independence",
-    "concise"
+    "sdk",
+    "orchestrator",
+    "pydantic",
+    "parallel-review"
   ]
 }

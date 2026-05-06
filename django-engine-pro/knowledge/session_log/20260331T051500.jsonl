@@ -1,0 +1,29 @@
+{"event":"session_start","timestamp":"2026-03-31T05:15:00Z","project":"Index-API"}
+{"event":"agent_invoked","agent":"api-architect","trigger":"implementing Django Ninja v2 API with Response Protocol from SPEC-NINJA-API-RESPONSE-PROTOCOL.md"}
+{"event":"agent_invoked","agent":"orm-specialist","trigger":"reconciling spec field names with actual model fields (Object.body vs content, capture_method vs source_adapter, Tension M2M vs direct FKs)"}
+{"event":"agent_invoked","agent":"pydantic-specialist","trigger":"creating Pydantic schemas for Response Protocol (30+ ninja.Schema classes)"}
+{"event":"agent_invoked","agent":"model-architect","trigger":"adding utility_count IntegerField to Edge model, creating migration 0044"}
+{"event":"suggestion","suggestion_id":"sug-001","file":"apps/notebook/services/graph_stats.py","description":"batch 5 count queries into single raw SQL with subselects instead of 5 ORM .count() calls","claim_refs":["ef63f76ed394"]}
+{"event":"suggestion_outcome","suggestion_id":"sug-001","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-002","file":"apps/notebook/api/graph.py","description":"merge edges_out + edges_in queries into single Q(from_object=obj) | Q(to_object=obj) query","claim_refs":["221259ecddd5"]}
+{"event":"suggestion_outcome","suggestion_id":"sug-002","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-003","file":"apps/notebook/services/writeback.py","description":"use bulk_create for provenance edges instead of individual Edge.objects.create in loop","claim_refs":["0d04bfd2edbb"]}
+{"event":"suggestion_outcome","suggestion_id":"sug-003","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-004","file":"apps/notebook/services/ask_pipeline.py","description":"eliminate duplicate assemble_evidence() call by hoisting arg_graph computation before L2/L3"}
+{"event":"suggestion_outcome","suggestion_id":"sug-004","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-005","file":"apps/notebook/services/expression.py","description":"skip compose_with_reasoning fallback when reasoning_result is None to avoid redundant retrieval"}
+{"event":"suggestion_outcome","suggestion_id":"sug-005","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-006","file":"apps/notebook/services/writeback.py","description":"use model enum constants (Tension.Status.OPEN, Tension.TensionType.CLAIM_CONFLICT) instead of string literals"}
+{"event":"suggestion_outcome","suggestion_id":"sug-006","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-007","file":"apps/notebook/services/graph_stats.py","description":"use Model._meta.db_table instead of hardcoded table names in raw SQL"}
+{"event":"suggestion_outcome","suggestion_id":"sug-007","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-008","file":"apps/notebook/services/expression.py","description":"remove dead retrieved_objects and tensions parameters from generate_narrative"}
+{"event":"suggestion_outcome","suggestion_id":"sug-008","outcome":"accepted"}
+{"event":"candidate_claim","description":"Django Ninja v2 can coexist with DRF v1 on the same project by mounting at /api/v2/ without conflicting with existing /api/v1/ DRF router"}
+{"event":"candidate_claim","description":"When spec assumes direct FK fields on a model but reality uses M2M, map through M2M.values_list in the service layer rather than adding redundant FK fields"}
+{"event":"candidate_claim","description":"ConnectionFeedback should be created via the from_object/to_object pair from the Edge, not by passing the edge itself as FK, because the model stores the object pair not the edge reference"}
+{"event":"candidate_claim","description":"Batch multiple COUNT queries into a single raw SQL with subselects when the endpoint is called on every page load (graph-weather pattern)"}
+{"event":"candidate_claim","description":"When a compose/expression function has a fallback path that triggers full retrieval, skip it if pre-retrieved objects are available to avoid redundant DB+vector round-trips"}
+{"event":"candidate_claim","description":"Use Model._meta.db_table in raw SQL instead of hardcoding table names to survive app_label changes"}
+{"event":"auto_capture","claims_added":[],"solution_file":"","domain":"engine.api.ninja","project":"Index-API"}
+{"event":"session_end","timestamp":"2026-03-31T06:30:00Z","duration_minutes":75,"files_changed":["config/api_v2.py","config/settings.py","config/urls.py","apps/notebook/models/graph.py","apps/notebook/api/__init__.py","apps/notebook/api/intelligence.py","apps/notebook/api/writeback.py","apps/notebook/api/graph.py","apps/notebook/schemas/__init__.py","apps/notebook/schemas/protocol.py","apps/notebook/services/__init__.py","apps/notebook/services/ask_pipeline.py","apps/notebook/services/briefing.py","apps/notebook/services/writeback.py","apps/notebook/services/capture.py","apps/notebook/services/expression.py","apps/notebook/services/web_fallback.py","apps/notebook/services/graph_stats.py","apps/notebook/migrations/0044_add_edge_utility_count.py"]}

@@ -1,0 +1,21 @@
+Migration inventory:
+  active: instruction files - 2 found
+    - CLAUDE.md
+    - AGENTS.md
+  inactive: skills - none found
+  inactive: command sources - none found
+  inactive: subagents - none found
+Migration surfaces:
+  active: AGENTS.md - 1 instruction file(s) found.
+  inactive: skills - No skills found.
+  active: MCP config - 10 MCP server(s) converted into config.toml.
+  inactive: subagents - No subagents found.
+Migration report:
+  manual_fix_required: AGENTS.md - Generated copy contains Claude-only instruction semantics.
+  manual_fix_required: .claude-plugin/marketplace.json - Manual review required for Claude Code plugin marketplace; not converted by this tool.
+  rewritten: .codex/config.toml - Converted 10 MCP server entries.
+
+Post-migration reconciliation:
+  resolved: AGENTS.md - Rewrote Claude Code install-path wording for Codex and removed the generated manual migration block.
+  adjusted: .codex/config.toml - Changed tavily MCP URL to the OAuth-capable remote endpoint without an API key query string.
+  remains_manual: .claude-plugin/marketplace.json - Claude plugin marketplace metadata still needs manual Codex marketplace setup if required.

@@ -1,9 +1,9 @@
-# @theorem/context (TypeScript)
+# @context/theorem (TypeScript)
 
 TypeScript / JavaScript SDK for the Theorem Context Compiler.
 
 ```ts
-import { TheoremContextClient } from '@theorem/context';
+import { TheoremContextClient } from '@context/theorem';
 
 const cc = new TheoremContextClient({
   baseUrl: process.env.THEOREM_CONTEXT_BASE_URL,
@@ -38,9 +38,29 @@ if (pdf.stub) {
 ```
 
 Signed JSON and Markdown exports call the live backend routes today. PDF
-currently returns the backend's explicit stub response. Artifact `fork()`
-and `attach()` are not implemented server-side yet and raise
-`UnsupportedSurfaceError` instead of returning fake success objects.
+currently returns the backend's explicit stub response.
+
+## Artifact lifecycle and graph context
+
+```ts
+const forked = await cc.context.artifacts.fork('artifact-123', {
+  title: 'Redis harness follow-up',
+  metadata: { reason: 'branch review context' },
+});
+
+const attached = await cc.context.artifacts.attach('artifact-123', 'run-123', {
+  target_type: 'harness_run',
+  metadata: { adapter: 'codex' },
+});
+
+const focus = await cc.context.graph.focus([42]);
+const patches = await cc.context.graph.patches.list();
+```
+
+Artifact `fork()` clones the compiled artifact and atom rows into a new
+artifact with fork provenance. Artifact `attach()` records provenance and, for
+harness-run targets, links the artifact into the run state. Graph focus and
+graph patches call the live read-only graph context endpoints.
 
 The SDK also exports typed error classes for higher-level branching:
 `AuthError`, `CompileError`, `HarnessError`, `RequestTimeoutError`,
@@ -102,10 +122,28 @@ Use `thg.profiles.*` and `thg.plugins.*` when you want the THG runtime command
 surface with graph-shaped results like `nodes`, `edges`, `events`, and
 `state_hash`.
 
+## Orchestrate
+
+```ts
+const result = await cc.orchestrate({
+  task: 'Fix the failing SDK harness parity test',
+  mode: 'fix',
+  repo: 'Travis-Gilbert/Index-API',
+  budget_tokens: 6000,
+});
+
+console.log(result.run.run_id, result.artifact?.id, result.action_rail?.rail_id);
+```
+
+`orchestrate()` is a composed SDK convenience over shipped routes. It begins a
+Redis-backed harness run, resolves a Context Command, compiles and attaches a
+Context Artifact, and generates an Action Rail. It does not promote memory
+patches or claim canonical graph writes.
+
 ## Codex Bundle
 
 ```ts
-import { prepareCodexBundle, TheoremContextClient } from '@theorem/context';
+import { prepareCodexBundle, TheoremContextClient } from '@context/theorem';
 
 const cc = new TheoremContextClient({
   baseUrl: process.env.THEOREM_CONTEXT_BASE_URL,
@@ -165,7 +203,7 @@ graph memory.
 ## THG Product Service
 
 ```ts
-import { TheoremHotGraphClient } from '@theorem/context';
+import { TheoremHotGraphClient } from '@context/theorem';
 
 const thg = new TheoremHotGraphClient({
   baseUrl: 'https://thg-product.example.com',

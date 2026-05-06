@@ -14,19 +14,22 @@ from .errors import (
     HarnessError,
     RequestTimeoutError,
     ServerUnavailableError,
-    UnsupportedSurfaceError,
 )
 from .types import (
     ActionRailGenerateRequest,
     ActionRailPreviewRequest,
     ActionSelectedRequest,
     ArtifactExport,
+    ArtifactAttachResponse,
+    ArtifactForkResponse,
     ArtifactMarkdownExport,
     ArtifactPdfExport,
     ArtifactSignedExport,
     CompileRequest,
     ContextCommandRequest,
     ContextArtifact,
+    GraphFocusResponse,
+    GraphPatchesListResponse,
     HarnessBeginRequest,
     HarnessCompareRequest,
     HarnessContextRequest,
@@ -45,6 +48,9 @@ from .types import (
     LearningProfileToolkitRequest,
     LearningStructuralSignalRequest,
     OutcomeRequest,
+    OrchestrateRequest,
+    OrchestrateResult,
+    OrchestrateReport,
     THGCommandRequest,
     THGCypherRequest,
     THGResult,
@@ -105,16 +111,23 @@ class _ArtifactsNamespace:
     ) -> ArtifactExport:
         return await self._client._export_artifact(artifact_id, format=format)
 
-    async def fork(self, artifact_id: str) -> None:
-        raise UnsupportedSurfaceError(
-            'context.artifacts.fork',
-            'Artifact fork is not implemented by the backend yet.',
-        )
+    async def fork(
+        self,
+        artifact_id: str,
+        **options: Any,
+    ) -> ArtifactForkResponse:
+        return await self._client._fork_artifact(artifact_id, options)
 
-    async def attach(self, artifact_id: str, target: str) -> None:
-        raise UnsupportedSurfaceError(
-            'context.artifacts.attach',
-            'Artifact attach is not implemented by the backend yet.',
+    async def attach(
+        self,
+        artifact_id: str,
+        target: str,
+        **options: Any,
+    ) -> ArtifactAttachResponse:
+        return await self._client._attach_artifact(
+            artifact_id,
+            target,
+            options,
         )
 
 
@@ -131,16 +144,16 @@ class _GraphNamespace:
         self._client = client
         self.patches = _PatchesNamespace(client)
 
-    async def focus(self, seed_ids: list[int]) -> dict:
-        return {'stub': True, 'seed_ids': seed_ids}
+    async def focus(self, seed_ids: list[int]) -> GraphFocusResponse:
+        return await self._client._graph_focus(seed_ids)
 
 
 class _PatchesNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
 
-    async def list(self) -> dict:
-        return {'stub': True, 'patches': []}
+    async def list(self) -> GraphPatchesListResponse:
+        return await self._client._graph_patches_list()
 
 
 class _ContextCommandNamespace:
@@ -440,12 +453,12 @@ class TheoremContextClient:
                     'markdown': 'live',
                     'pdf': 'stub',
                 },
-                'fork': 'unsupported',
-                'attach': 'unsupported',
+                'fork': 'live',
+                'attach': 'live',
             },
             'graph': {
-                'focus': 'stub',
-                'patches': 'stub',
+                'focus': 'live',
+                'patches': 'live',
             },
             'harness': {
                 'public_run_model': 'AgentRunState',
@@ -473,6 +486,154 @@ class TheoremContextClient:
 
     async def aclose(self) -> None:
         await self._http.aclose()
+
+    async def orchestrate(self, **kwargs: Any) -> OrchestrateResult:
+        request = OrchestrateRequest(**kwargs)
+        task = request.task.strip()
+        if not task:
+            raise CompileError('orchestrate failed: task is required')
+
+        metadata = {
+            **request.metadata,
+            'orchestrate': True,
+            'mode': request.mode,
+        }
+        run = await self._harness_begin(
+            HarnessBeginRequest(
+                task=task,
+                actor=request.actor,
+                scope=_compact_dict({
+                    **request.scope,
+                    'orchestrate': True,
+                    'mode': request.mode,
+                    'repo': request.repo,
+                    'target': request.target,
+                    'profile_id': request.profile_id,
+                    'risk_mode': request.risk_mode,
+                }),
+            ),
+        )
+
+        context_command = None
+        if request.resolve_context_command:
+            context_command = await self._context_command_resolve(
+                ContextCommandRequest(
+                    goal=task,
+                    query=task,
+                    output_target='orchestrate',
+                    risk_mode=request.risk_mode,
+                    metadata={**metadata, 'run_id': run.run_id},
+                ),
+            )
+
+        artifact = None
+        if request.compile_context:
+            artifact_payload = await self._harness_context(
+                run.run_id,
+                HarnessContextRequest(
+                    task=task,
+                    repo=request.repo,
+                    task_type=_task_type_for_orchestrate_mode(request.mode),
+                    budget_tokens=request.budget_tokens,
+                    invariants=request.invariants,
+                ),
+            )
+            artifact = ContextArtifact.model_validate(artifact_payload)
+
+        artifact_attachment = None
+        if artifact is not None and request.attach_artifact:
+            artifact_attachment = await self._attach_artifact(
+                artifact.id,
+                run.run_id,
+                {
+                    'metadata': {
+                        'source': 'orchestrate',
+                        'mode': request.mode,
+                        'profile_id': request.profile_id,
+                    },
+                },
+            )
+
+        action_rail = None
+        if request.generate_action_rail:
+            state = (
+                context_command.get('state')
+                if isinstance(context_command, dict)
+                else None
+            )
+            action_rail = await self._action_rail_generate(
+                ActionRailGenerateRequest(
+                    context_command_id=(
+                        state.get('command_id') if isinstance(state, dict) else None
+                    ),
+                    context_command=(
+                        state
+                        if isinstance(state, dict)
+                        else {'goal': task, 'query': task, 'metadata': metadata}
+                    ),
+                    max_actions=request.max_actions,
+                    include_disabled=True,
+                    metadata={
+                        **metadata,
+                        'run_id': run.run_id,
+                        'artifact_id': artifact.id if artifact else None,
+                    },
+                ),
+            )
+
+        checklist = [
+            {
+                'id': 'ORCH-SDK-001',
+                'task': 'Begin Redis-backed harness run',
+                'status': 'done',
+                'evidence': run.run_id,
+            },
+            {
+                'id': 'ORCH-SDK-002',
+                'task': 'Resolve context command',
+                'status': 'done' if context_command else 'skipped',
+                'evidence': (
+                    context_command.get('state', {}).get('command_id')
+                    if isinstance(context_command, dict)
+                    else None
+                ),
+            },
+            {
+                'id': 'ORCH-SDK-003',
+                'task': 'Compile and attach context artifact',
+                'status': 'done' if artifact else 'skipped',
+                'evidence': artifact.id if artifact else None,
+            },
+            {
+                'id': 'ORCH-SDK-004',
+                'task': 'Generate action rail',
+                'status': 'done' if action_rail else 'skipped',
+                'evidence': (
+                    action_rail.get('rail_id')
+                    if isinstance(action_rail, dict)
+                    else None
+                ),
+            },
+        ]
+
+        return OrchestrateResult(
+            run=run,
+            context_command=context_command,
+            artifact=artifact,
+            artifact_attachment=artifact_attachment,
+            action_rail=action_rail,
+            report=OrchestrateReport(
+                checklist=checklist,
+                harness_writeback=(
+                    'recorded' if artifact_attachment else 'not_requested'
+                ),
+                next_actions=(
+                    action_rail.get('actions', [])
+                    if isinstance(action_rail, dict)
+                    else []
+                ),
+            ),
+        )
 
     def _headers(self) -> dict[str, str]:
         out = {'Content-Type': 'application/json'}
@@ -635,6 +796,59 @@ class TheoremContextClient:
             reason=str(body.get('reason') or ''),
             url=body.get('url') if isinstance(body.get('url'), str) else None,
         )
+
+    async def _fork_artifact(
+        self,
+        artifact_id: str,
+        options: dict[str, Any] | None = None,
+    ) -> ArtifactForkResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/context/artifacts/{artifact_id}/fork/',
+            surface='artifact fork',
+            headers=self._headers(),
+            json=options or {},
+        )
+        return ArtifactForkResponse.model_validate(response.json())
+
+    async def _attach_artifact(
+        self,
+        artifact_id: str,
+        target: str,
+        options: dict[str, Any] | None = None,
+    ) -> ArtifactAttachResponse:
+        options = options or {}
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/context/artifacts/{artifact_id}/attach/',
+            surface='artifact attach',
+            headers=self._headers(),
+            json={
+                'target': target,
+                'target_type': options.get('target_type', 'harness_run'),
+                'metadata': options.get('metadata', {}),
+            },
+        )
+        return ArtifactAttachResponse.model_validate(response.json())
+
+    async def _graph_focus(self, seed_ids: list[int]) -> GraphFocusResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/context/graph/focus/',
+            surface='graph focus',
+            headers=self._headers(),
+            json={'seed_ids': seed_ids},
+        )
+        return GraphFocusResponse.model_validate(response.json())
+
+    async def _graph_patches_list(self) -> GraphPatchesListResponse:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/context/graph/patches/',
+            surface='graph patches list',
+            headers=self._headers(),
+        )
+        return GraphPatchesListResponse.model_validate(response.json())
 
     async def _context_command_resolve(
         self,
@@ -1051,3 +1265,19 @@ def _derive_plugins_base_url(base_url: str) -> str:
     if base_url.endswith('/theseus'):
         return f'{base_url[:-len("/theseus")]}/plugins'
     return f'{base_url}/plugins'
+
+
+def _compact_dict(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in data.items()
+        if value is not None and value != ''
+    }
+
+
+def _task_type_for_orchestrate_mode(mode: str) -> str:
+    if mode in {'execute', 'debug'}:
+        return 'fix'
+    if mode in {'plan', 'review', 'fix', 'refactor', 'research'}:
+        return mode
+    return 'other'

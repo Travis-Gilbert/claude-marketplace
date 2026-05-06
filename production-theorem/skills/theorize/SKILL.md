@@ -5,6 +5,9 @@ description: This skill should be used when the user asks to "theorize", "brains
 
 # Theorize
 
+Compatibility note: this skill is now an internal mode of Orchestrate. Prefer
+`/orchestrate mode=theorize` for new workflows.
+
 Turn fuzzy intent into a production-shaped problem model. Do not drift into theatrical ideation. Use adversarial clarification, repo grounding, and explicit decision capture.
 
 ## User-Facing Role

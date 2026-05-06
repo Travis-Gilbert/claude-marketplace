@@ -107,6 +107,15 @@ def test_cli_run_dry_run_prints_command_sequence(capsys) -> None:
     assert output[1]['path'] == '/harness/runs/{run_id}/transition/'
 
 
+def test_cli_orchestrate_dry_run_prints_checklist(capsys) -> None:
+    assert main(['orchestrate', 'fix failing context test', '--dry-run']) == 0
+
+    output = json.loads(capsys.readouterr().out)
+    assert output['command'] == 'orchestrate'
+    assert output['checklist'][0]['id'] == 'ORCH-SDK-001'
+    assert output['checklist'][-1]['path'] == '/action-rail/generate/'
+
+
 def test_runs_namespace_normalizes_state_machine_failures_into_typed_errors() -> None:
     cases = [
         (

@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-03-29T01:06:52.134949",
+  "plugin": "ml-pro",
+  "confidence_changes": [],
+  "new_tensions": [],
+  "candidate_claims": [
+    {
+      "text": "Epistemic knowledge layers for non-ML plugins should use manually seeded claims from spec documents rather than the automated markdown seeder, since hook/command plugins lack the agent/skill markdown that the seeder parses",
+      "source": "session_observation",
+      "related_claims": []
+    },
+    {
+      "text": "Domain mapping entries in HEADING_DOMAIN_MAP should be plugin-prefixed in comments to prevent collisions when multiple plugins share similar terminology",
+      "source": "session_observation",
+      "related_claims": []
+    }
+  ],
+  "attention_needed": [],
+  "summary": {
+    "total_claims": 83,
+    "active_claims": 72,
+    "avg_confidence": 0.667,
+    "evidence_records": 2,
+    "claims_updated": 0,
+    "new_tensions": 0,
+    "candidates": 2
+  }
+}

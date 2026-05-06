@@ -140,6 +140,25 @@ class CompileRequest(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class OrchestrateRequest(BaseModel):
+    task: str
+    mode: str = 'plan'
+    actor: str = 'codex'
+    repo: str | None = None
+    target: str | None = None
+    profile_id: str | None = None
+    risk_mode: str | None = None
+    budget_tokens: int = 6000
+    invariants: str | None = None
+    scope: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    max_actions: int = 8
+    resolve_context_command: bool = True
+    compile_context: bool = True
+    attach_artifact: bool = True
+    generate_action_rail: bool = True
+
+
 class OutcomeRequest(BaseModel):
     agentUsed: str | None = None
     accepted: bool | None = None
@@ -179,6 +198,52 @@ class ArtifactPdfExport(BaseModel):
 
 
 ArtifactExport = ArtifactSignedExport | ArtifactMarkdownExport | ArtifactPdfExport
+
+
+class ArtifactForkResponse(BaseModel):
+    forked: bool = False
+    source_artifact_id: str = ''
+    cloned_atom_count: int = 0
+    artifact: ContextArtifact
+
+
+class ArtifactAttachResponse(BaseModel):
+    attached: bool = False
+    harness_attached: bool = False
+    attachment: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphFocusNode(BaseModel):
+    id: int
+    title: str = ''
+    slug: str = ''
+    url: str = ''
+    source_system: str = ''
+    object_type: str = ''
+    object_type_name: str = ''
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphFocusEdge(BaseModel):
+    id: int
+    from_object: int
+    to_object: int
+    edge_type: str = ''
+    reason: str = ''
+    strength: float = 0.0
+    engine: str = ''
+
+
+class GraphFocusResponse(BaseModel):
+    stub: bool = False
+    seed_ids: list[int] = Field(default_factory=list)
+    nodes: list[GraphFocusNode] = Field(default_factory=list)
+    edges: list[GraphFocusEdge] = Field(default_factory=list)
+
+
+class GraphPatchesListResponse(BaseModel):
+    stub: bool = False
+    patches: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ContextCommandRequest(BaseModel):
@@ -295,6 +360,22 @@ class HarnessRun(BaseModel):
     validations: list[dict[str, Any]] = Field(default_factory=list)
     created_at: str | None = None
     updated_at: str | None = None
+
+
+class OrchestrateReport(BaseModel):
+    status: Literal['ready'] = 'ready'
+    checklist: list[dict[str, Any]] = Field(default_factory=list)
+    harness_writeback: Literal['recorded', 'not_requested'] = 'not_requested'
+    next_actions: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class OrchestrateResult(BaseModel):
+    run: HarnessRun
+    context_command: dict[str, Any] | None = None
+    artifact: ContextArtifact | None = None
+    artifact_attachment: ArtifactAttachResponse | None = None
+    action_rail: dict[str, Any] | None = None
+    report: OrchestrateReport = Field(default_factory=OrchestrateReport)
 
 
 class HarnessEvent(BaseModel):

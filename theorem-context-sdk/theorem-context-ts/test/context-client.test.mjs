@@ -88,22 +88,74 @@ test('context artifacts export preserves the pdf stub response', async () => {
   assert.equal(result.reason, 'PDF rendering pipeline lands post-launch.');
 });
 
-test('context artifacts fork and attach fail honestly when backend routes are absent', async () => {
+test('context artifacts fork and attach call live backend routes', async () => {
+  const requests = [];
   const client = new TheoremContextClient({
     baseUrl: 'http://localhost:8000/api/v2/theseus',
-    fetchImpl: async () => {
-      throw new Error('fetch should not be called');
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/fork/')) {
+        return new Response(
+          JSON.stringify({
+            forked: true,
+            source_artifact_id: 'artifact-1',
+            cloned_atom_count: 2,
+            artifact: {
+              id: 'artifact-2',
+              status: 'compiled',
+              task_type: 'review',
+              task_description: 'review harness',
+              budget_tokens: 1000,
+              capsule: {},
+              atoms: [],
+              actions: [],
+              graph_health: {},
+              stress_test: {},
+              provenance: {},
+              token_ledger: {},
+              source_graph: {},
+              cache_key: '',
+              cache_hit: false,
+              created_at: null,
+              updated_at: null,
+            },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          attached: true,
+          harness_attached: true,
+          attachment: { artifact_id: 'artifact-1', target: 'run-1' },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
     },
   });
 
-  await assert.rejects(
-    client.context.artifacts.fork('artifact-1'),
-    /not implemented|unsupported/i,
+  const forked = await client.context.artifacts.fork('artifact-1', {
+    metadata: { reason: 'test' },
+  });
+  const attached = await client.context.artifacts.attach(
+    'artifact-1',
+    'run-1',
+    { metadata: { adapter: 'codex' } },
   );
-  await assert.rejects(
-    client.context.artifacts.attach('artifact-1', 'run-1'),
-    /not implemented|unsupported/i,
+
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/context/artifacts/artifact-1/fork/',
   );
+  assert.equal(requests[0].init.method, 'POST');
+  assert.equal(JSON.parse(requests[0].init.body).metadata.reason, 'test');
+  assert.equal(forked.artifact.id, 'artifact-2');
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/context/artifacts/artifact-1/attach/',
+  );
+  assert.equal(JSON.parse(requests[1].init.body).target, 'run-1');
+  assert.equal(attached.harness_attached, true);
 });
 
 test('context command namespace maps resolve and preview to existing routes', async () => {
@@ -224,6 +276,143 @@ test('action rail namespace maps generate, preview, and selected routes', async 
     'http://localhost:8000/api/v2/theseus/action-rail/rail-1/selected/',
   );
   assert.deepEqual(selected, { ok: true });
+});
+
+test('context graph namespace maps focus and patches to live routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/context/graph/focus/')) {
+        return new Response(
+          JSON.stringify({
+            stub: false,
+            seed_ids: [1],
+            nodes: [{ id: 1, title: 'Redis harness' }],
+            edges: [],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          stub: false,
+          patches: [{ id: 1, operation: 'object_upsert' }],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    },
+  });
+
+  const focus = await client.context.graph.focus([1]);
+  const patches = await client.context.graph.patches.list();
+
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/context/graph/focus/',
+  );
+  assert.deepEqual(JSON.parse(requests[0].init.body).seed_ids, [1]);
+  assert.equal(focus.stub, false);
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/context/graph/patches/',
+  );
+  assert.equal(patches.patches[0].operation, 'object_upsert');
+});
+
+test('orchestrate composes harness context artifact and action rail routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/harness/runs/')) {
+        return jsonResponse({
+          run: {
+            run_id: 'run:orch',
+            task: 'Fix the SDK parity test',
+            actor: 'codex',
+            scope: {},
+            status: 'running',
+            steps: [],
+            search_runs: [],
+            artifacts: [],
+            memory_patches: [],
+            validations: [],
+          },
+        });
+      }
+      if (String(url).endsWith('/context-command/resolve/')) {
+        return jsonResponse({
+          state: {
+            command_id: 'ctx:1',
+            goal: 'Fix the SDK parity test',
+            working_set: [],
+            exclusions: [],
+            hot_context: [],
+            canonical_context: [],
+            graph_layers: [],
+            tool_scope: [],
+            warnings: [],
+            metadata: {},
+          },
+          preview: {
+            command_id: 'ctx:1',
+            working_set_count: 0,
+          },
+        });
+      }
+      if (String(url).endsWith('/harness/runs/run:orch/context/')) {
+        return jsonResponse({
+          artifact: contextArtifactFixture('artifact-orch'),
+          contract: {},
+        });
+      }
+      if (String(url).endsWith('/attach/')) {
+        return jsonResponse({
+          attached: true,
+          harness_attached: true,
+          attachment: {
+            artifact_id: 'artifact-orch',
+            target: 'run:orch',
+          },
+        });
+      }
+      if (String(url).endsWith('/action-rail/generate/')) {
+        return jsonResponse({
+          rail_id: 'rail:1',
+          actions: [{ action_id: 'act:1', label: 'Run focused tests' }],
+          grouped: {},
+          context_summary: {},
+          warnings: [],
+          metadata: {},
+        });
+      }
+      return new Response('', { status: 404 });
+    },
+  });
+
+  const result = await client.orchestrate({
+    task: 'Fix the SDK parity test',
+    mode: 'fix',
+    repo: 'Travis-Gilbert/Index-API',
+  });
+
+  assert.equal(result.run.run_id, 'run:orch');
+  assert.equal(result.context_command.state.command_id, 'ctx:1');
+  assert.equal(result.artifact.id, 'artifact-orch');
+  assert.equal(result.artifact_attachment.harness_attached, true);
+  assert.equal(result.action_rail.rail_id, 'rail:1');
+  assert.equal(result.report.checklist[0].id, 'ORCH-SDK-001');
+  assert.equal(result.report.harness_writeback, 'recorded');
+  assert.deepEqual(requests.map((request) => request.url), [
+    'http://localhost:8000/api/v2/theseus/harness/runs/',
+    'http://localhost:8000/api/v2/theseus/context-command/resolve/',
+    'http://localhost:8000/api/v2/theseus/harness/runs/run:orch/context/',
+    'http://localhost:8000/api/v2/theseus/context/artifacts/artifact-orch/attach/',
+    'http://localhost:8000/api/v2/theseus/action-rail/generate/',
+  ]);
 });
 
 test('learning namespace maps profile, spend-plan, and structural-signal routes', async () => {
@@ -497,3 +686,32 @@ test('transport timeouts surface as RequestTimeoutError', async () => {
       && /compile failed: timed out/i.test(error.message),
   );
 });
+
+function jsonResponse(body) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+function contextArtifactFixture(id) {
+  return {
+    id,
+    status: 'compiled',
+    task_type: 'fix',
+    task_description: 'Fix the SDK parity test',
+    budget_tokens: 6000,
+    capsule: {},
+    atoms: [],
+    actions: [],
+    graph_health: {},
+    stress_test: {},
+    provenance: {},
+    token_ledger: {},
+    source_graph: {},
+    cache_key: '',
+    cache_hit: false,
+    created_at: null,
+    updated_at: null,
+  };
+}

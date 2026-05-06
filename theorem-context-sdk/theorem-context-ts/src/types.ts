@@ -149,6 +149,50 @@ export interface CompileRequest {
   metadata?: Record<string, unknown>;
 }
 
+export type OrchestrateMode =
+  | 'plan'
+  | 'review'
+  | 'fix'
+  | 'refactor'
+  | 'research'
+  | 'execute'
+  | 'debug'
+  | 'other'
+  | string;
+
+export interface OrchestrateRequest {
+  task: string;
+  mode?: OrchestrateMode;
+  actor?: string;
+  repo?: string;
+  target?: string;
+  profile_id?: string;
+  risk_mode?: string;
+  budget_tokens?: number;
+  invariants?: string;
+  scope?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  max_actions?: number;
+  resolve_context_command?: boolean;
+  compile_context?: boolean;
+  attach_artifact?: boolean;
+  generate_action_rail?: boolean;
+}
+
+export interface OrchestrateResult {
+  run: HarnessRun;
+  context_command: ContextCommandResolveResponse | null;
+  artifact: ContextArtifact | null;
+  artifact_attachment: ArtifactAttachResponse | null;
+  action_rail: ActionRailBundle | null;
+  report: {
+    status: 'ready';
+    checklist: Array<Record<string, unknown>>;
+    harness_writeback: 'recorded' | 'not_requested';
+    next_actions: Array<Record<string, unknown>>;
+  };
+}
+
 export interface OutcomeRequest {
   agentUsed?: string;
   accepted?: boolean;
@@ -190,6 +234,52 @@ export type ArtifactExport =
   | ArtifactSignedExport
   | ArtifactMarkdownExport
   | ArtifactPdfExport;
+
+export interface ArtifactForkResponse {
+  forked: boolean;
+  source_artifact_id: string;
+  cloned_atom_count: number;
+  artifact: ContextArtifact;
+}
+
+export interface ArtifactAttachResponse {
+  attached: boolean;
+  harness_attached: boolean;
+  attachment: Record<string, unknown>;
+}
+
+export interface GraphFocusNode {
+  id: number;
+  title: string;
+  slug: string;
+  url: string;
+  source_system: string;
+  object_type: string;
+  object_type_name: string;
+  properties: Record<string, unknown>;
+}
+
+export interface GraphFocusEdge {
+  id: number;
+  from_object: number;
+  to_object: number;
+  edge_type: string;
+  reason: string;
+  strength: number;
+  engine: string;
+}
+
+export interface GraphFocusResponse {
+  stub: false;
+  seed_ids: number[];
+  nodes: GraphFocusNode[];
+  edges: GraphFocusEdge[];
+}
+
+export interface GraphPatchesListResponse {
+  stub: false;
+  patches: Array<Record<string, unknown>>;
+}
 
 export interface ContextCommandPayload {
   goal?: string;

@@ -107,25 +107,75 @@ def test_context_artifacts_export_preserves_pdf_stub_response() -> None:
     asyncio.run(run())
 
 
-def test_context_artifacts_fork_and_attach_fail_honestly_when_backend_routes_are_absent() -> None:
-    async def run() -> None:
-        client = TheoremContextClient(base_url='http://localhost:8000/api/v2/theseus')
-        try:
-            try:
-                await client.context.artifacts.fork('artifact-1')
-            except Exception as exc:
-                assert 'not implemented' in str(exc).lower() or 'unsupported' in str(exc).lower()
-            else:
-                raise AssertionError('fork() should not silently succeed')
+def test_context_artifacts_fork_and_attach_call_live_backend_routes() -> None:
+    requests: list[httpx.Request] = []
 
-            try:
-                await client.context.artifacts.attach('artifact-1', 'run-1')
-            except Exception as exc:
-                assert 'not implemented' in str(exc).lower() or 'unsupported' in str(exc).lower()
-            else:
-                raise AssertionError('attach() should not silently succeed')
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/fork/'):
+            return httpx.Response(
+                200,
+                json={
+                    'forked': True,
+                    'source_artifact_id': 'artifact-1',
+                    'cloned_atom_count': 2,
+                    'artifact': {
+                        'id': 'artifact-2',
+                        'status': 'compiled',
+                        'task_type': 'review',
+                        'task_description': 'review harness',
+                        'budget_tokens': 1000,
+                        'capsule': {},
+                        'atoms': [],
+                        'actions': [],
+                        'graph_health': {},
+                        'stress_test': {},
+                        'provenance': {},
+                        'token_ledger': {},
+                        'source_graph': {},
+                        'cache_key': '',
+                        'cache_hit': False,
+                        'created_at': None,
+                        'updated_at': None,
+                    },
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                'attached': True,
+                'harness_attached': True,
+                'attachment': {
+                    'artifact_id': 'artifact-1',
+                    'target': 'run-1',
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            forked = await client.context.artifacts.fork(
+                'artifact-1',
+                metadata={'reason': 'test'},
+            )
+            attached = await client.context.artifacts.attach(
+                'artifact-1',
+                'run-1',
+                metadata={'adapter': 'codex'},
+            )
         finally:
             await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/context/artifacts/artifact-1/fork/'
+        assert json.loads(requests[0].content)['metadata']['reason'] == 'test'
+        assert forked.artifact.id == 'artifact-2'
+        assert requests[1].url.path == '/api/v2/theseus/context/artifacts/artifact-1/attach/'
+        assert json.loads(requests[1].content)['target'] == 'run-1'
+        assert attached.harness_attached is True
 
     asyncio.run(run())
 
@@ -237,6 +287,160 @@ def test_action_rail_namespace_maps_generate_preview_and_selected_routes() -> No
         assert preview['execution_route'] == 'capture_api'
         assert requests[2].url.path == '/api/v2/theseus/action-rail/rail-1/selected/'
         assert selected == {'ok': True}
+
+    asyncio.run(run())
+
+
+def test_context_graph_namespace_maps_focus_and_patches_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/context/graph/focus/'):
+            return httpx.Response(
+                200,
+                json={
+                    'stub': False,
+                    'seed_ids': [1],
+                    'nodes': [{'id': 1, 'title': 'Redis harness'}],
+                    'edges': [],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                'stub': False,
+                'patches': [{'id': 1, 'operation': 'object_upsert'}],
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            focus = await client.context.graph.focus([1])
+            patches = await client.context.graph.patches.list()
+        finally:
+            await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/context/graph/focus/'
+        assert json.loads(requests[0].content)['seed_ids'] == [1]
+        assert focus.stub is False
+        assert requests[1].url.path == '/api/v2/theseus/context/graph/patches/'
+        assert patches.patches[0]['operation'] == 'object_upsert'
+
+    asyncio.run(run())
+
+
+def test_orchestrate_composes_harness_context_artifact_and_action_rail_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/harness/runs/'):
+            return httpx.Response(
+                200,
+                json={
+                    'run': {
+                        'run_id': 'run:orch',
+                        'task': 'Fix the SDK parity test',
+                        'actor': 'codex',
+                        'scope': {},
+                        'status': 'running',
+                        'steps': [],
+                        'search_runs': [],
+                        'artifacts': [],
+                        'memory_patches': [],
+                        'validations': [],
+                    },
+                },
+            )
+        if request.url.path.endswith('/context-command/resolve/'):
+            return httpx.Response(
+                200,
+                json={
+                    'state': {
+                        'command_id': 'ctx:1',
+                        'goal': 'Fix the SDK parity test',
+                        'working_set': [],
+                        'exclusions': [],
+                        'hot_context': [],
+                        'canonical_context': [],
+                        'graph_layers': [],
+                        'tool_scope': [],
+                        'warnings': [],
+                        'metadata': {},
+                    },
+                    'preview': {
+                        'command_id': 'ctx:1',
+                        'working_set_count': 0,
+                    },
+                },
+            )
+        if request.url.path.endswith('/harness/runs/run:orch/context/'):
+            return httpx.Response(
+                200,
+                json={
+                    'artifact': _artifact_json('artifact-orch'),
+                    'contract': {},
+                },
+            )
+        if request.url.path.endswith('/attach/'):
+            return httpx.Response(
+                200,
+                json={
+                    'attached': True,
+                    'harness_attached': True,
+                    'attachment': {
+                        'artifact_id': 'artifact-orch',
+                        'target': 'run:orch',
+                    },
+                },
+            )
+        if request.url.path.endswith('/action-rail/generate/'):
+            return httpx.Response(
+                200,
+                json={
+                    'rail_id': 'rail:1',
+                    'actions': [{'action_id': 'act:1', 'label': 'Run focused tests'}],
+                    'grouped': {},
+                    'context_summary': {},
+                    'warnings': [],
+                    'metadata': {},
+                },
+            )
+        return httpx.Response(404)
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            result = await client.orchestrate(
+                task='Fix the SDK parity test',
+                mode='fix',
+                repo='Travis-Gilbert/Index-API',
+            )
+        finally:
+            await client.aclose()
+
+        assert result.run.run_id == 'run:orch'
+        assert result.context_command['state']['command_id'] == 'ctx:1'
+        assert result.artifact.id == 'artifact-orch'
+        assert result.artifact_attachment.harness_attached is True
+        assert result.action_rail['rail_id'] == 'rail:1'
+        assert result.report.checklist[0]['id'] == 'ORCH-SDK-001'
+        assert result.report.harness_writeback == 'recorded'
+        assert [request.url.path for request in requests] == [
+            '/api/v2/theseus/harness/runs/',
+            '/api/v2/theseus/context-command/resolve/',
+            '/api/v2/theseus/harness/runs/run:orch/context/',
+            '/api/v2/theseus/context/artifacts/artifact-orch/attach/',
+            '/api/v2/theseus/action-rail/generate/',
+        ]
 
     asyncio.run(run())
 
@@ -517,3 +721,25 @@ def test_transport_timeouts_surface_as_request_timeout_error() -> None:
             await client.aclose()
 
     asyncio.run(run())
+
+
+def _artifact_json(artifact_id: str) -> dict:
+    return {
+        'id': artifact_id,
+        'status': 'compiled',
+        'task_type': 'fix',
+        'task_description': 'Fix the SDK parity test',
+        'budget_tokens': 6000,
+        'capsule': {},
+        'atoms': [],
+        'actions': [],
+        'graph_health': {},
+        'stress_test': {},
+        'provenance': {},
+        'token_ledger': {},
+        'source_graph': {},
+        'cache_key': '',
+        'cache_hit': False,
+        'created_at': None,
+        'updated_at': None,
+    }

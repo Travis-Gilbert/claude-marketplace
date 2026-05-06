@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["vitest/globals"]
+  },
+  "include": ["e2e/**/*", "integration/**/*", "regressions/**/*"],
+  "exclude": ["node_modules", "regressions/build/**/*", "vitest.config.ts"]
+}

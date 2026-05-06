@@ -1,6 +1,10 @@
-# theorem-context (Python)
+# Context-Theorem (Python)
 
 Python SDK for the Theorem Context Compiler.
+
+```bash
+pip install Context-Theorem
+```
 
 ```python
 import asyncio
@@ -36,9 +40,32 @@ if pdf.stub:
 ```
 
 Signed JSON and Markdown exports call the live backend routes today. PDF
-currently returns the backend's explicit stub response. Artifact `fork()`
-and `attach()` are not implemented server-side yet and raise
-`UnsupportedSurfaceError` instead of returning fake success objects.
+currently returns the backend's explicit stub response.
+
+## Artifact lifecycle and graph context
+
+```python
+forked = await cc.context.artifacts.fork(
+    'artifact-123',
+    title='Redis harness follow-up',
+    metadata={'reason': 'branch review context'},
+)
+
+attached = await cc.context.artifacts.attach(
+    'artifact-123',
+    'run-123',
+    target_type='harness_run',
+    metadata={'adapter': 'codex'},
+)
+
+focus = await cc.context.graph.focus([42])
+patches = await cc.context.graph.patches.list()
+```
+
+Artifact `fork()` clones the compiled artifact and atom rows into a new
+artifact with fork provenance. Artifact `attach()` records provenance and, for
+harness-run targets, links the artifact into the run state. Graph focus and
+graph patches call the live read-only graph context endpoints.
 
 The SDK also exports typed error classes for higher-level branching:
 `AuthError`, `CompileError`, `HarnessError`, `RequestTimeoutError`,
@@ -102,12 +129,36 @@ Use `thg.profiles.*` and `thg.plugins.*` when you want the THG runtime command
 surface with graph-shaped results like `nodes`, `edges`, `events`, and
 `state_hash`.
 
+## Orchestrate
+
+```python
+result = await cc.orchestrate(
+    task='Fix the failing SDK harness parity test',
+    mode='fix',
+    repo='Travis-Gilbert/Index-API',
+    budget_tokens=6000,
+)
+
+print(result.run.run_id, result.artifact.id, result.action_rail['rail_id'])
+```
+
+CLI:
+
+```bash
+context-theorem orchestrate "Fix the failing SDK harness parity test" --mode fix
+```
+
+`orchestrate()` is a composed SDK convenience over shipped routes. It begins a
+Redis-backed harness run, resolves a Context Command, compiles and attaches a
+Context Artifact, and generates an Action Rail. It does not promote memory
+patches or claim canonical graph writes.
+
 ## Codex Bundle
 
 Python is the canonical local wrapper layer for Codex-ready harness setup.
 
 ```bash
-theorem-context codex prepare \
+context-theorem codex prepare \
   --task "Review the database harness SDK gap" \
   --bundle-dir .theorem \
   --task-type review
@@ -136,6 +187,9 @@ This writes the local Codex bundle files:
 
 You can inspect `cc.surface_status` when you need to branch on live, stubbed,
 unsupported, or compatibility-only surfaces without probing the server first.
+
+The legacy `theorem-context` console command remains available for local
+compatibility.
 
 ## Database Harness Compatibility Layer
 

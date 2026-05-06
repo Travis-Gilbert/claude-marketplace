@@ -6,15 +6,7 @@ Mantine's theming system provides tokens (shadows, elevation, z-index, spacing, 
 
 ## Shadow Scale
 
-Mapped from Mantine's shadow tokens to VIE CSS custom properties:
-
-```css
---vie-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.15);
---vie-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
---vie-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.25);
---vie-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.3);
---vie-shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.35);
-```
+Mapped from Mantine's shadow tokens to VIE CSS custom properties. See `color-tokens.md` for the full `--vie-shadow-*` values.
 
 To verify or update these values, grep the Mantine source:
 ```bash
