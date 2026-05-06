@@ -80,9 +80,11 @@ Treat these as internal phases, not separate public commands:
 
 ## Redis And Harness Rules
 
-Use Redis agents whenever work touches THG, Redis-backed harness state,
-run/event/cache storage, tenant-scoped product graph routes, RESP/Valkey
-facades, or SDK/database harness writeback.
+Consult Redis and graph agents whenever work touches THG, Redis-backed harness
+state, run/event/cache storage, tenant-scoped product graph routes, RESP/Valkey
+facades, or SDK/database harness writeback. These specialists provide context,
+guardrails, and validators; implementation remains owned by execute mode or by a
+separate write-scoped task.
 
 - Orchestrate Redis is operational state and references, not canonical Theseus
   truth.
@@ -164,12 +166,12 @@ Use these routes internally:
 | ambiguous design | theorize mode |
 | production plan | planning mode |
 | implementation | execute mode |
-| SDK/database harness work | codex-sdk-harness-product |
-| Redis harness/run/cache work | redis-harness-operator |
-| tenant THG product or RESP work | redis-product-safety |
+| SDK/database harness context | codex-sdk-harness-product |
+| Redis harness/run/cache guardrails | redis-harness-operator |
+| tenant THG product or RESP safety | redis-product-safety |
 | context artifact work | context-artifact-specialist |
 | plugin selection | plugin-router |
-| GraphRAG / evidence paths | epistemic-graphrag-specialist |
+| GraphRAG / GNN-RAG evidence context | epistemic-graphrag-specialist |
 | action recommendations | action-rail-specialist |
 | tests and validation | validator-reporter |
 | federation or learning | federation-learning-recorder |

@@ -15,16 +15,17 @@ Inventory generated for the Orchestrate v1 upgrade.
 
 | Agent | Role |
 |---|---|
-| `codex-sdk-harness-product` | Grounds SDK/database harness and product-client claims in shipped code. |
+| `checklist-manifest` | Builds the codebase-grounded checklist manifest before work and reconciles the same checklist at completion. |
+| `codex-sdk-harness-product` | Grounds SDK/database harness and product-client claims in shipped code; read-only context, not implementation ownership. |
 | `orchestrate-planner` | Builds production plans and stable checklists. |
 | `plugin-router` | Selects hidden plugins/skills, profiles, validators, and exposure recommendations. |
 | `context-artifact-specialist` | Defines Context Artifact, Capsule, Brief, and trust-boundary requirements. |
 | `action-rail-specialist` | Produces safe next actions with validators and approval gates. |
 | `validator-reporter` | Chooses checks and reconciles validation evidence. |
-| `epistemic-graphrag-specialist` | Selects graph retrieval operators, evidence paths, and trace needs. |
+| `epistemic-graphrag-specialist` | Gathers GraphRAG/GNN-RAG evidence context, retrieval operators, and trace needs. |
 | `federation-learning-recorder` | Prepares local learning and safe structural federation candidates. |
-| `redis-harness-operator` | Protects Redis harness state, cache/run/event boundaries, and fallback behavior. |
-| `redis-product-safety` | Protects tenant THG product service, auth, Redis key isolation, and RESP gates. |
+| `redis-harness-operator` | Provides Redis harness guardrails for cache/run/event boundaries and fallback behavior. |
+| `redis-product-safety` | Provides tenant THG product safety checks for auth, Redis key isolation, and RESP gates. |
 
 ## Commands Exposed
 

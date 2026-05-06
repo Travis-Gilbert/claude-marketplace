@@ -57,11 +57,30 @@ These are phases inside Orchestrate.
    ship, run internal `execute` mode.
 5. If execution reveals unresolved ambiguity, route briefly through internal
    `theorize` mode, then return to the checklist.
-6. If work touches the paired harness SDK product or product graph client,
-   consult `codex-sdk-harness-product` before locking decisions or editing.
-7. If work touches Redis-backed harness state, THG product service, RESP/Valkey,
+6. Consult `checklist-manifest` before multi-step execution when the parent
+   needs the compact table of user intent, current codebase state, additions or
+   removals, and exact locations. Consult it again at report time when the
+   parent needs the same checklist updated with done, partial, blocked, failed,
+   skipped, or not-run reasons.
+7. If work touches the paired harness SDK product or product graph client,
+   consult `codex-sdk-harness-product` for a read-only context pass before
+   locking decisions or editing.
+8. If work touches Redis-backed harness state, THG product service, RESP/Valkey,
    tenant Redis keyspaces, or product deployment gates, consult
-   `redis-harness-operator` or `redis-product-safety`.
+   `redis-harness-operator` or `redis-product-safety` for guardrails and
+   validators. Do not treat those agents as implementation owners unless the
+   parent has assigned a write-scoped task.
+
+## Checklist Manifest Escalation
+
+Use `checklist-manifest` when work needs a compact table in this shape:
+
+| Unchecked box | Desired outcome | Where | Why |
+|---|---|---|---|
+| [ ] CM-001 | Outcome to produce or verify. | `file`, route, command, or runtime surface | Why this matters and what evidence grounds it. |
+
+At completion, keep the same IDs and table shape, but update the first column
+with `[x]`, `[~]`, `[!]`, or `[ ]` and explain every non-done item in `Why`.
 
 ## SDK Harness Product Escalation
 
@@ -82,7 +101,8 @@ Use `codex-sdk-harness-product` when work references any of these:
 
 ## Redis Agent Escalation
 
-Use `redis-harness-operator` when work references:
+Consult `redis-harness-operator` for a read-only Redis harness brief when work
+references:
 
 - Redis-backed harness runs/events/cache
 - semantic cache or ContextArtifact cache behavior
@@ -91,7 +111,8 @@ Use `redis-harness-operator` when work references:
 - local Redis unavailable fallback behavior
 - operational state vs canonical graph boundaries
 
-Use `redis-product-safety` when work references:
+Consult `redis-product-safety` for a read-only product safety brief when work
+references:
 
 - `thg-product-server`
 - tenant-scoped routes under `/v1/tenants/{tenant_id}/`
