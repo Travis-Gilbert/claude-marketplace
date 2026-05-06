@@ -57,6 +57,11 @@
       "source": "./plan-pro"
     },
     {
+      "name": "production-theorem",
+      "version": "0.1.0",
+      "source": "./production-theorem"
+    },
+    {
       "name": "scipy-pro",
       "version": "4.0.0",
       "source": "./scipy-pro"
