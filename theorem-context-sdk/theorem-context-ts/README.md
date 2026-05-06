@@ -1,9 +1,9 @@
-# @theorem/context (TypeScript)
+# @context/theorem (TypeScript)
 
 TypeScript / JavaScript SDK for the Theorem Context Compiler.
 
 ```ts
-import { TheoremContextClient } from '@theorem/context';
+import { TheoremContextClient } from '@context/theorem';
 
 const cc = new TheoremContextClient({
   baseUrl: process.env.THEOREM_CONTEXT_BASE_URL,
@@ -143,7 +143,7 @@ patches or claim canonical graph writes.
 ## Codex Bundle
 
 ```ts
-import { prepareCodexBundle, TheoremContextClient } from '@theorem/context';
+import { prepareCodexBundle, TheoremContextClient } from '@context/theorem';
 
 const cc = new TheoremContextClient({
   baseUrl: process.env.THEOREM_CONTEXT_BASE_URL,
@@ -203,7 +203,7 @@ graph memory.
 ## THG Product Service
 
 ```ts
-import { TheoremHotGraphClient } from '@theorem/context';
+import { TheoremHotGraphClient } from '@context/theorem';
 
 const thg = new TheoremHotGraphClient({
   baseUrl: 'https://thg-product.example.com',

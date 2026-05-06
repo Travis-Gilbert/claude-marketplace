@@ -19,7 +19,7 @@ from .client import TheoremContextClient
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog='theorem-context')
+    parser = argparse.ArgumentParser(prog='context-theorem')
     parser.add_argument(
         '--base-url',
         default=os.getenv('THEOREM_CONTEXT_BASE_URL'),
@@ -145,7 +145,7 @@ def _legacy_run_main(
     *,
     client_factory: Callable[[argparse.Namespace], Any] | None = None,
 ) -> int:
-    parser = argparse.ArgumentParser(prog='theorem-context')
+    parser = argparse.ArgumentParser(prog='context-theorem')
     parser.add_argument('command', choices=['run'])
     parser.add_argument('task')
     parser.add_argument('--actor', default='agent')

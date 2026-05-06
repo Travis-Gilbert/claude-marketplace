@@ -1,6 +1,10 @@
-# theorem-context (Python)
+# Context-Theorem (Python)
 
 Python SDK for the Theorem Context Compiler.
+
+```bash
+pip install Context-Theorem
+```
 
 ```python
 import asyncio
@@ -141,7 +145,7 @@ print(result.run.run_id, result.artifact.id, result.action_rail['rail_id'])
 CLI:
 
 ```bash
-theorem-context orchestrate "Fix the failing SDK harness parity test" --mode fix
+context-theorem orchestrate "Fix the failing SDK harness parity test" --mode fix
 ```
 
 `orchestrate()` is a composed SDK convenience over shipped routes. It begins a
@@ -154,7 +158,7 @@ patches or claim canonical graph writes.
 Python is the canonical local wrapper layer for Codex-ready harness setup.
 
 ```bash
-theorem-context codex prepare \
+context-theorem codex prepare \
   --task "Review the database harness SDK gap" \
   --bundle-dir .theorem \
   --task-type review
@@ -183,6 +187,9 @@ This writes the local Codex bundle files:
 
 You can inspect `cc.surface_status` when you need to branch on live, stubbed,
 unsupported, or compatibility-only surfaces without probing the server first.
+
+The legacy `theorem-context` console command remains available for local
+compatibility.
 
 ## Database Harness Compatibility Layer
 

@@ -45,4 +45,4 @@ Run `./sync-plugins.sh --status` to check which plugins are linked.
 
 ## Remote
 
-Remote: `https://github.com/Travis-Gilbert/Plugins-building.git`
+Remote: `https://github.com/Travis-Gilbert/claude-marketplace.git`
