@@ -6,6 +6,12 @@ from typing import Any
 
 import httpx
 
+from .errors import (
+    AuthError,
+    HarnessError,
+    RequestTimeoutError,
+    ServerUnavailableError,
+)
 from .types import THGResult
 
 
@@ -49,20 +55,20 @@ class TheoremHotGraphClient:
         self,
         commands: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        response = await self._http.post(
-            f'{self._tenant_url()}/batch',
-            headers=self._headers(),
+        response = await self._request(
+            'POST',
+            '/batch',
+            action='batch',
             json={'commands': commands},
         )
-        response.raise_for_status()
         return response.json()
 
     async def run(self, run_id: str) -> THGResult:
-        response = await self._http.get(
-            f'{self._tenant_url()}/runs/{run_id}',
-            headers=self._headers(),
+        response = await self._request(
+            'GET',
+            f'/runs/{run_id}',
+            action='run',
         )
-        response.raise_for_status()
         return THGResult.model_validate(response.json())
 
     async def context_pack(self, args: dict[str, Any]) -> THGResult:
@@ -82,13 +88,56 @@ class TheoremHotGraphClient:
         })
 
     async def _post(self, path: str, body: dict[str, Any]) -> THGResult:
-        response = await self._http.post(
-            f'{self._tenant_url()}{path}',
-            headers=self._headers(),
+        response = await self._request(
+            'POST',
+            path,
+            action=path,
             json=body,
         )
-        response.raise_for_status()
         return THGResult.model_validate(response.json())
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        action: str,
+        **kwargs: Any,
+    ) -> httpx.Response:
+        try:
+            response = await self._http.request(
+                method,
+                f'{self._tenant_url()}{path}',
+                headers=self._headers(),
+                **kwargs,
+            )
+        except httpx.TimeoutException as exc:
+            raise RequestTimeoutError(
+                f'THG product {action} failed: {exc}',
+            ) from exc
+        except httpx.RequestError as exc:
+            raise ServerUnavailableError(
+                f'THG product {action} failed: {exc}',
+            ) from exc
+        self._raise_for_status(response, action=action)
+        return response
+
+    def _raise_for_status(self, response: httpx.Response, *, action: str) -> None:
+        if response.is_success:
+            return
+        detail = response.text.strip()
+        suffix = f' {detail}' if detail else ''
+        message = (
+            f'THG product {action} failed with HTTP '
+            f'{response.status_code}{suffix}'
+        )
+        if response.status_code in {401, 403}:
+            raise AuthError(message)
+        if response.status_code in {408, 504}:
+            raise RequestTimeoutError(message)
+        if response.status_code in {502, 503}:
+            raise ServerUnavailableError(message)
+        raise HarnessError(message)
 
     def _headers(self) -> dict[str, str]:
         return {

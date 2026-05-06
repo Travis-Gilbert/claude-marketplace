@@ -4,10 +4,14 @@ Python SDK for the Theorem Context Compiler.
 
 ```python
 import asyncio
+import os
 from theorem_context import TheoremContextClient
 
 async def main():
-    async with TheoremContextClient(api_key='...') as cc:
+    async with TheoremContextClient(
+        base_url=os.environ.get('THEOREM_CONTEXT_BASE_URL'),
+        api_key=os.environ.get('THEOREM_CONTEXT_API_KEY'),
+    ) as cc:
         artifact = await cc.context.compile(
             task='review the auth module for missing rate limits',
             task_type='review',
@@ -18,10 +22,125 @@ async def main():
 asyncio.run(main())
 ```
 
-## Database Harness V3
+## Artifact exports
 
-The same client exposes replayable agent-run harness routes and the V3 THG
-custom database command surface:
+```python
+signed = await cc.context.artifacts.export('artifact-123', format='signed')
+markdown = await cc.context.artifacts.export('artifact-123', format='markdown')
+pdf = await cc.context.artifacts.export('artifact-123', format='pdf')
+
+print(signed.signed, markdown.content)
+
+if pdf.stub:
+    print(pdf.reason)
+```
+
+Signed JSON and Markdown exports call the live backend routes today. PDF
+currently returns the backend's explicit stub response. Artifact `fork()`
+and `attach()` are not implemented server-side yet and raise
+`UnsupportedSurfaceError` instead of returning fake success objects.
+
+The SDK also exports typed error classes for higher-level branching:
+`AuthError`, `CompileError`, `HarnessError`, `RequestTimeoutError`,
+`ServerUnavailableError`, `UnsupportedSurfaceError`, and `StubSurfaceError`.
+
+## Context Command And Action Rail
+
+```python
+command = await cc.context_command.resolve(
+    goal='Read this page',
+    current_url='https://example.com/a',
+    selected_text='claim text',
+)
+
+preview = await cc.context_command.preview(command['state']['command_id'])
+
+rail = await cc.actions.generate(
+    current_url='https://example.com/a',
+    selected_text='claim text',
+)
+
+action_preview = await cc.actions.preview(action_id='capture_page')
+await cc.actions.record_selected(rail['rail_id'], action_id='capture_page')
+```
+
+These methods map directly to the existing `/api/v2/theseus/context-command/...`
+and `/api/v2/theseus/action-rail/...` routes.
+
+## Learning Profiles And THG
+
+```python
+installed = await cc.learning.profiles.install(
+    'developer-core',
+    enabled_by_default=True,
+)
+
+toolkit = await cc.learning.profiles.toolkit(
+    'developer-core',
+    task_type='python_review',
+    permissions=['code_read', 'graph_read'],
+    budget_tokens=6000,
+)
+
+spend_plan = await cc.learning.context.spend_plan(
+    profile_id='developer-core',
+    task_signature='review.python.pr',
+    budget_tokens=6000,
+    candidate_atoms=[],
+)
+
+thg_toolkit = await cc.thg.profiles.toolkit(
+    profile_id='developer-core',
+    task_type='python_review',
+    permissions=['code_read'],
+)
+```
+
+Use `learning.*` for the Django-backed `/api/v2/plugins/learning/...` routes:
+profile install, toolkit resolution, spend plans, and structural signals.
+Use `thg.profiles.*` and `thg.plugins.*` when you want the THG runtime command
+surface with graph-shaped results like `nodes`, `edges`, `events`, and
+`state_hash`.
+
+## Codex Bundle
+
+Python is the canonical local wrapper layer for Codex-ready harness setup.
+
+```bash
+theorem-context codex prepare \
+  --task "Review the database harness SDK gap" \
+  --bundle-dir .theorem \
+  --task-type review
+```
+
+You can also call the adapter directly:
+
+```python
+from theorem_context import TheoremContextClient, prepare_codex_bundle
+
+async with TheoremContextClient() as cc:
+    await prepare_codex_bundle(
+        client=cc,
+        task='Review the database harness SDK gap',
+        bundle_dir='.theorem',
+        task_type='review',
+    )
+```
+
+This writes the local Codex bundle files:
+
+- `.theorem/current-context.md`
+- `.theorem/current-artifact.json`
+- `.theorem/current-run.json`
+- `.theorem/runs/<run_id>/...`
+
+You can inspect `cc.surface_status` when you need to branch on live, stubbed,
+unsupported, or compatibility-only surfaces without probing the server first.
+
+## Database Harness Compatibility Layer
+
+The same client exposes replayable agent-run harness routes plus the separate
+V3 THG command surface:
 
 ```python
 async with TheoremContextClient(
@@ -51,8 +170,11 @@ async with TheoremContextClient(
 ```
 
 Harness memory patches are proposals; validation returns review state and
-does not promote canonical graph memory directly. THG is the V3 sidecar/runtime
-surface; Redis/cache remains hot run-state storage, not canonical graph memory.
+does not promote canonical graph memory directly. The public `harness.*`
+namespace still returns the compatibility `AgentRunState` shape. THG is the
+separate V3 sidecar/runtime surface for richer graph-shaped state-machine
+results, while Redis/cache remains hot run-state storage and not canonical
+graph memory.
 
 ## THG Product Service
 

@@ -150,6 +150,120 @@ class OutcomeRequest(BaseModel):
     dismissedAtomIds: list[str] = Field(default_factory=list)
 
 
+ArtifactExportFormat = Literal['signed', 'markdown', 'pdf', 'json']
+
+
+class ArtifactSignedExport(BaseModel):
+    format: Literal['signed'] = 'signed'
+    artifact_id: str
+    node_id: str = ''
+    signature: str = ''
+    payload_hash: str = ''
+    payload: dict[str, Any] = Field(default_factory=dict)
+    signed: bool = False
+
+
+class ArtifactMarkdownExport(BaseModel):
+    format: Literal['markdown'] = 'markdown'
+    artifact_id: str
+    content: str = ''
+    content_type: str = 'text/markdown; charset=utf-8'
+
+
+class ArtifactPdfExport(BaseModel):
+    format: Literal['pdf'] = 'pdf'
+    artifact_id: str
+    stub: bool = True
+    reason: str = ''
+    url: str | None = None
+
+
+ArtifactExport = ArtifactSignedExport | ArtifactMarkdownExport | ArtifactPdfExport
+
+
+class ContextCommandRequest(BaseModel):
+    goal: str | None = None
+    query: str | None = None
+    user_id: str | None = None
+    session_id: str | None = None
+    folio_id: str | None = None
+    notebook_id: str | None = None
+    project_id: str | None = None
+    current_url: str | None = None
+    current_title: str | None = None
+    selected_text: str | None = None
+    open_tabs: list[dict[str, Any]] = Field(default_factory=list)
+    working_set: list[dict[str, Any]] = Field(default_factory=list)
+    exclusions: list[dict[str, Any]] = Field(default_factory=list)
+    memory_scope: str | None = None
+    graph_layers: list[str] | None = None
+    tool_scope: list[str] | None = None
+    retrieval_policy: dict[str, Any] | None = None
+    output_target: str | None = None
+    risk_mode: str | None = None
+    permission_policy: dict[str, Any] | None = None
+    trace_policy: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class ActionRailGenerateRequest(BaseModel):
+    context_command_id: str | None = None
+    context_command: dict[str, Any] | None = None
+    perception_bundle: dict[str, Any] | None = None
+    user_id: str | None = None
+    session_id: str | None = None
+    folio_id: str | None = None
+    current_url: str | None = None
+    selected_text: str | None = None
+    max_actions: int = 20
+    include_disabled: bool = True
+    metadata: dict[str, Any] | None = None
+
+
+class ActionRailPreviewRequest(BaseModel):
+    action_id: str | None = None
+    action: dict[str, Any] | None = None
+
+
+class ActionSelectedRequest(BaseModel):
+    action_id: str
+    user_id: str | None = None
+    session_id: str | None = None
+    folio_id: str | None = None
+
+
+class LearningProfileInstallRequest(BaseModel):
+    enabled_by_default: bool = False
+
+
+class LearningProfileToolkitRequest(BaseModel):
+    task_type: str
+    permissions: list[str] | None = None
+    budget_tokens: int | None = None
+
+
+class LearningContextSpendPlanRequest(BaseModel):
+    profile_id: str
+    run_id: str = ''
+    task_signature: str
+    budget_tokens: int
+    candidate_atoms: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class LearningStructuralSignalRequest(BaseModel):
+    plugin_id: str
+    profile_id: str = ''
+    task_signature_hash: str
+    task_type: str
+    graph_motif_hash: str
+    method_id: str
+    validator_id: str
+    outcome: dict[str, Any]
+    token_metrics: dict[str, Any] | None = None
+    privacy: dict[str, Any]
+    plugin_version: str = ''
+
+
 class HarnessStep(BaseModel):
     step_id: str
     run_id: str
@@ -181,6 +295,46 @@ class HarnessRun(BaseModel):
     validations: list[dict[str, Any]] = Field(default_factory=list)
     created_at: str | None = None
     updated_at: str | None = None
+
+
+class HarnessEvent(BaseModel):
+    event_id: str
+    run_id: str
+    seq: int
+    type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    state_hash_before: str = ''
+    state_hash_after: str = ''
+    created_at: str | None = None
+
+
+class HarnessGuardViolation(BaseModel):
+    code: str
+    message: str
+    required_state: str = ''
+    received_state: str = ''
+    missing_fields: list[str] = Field(default_factory=list)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class HarnessTransitionRequest(BaseModel):
+    type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    actor: str | None = None
+    idempotency_key: str | None = None
+
+
+class HarnessTransitionResult(BaseModel):
+    run: dict[str, Any]
+    event: HarnessEvent
+    effects: list[dict[str, Any]] = Field(default_factory=list)
+    state_hash_before: str = ''
+    state_hash_after: str = ''
+
+
+class HarnessStateHashResponse(BaseModel):
+    run_id: str
+    state_hash: str
 
 
 class HarnessBeginRequest(BaseModel):

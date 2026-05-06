@@ -1,6 +1,8 @@
-# Theorem Context SDK
+# Context Theorem SDK
 
-Root-level copy of the Theorem Context SDK clients used by Theseus/Index-API.
+Root-level copy of the Context Theorem SDK clients used by Theseus/Index-API.
+The package directory names remain `theorem-context-*` for published-package
+compatibility.
 
 ## Contents
 

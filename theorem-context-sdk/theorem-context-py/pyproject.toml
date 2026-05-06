@@ -17,6 +17,10 @@ dependencies = [
   "pydantic>=2.5",
 ]
 
+[project.scripts]
+theorem = "theorem_context.cli:main"
+theorem-context = "theorem_context.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8",
