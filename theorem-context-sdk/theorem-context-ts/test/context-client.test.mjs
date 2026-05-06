@@ -363,8 +363,11 @@ test('orchestrate composes harness context artifact and action rail routes', asy
           },
         });
       }
-      if (String(url).endsWith('/context/compile/')) {
-        return jsonResponse(contextArtifactFixture('artifact-orch'));
+      if (String(url).endsWith('/harness/runs/run:orch/context/')) {
+        return jsonResponse({
+          artifact: contextArtifactFixture('artifact-orch'),
+          contract: {},
+        });
       }
       if (String(url).endsWith('/attach/')) {
         return jsonResponse({
@@ -406,7 +409,7 @@ test('orchestrate composes harness context artifact and action rail routes', asy
   assert.deepEqual(requests.map((request) => request.url), [
     'http://localhost:8000/api/v2/theseus/harness/runs/',
     'http://localhost:8000/api/v2/theseus/context-command/resolve/',
-    'http://localhost:8000/api/v2/theseus/context/compile/',
+    'http://localhost:8000/api/v2/theseus/harness/runs/run:orch/context/',
     'http://localhost:8000/api/v2/theseus/context/artifacts/artifact-orch/attach/',
     'http://localhost:8000/api/v2/theseus/action-rail/generate/',
   ]);

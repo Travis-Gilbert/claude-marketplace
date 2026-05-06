@@ -528,17 +528,17 @@ class TheoremContextClient:
 
         artifact = None
         if request.compile_context:
-            artifact = await self._compile(
-                CompileRequest(
+            artifact_payload = await self._harness_context(
+                run.run_id,
+                HarnessContextRequest(
                     task=task,
-                    target=request.target,
                     repo=request.repo,
                     task_type=_task_type_for_orchestrate_mode(request.mode),
                     budget_tokens=request.budget_tokens,
                     invariants=request.invariants,
-                    metadata={**metadata, 'run_id': run.run_id},
                 ),
             )
+            artifact = ContextArtifact.model_validate(artifact_payload)
 
         artifact_attachment = None
         if artifact is not None and request.attach_artifact:

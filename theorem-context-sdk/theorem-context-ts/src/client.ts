@@ -373,15 +373,13 @@ export class TheoremContextClient {
     const artifact =
       request.compile_context === false
         ? null
-        : await this.compile({
+        : ((await this.compileHarnessContext(run.run_id, {
             task,
-            target: request.target,
             repo: request.repo,
             task_type: taskTypeForOrchestrateMode(mode),
             budget_tokens: request.budget_tokens ?? 6000,
             invariants: request.invariants,
-            metadata: { ...metadata, run_id: run.run_id },
-          });
+          })) as ContextArtifact);
 
     const artifactAttachment =
       artifact && request.attach_artifact !== false

@@ -379,8 +379,14 @@ def test_orchestrate_composes_harness_context_artifact_and_action_rail_routes() 
                     },
                 },
             )
-        if request.url.path.endswith('/context/compile/'):
-            return httpx.Response(200, json=_artifact_json('artifact-orch'))
+        if request.url.path.endswith('/harness/runs/run:orch/context/'):
+            return httpx.Response(
+                200,
+                json={
+                    'artifact': _artifact_json('artifact-orch'),
+                    'contract': {},
+                },
+            )
         if request.url.path.endswith('/attach/'):
             return httpx.Response(
                 200,
@@ -431,7 +437,7 @@ def test_orchestrate_composes_harness_context_artifact_and_action_rail_routes() 
         assert [request.url.path for request in requests] == [
             '/api/v2/theseus/harness/runs/',
             '/api/v2/theseus/context-command/resolve/',
-            '/api/v2/theseus/context/compile/',
+            '/api/v2/theseus/harness/runs/run:orch/context/',
             '/api/v2/theseus/context/artifacts/artifact-orch/attach/',
             '/api/v2/theseus/action-rail/generate/',
         ]

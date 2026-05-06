@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -13,6 +14,10 @@ from .errors import (
     ServerUnavailableError,
 )
 from .types import THGResult
+
+
+def _quote_path(value: str) -> str:
+    return quote(str(value), safe='')
 
 
 class TheoremHotGraphClient:
@@ -66,7 +71,7 @@ class TheoremHotGraphClient:
     async def run(self, run_id: str) -> THGResult:
         response = await self._request(
             'GET',
-            f'/runs/{run_id}',
+            f'/runs/{_quote_path(run_id)}',
             action='run',
         )
         return THGResult.model_validate(response.json())
@@ -146,4 +151,4 @@ class TheoremHotGraphClient:
         }
 
     def _tenant_url(self) -> str:
-        return f'{self.base_url}/v1/tenants/{self.tenant_id}'
+        return f'{self.base_url}/v1/tenants/{_quote_path(self.tenant_id)}'
