@@ -20,8 +20,13 @@ set -euo pipefail
 
 DEV_DIR="$(cd "$(dirname "$0")" && pwd)"
 MARKETPLACE="$HOME/.claude/plugins/marketplaces/local-desktop-app-uploads"
+MARKETPLACE_JSON="$MARKETPLACE/.claude-plugin/marketplace.json"
 REGISTRY="$HOME/.claude/plugins/installed_plugins.json"
 SETTINGS="$HOME/.claude/settings.json"
+
+# Plugins provided by other marketplaces; skip from this marketplace.json
+# to avoid duplicate registrations that confuse Claude Desktop.
+MARKETPLACE_JSON_EXCLUDE=("superpowers")
 
 # Colors
 GREEN='\033[0;32m'
@@ -212,6 +217,105 @@ with open(registry_path, 'w') as f:
 }
 
 # ─────────────────────────────────────────────
+# Add plugin to marketplace.json (Claude Desktop's catalog)
+# Idempotent: updates version if already present, skips if excluded.
+# ─────────────────────────────────────────────
+add_to_marketplace_json() {
+    local name="$1"
+    local version="$2"
+
+    # Skip excluded plugins (provided by other marketplaces)
+    local excluded
+    for excluded in "${MARKETPLACE_JSON_EXCLUDE[@]}"; do
+        if [[ "$name" == "$excluded" ]]; then
+            echo "skip-excluded"
+            return 0
+        fi
+    done
+
+    # Bootstrap marketplace.json if missing (edge case)
+    if [[ ! -f "$MARKETPLACE_JSON" ]]; then
+        mkdir -p "$(dirname "$MARKETPLACE_JSON")"
+        python3 -c "
+import json
+data = {
+    'name': 'local-desktop-app-uploads',
+    'version': '1.0.0',
+    'description': 'Locally uploaded plugins via Claude Desktop app',
+    'owner': {'name': 'Local User'},
+    'plugins': []
+}
+with open('$MARKETPLACE_JSON', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
+    fi
+
+    python3 -c "
+import json, sys
+
+path = '$MARKETPLACE_JSON'
+name = '$name'
+version = '$version'
+
+with open(path) as f:
+    data = json.load(f)
+
+plugins = data.setdefault('plugins', [])
+entry = {'name': name, 'version': version, 'source': f'./{name}'}
+
+for i, p in enumerate(plugins):
+    if p.get('name') == name:
+        if p.get('version') == version and p.get('source') == entry['source']:
+            print('already-present')
+            sys.exit(0)
+        plugins[i] = entry
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+            f.write('\n')
+        print('updated')
+        sys.exit(0)
+
+plugins.append(entry)
+with open(path, 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+print('added')
+"
+}
+
+# ─────────────────────────────────────────────
+# Remove plugin from marketplace.json
+# ─────────────────────────────────────────────
+remove_from_marketplace_json() {
+    local name="$1"
+
+    [[ ! -f "$MARKETPLACE_JSON" ]] && return 0
+
+    python3 -c "
+import json
+
+path = '$MARKETPLACE_JSON'
+name = '$name'
+
+with open(path) as f:
+    data = json.load(f)
+
+plugins = data.get('plugins', [])
+new_plugins = [p for p in plugins if p.get('name') != name]
+
+if len(new_plugins) != len(plugins):
+    data['plugins'] = new_plugins
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+        f.write('\n')
+    print('removed')
+else:
+    print('not-found')
+"
+}
+
+# ─────────────────────────────────────────────
 # Sync a single plugin
 # ─────────────────────────────────────────────
 sync_plugin() {
@@ -228,38 +332,51 @@ sync_plugin() {
 
     local target="$MARKETPLACE/$name"
 
-    # Check current state
+    # Check current state — always fall through so marketplace.json + registry
+    # + settings.json get reconciled even when the symlink is already correct.
+    local symlink_state="unchanged"
     if [[ -L "$target" ]]; then
         local current_link
         current_link=$(readlink "$target")
-        if [[ "$current_link" == "$plugin_dir" ]]; then
-            # Already symlinked correctly — just update timestamp
-            update_timestamp "$name" "$version"
-            echo -e "  ${GREEN}✓${NC} $name ($version) — already linked"
-            return 0
-        else
-            # Symlink points elsewhere — update it
+        if [[ "$current_link" != "$plugin_dir" ]]; then
             rm "$target"
+            ln -s "$plugin_dir" "$target"
+            symlink_state="updated"
             echo -e "  ${YELLOW}↻${NC} $name — updating symlink (was: $current_link)"
         fi
     elif [[ -d "$target" ]]; then
         # Physical directory exists — back it up and replace with symlink
         local backup="$target.backup.$(date +%Y%m%d%H%M%S)"
         mv "$target" "$backup"
+        ln -s "$plugin_dir" "$target"
+        symlink_state="replaced"
         echo -e "  ${YELLOW}↻${NC} $name — replacing copy with symlink (backup: $(basename "$backup"))"
+    else
+        ln -s "$plugin_dir" "$target"
+        symlink_state="created"
     fi
-
-    # Create symlink
-    ln -s "$plugin_dir" "$target"
 
     # Register if not already in installed_plugins.json
     if is_registered "$name"; then
         update_timestamp "$name" "$version"
-        echo -e "  ${GREEN}✓${NC} $name ($version) — synced (symlink + registry updated)"
+        if [[ "$symlink_state" == "unchanged" ]]; then
+            echo -e "  ${GREEN}✓${NC} $name ($version) — already linked"
+        else
+            echo -e "  ${GREEN}✓${NC} $name ($version) — synced (symlink + registry updated)"
+        fi
     else
         register_plugin "$name" "$version"
         echo -e "  ${GREEN}✓${NC} $name ($version) — installed (new symlink + registered)"
     fi
+
+    # Add to marketplace.json so Claude Desktop can discover the plugin
+    local catalog_result
+    catalog_result=$(add_to_marketplace_json "$name" "$version")
+    case "$catalog_result" in
+        added)   echo -e "  ${GREEN}✓${NC} $name — added to marketplace.json" ;;
+        updated) echo -e "  ${YELLOW}↻${NC} $name — version updated in marketplace.json" ;;
+        skip-excluded) echo -e "  ${YELLOW}!${NC} $name — excluded from marketplace.json (provided by another marketplace)" ;;
+    esac
 
     # Enable in settings.json (step 3)
     local enable_result
@@ -339,6 +456,12 @@ uninstall_plugin() {
     if is_registered "$name"; then
         unregister_plugin "$name"
         echo -e "  ${GREEN}✓${NC} Removed from installed_plugins.json"
+    fi
+
+    local catalog_result
+    catalog_result=$(remove_from_marketplace_json "$name")
+    if [[ "$catalog_result" == "removed" ]]; then
+        echo -e "  ${GREEN}✓${NC} Removed from marketplace.json"
     fi
 
     disable_plugin "$name"

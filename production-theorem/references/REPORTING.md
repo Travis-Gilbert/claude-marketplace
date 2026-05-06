@@ -2,6 +2,10 @@
 
 Production-Theorem reports are reconciliation artifacts, not victory speeches.
 
+Orchestrate makes this stricter: every report must reconcile a checklist or say
+why no checklist was needed. For multi-step, product, SDK, Redis, harness, or
+production-facing work, a checklist is always needed.
+
 ## Artifact Lineage
 
 Preserve this lineage whenever possible:
@@ -33,6 +37,10 @@ Avoid:
 - mark status explicitly: `planned`, `done`, `partial`, `blocked`, or `skipped`
 - attach evidence and validation to each completed or partially completed item
 - explain every non-`done` item
+- preserve newly discovered scope as new checklist IDs rather than hiding it in
+  notes
+- include Redis/harness writeback status when the run touches harness state,
+  SDK product behavior, THG product routes, or ContextArtifact reuse
 
 ## Incomplete Work Rules
 
@@ -73,6 +81,22 @@ If the SDK harness product is available, the report should be compatible with th
 - `RUN.CLOSED`
 
 If the harness is unavailable, preserve the same information in markdown and mark harness writeback as deferred.
+
+## Orchestrate Reporting
+
+Default report lineage:
+
+`Orchestrate Brief -> Orchestrate Plan -> Orchestrate Report -> Learning Candidate`
+
+The report must include:
+
+- checklist reconciliation
+- delegation reconciliation
+- context used and action rail choices
+- validation table
+- incomplete or blocked work
+- production gate review
+- learning/writeback candidates
 
 ## Failure Language
 

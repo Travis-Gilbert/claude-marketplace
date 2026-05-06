@@ -13,11 +13,24 @@ cortex. The experience should be beautiful and fun to navigate.
 
 ## Renderer pipeline
 
-D3 computes layout. TF.js directs scene intelligence. R3F renders.
-This is a pipeline, not a choice between alternatives. Sigma is the
-2D fallback when 3D is inappropriate. Vega-Lite handles declarative
-charts when custom D3 layout is overkill. Observable Framework provides
-additional layout and chart patterns.
+Two renderer paths exist.
+
+For knowledge-graph answers (the default answer type): TF.js upstream
+produces SceneDirectives and layer_positions; DuckDB-WASM stores the
+filterable data; Mosaic coordinates cross-filtering; cosmos.gl renders
+the force graph; vgplot renders histograms, timelines, and brushes.
+Sigma is the 2D fallback when WebGL is unavailable or the device is
+constrained.
+
+For custom data-visualization answers (the NYC taxi heatmap archetype):
+D3 computes layout; TF.js directs scene intelligence; R3F renders
+the 3D scene. Vega-Lite handles declarative charts when custom D3
+layout is overkill.
+
+Choosing between paths is the job of the answer-type classifier in
+Theseus's backend, surfaced via the SceneDirective.renderer field.
+Never render a knowledge-graph answer through R3F or a custom
+data-viz answer through cosmos.gl.
 
 ## When to use this plugin
 
@@ -38,7 +51,13 @@ Any work on the Theseus UI in travisgilbert.me: components in
 - ALWAYS use pretext for text measurement in construction sequences, datadot
   labels, and any canvas/R3F text positioning. Never trigger DOM reflow
   during answer construction animations.
-- NEVER bypass the D3 -> TF.js -> R3F pipeline
+- NEVER bypass the renderer pipeline appropriate for the answer type
+  (TF.js -> Mosaic -> cosmos.gl for knowledge-graph answers;
+  D3 -> TF.js -> R3F for custom data-viz answers)
+- NEVER import from `@cosmograph/react` (the branded wrapper).
+  ALWAYS import from `@cosmos.gl/graph` directly. The branded
+  wrapper bundles proprietary glue code; the open-source engine is
+  the contract.
 - NEVER treat text as subordinate to visual or visual as subordinate to text; they are co-equal modalities
 - NEVER render the datadot grid without binary data (0s and 1s)
 
@@ -50,6 +69,8 @@ Any work on the Theseus UI in travisgilbert.me: components in
 - For React internals and Next.js routing: JS-Pro
 - For animation implementation (springs, Motion API): Animation-Pro
 - For DOM-free text measurement in renderers: Pretext (refs/pretext/)
+- For cosmos.gl configuration, Mosaic wiring, vgplot authoring, and
+  SceneDirective -> cosmos.gl adapter work: cosmos-pro.
 - This plugin owns: visual design judgment, design tokens, material
   vocabulary (Mantine + Radix + custom), construction animation design,
   datadot grid, engine heat gradient, and the overall visual identity

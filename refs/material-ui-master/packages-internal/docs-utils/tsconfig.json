@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": ["./src/**/*.ts"]
+}

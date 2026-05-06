@@ -1,5 +1,5 @@
 /**
- * Context Theorem SDK: typed contracts.
+ * Theorem Context SDK: typed contracts.
  *
  * These mirror the shape returned by POST /api/v2/theseus/context/compile/
  * and the SSE stage events. Keeping them stable is part of the SDK's
@@ -149,6 +149,50 @@ export interface CompileRequest {
   metadata?: Record<string, unknown>;
 }
 
+export type OrchestrateMode =
+  | 'plan'
+  | 'review'
+  | 'fix'
+  | 'refactor'
+  | 'research'
+  | 'execute'
+  | 'debug'
+  | 'other'
+  | string;
+
+export interface OrchestrateRequest {
+  task: string;
+  mode?: OrchestrateMode;
+  actor?: string;
+  repo?: string;
+  target?: string;
+  profile_id?: string;
+  risk_mode?: string;
+  budget_tokens?: number;
+  invariants?: string;
+  scope?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  max_actions?: number;
+  resolve_context_command?: boolean;
+  compile_context?: boolean;
+  attach_artifact?: boolean;
+  generate_action_rail?: boolean;
+}
+
+export interface OrchestrateResult {
+  run: HarnessRun;
+  context_command: ContextCommandResolveResponse | null;
+  artifact: ContextArtifact | null;
+  artifact_attachment: ArtifactAttachResponse | null;
+  action_rail: ActionRailBundle | null;
+  report: {
+    status: 'ready';
+    checklist: Array<Record<string, unknown>>;
+    harness_writeback: 'recorded' | 'not_requested';
+    next_actions: Array<Record<string, unknown>>;
+  };
+}
+
 export interface OutcomeRequest {
   agentUsed?: string;
   accepted?: boolean;
@@ -157,6 +201,298 @@ export interface OutcomeRequest {
   userFeedback?: string;
   citedAtomIds?: string[];
   dismissedAtomIds?: string[];
+}
+
+export type ArtifactExportFormat = 'signed' | 'markdown' | 'pdf' | 'json';
+
+export interface ArtifactSignedExport {
+  format: 'signed';
+  artifact_id: string;
+  node_id: string;
+  signature: string;
+  payload_hash: string;
+  payload: Record<string, unknown>;
+  signed: boolean;
+}
+
+export interface ArtifactMarkdownExport {
+  format: 'markdown';
+  artifact_id: string;
+  content: string;
+  content_type: string;
+}
+
+export interface ArtifactPdfExport {
+  format: 'pdf';
+  artifact_id: string;
+  stub: boolean;
+  reason: string;
+  url?: string;
+}
+
+export type ArtifactExport =
+  | ArtifactSignedExport
+  | ArtifactMarkdownExport
+  | ArtifactPdfExport;
+
+export interface ArtifactForkResponse {
+  forked: boolean;
+  source_artifact_id: string;
+  cloned_atom_count: number;
+  artifact: ContextArtifact;
+}
+
+export interface ArtifactAttachResponse {
+  attached: boolean;
+  harness_attached: boolean;
+  attachment: Record<string, unknown>;
+}
+
+export interface GraphFocusNode {
+  id: number;
+  title: string;
+  slug: string;
+  url: string;
+  source_system: string;
+  object_type: string;
+  object_type_name: string;
+  properties: Record<string, unknown>;
+}
+
+export interface GraphFocusEdge {
+  id: number;
+  from_object: number;
+  to_object: number;
+  edge_type: string;
+  reason: string;
+  strength: number;
+  engine: string;
+}
+
+export interface GraphFocusResponse {
+  stub: false;
+  seed_ids: number[];
+  nodes: GraphFocusNode[];
+  edges: GraphFocusEdge[];
+}
+
+export interface GraphPatchesListResponse {
+  stub: false;
+  patches: Array<Record<string, unknown>>;
+}
+
+export interface ContextCommandPayload {
+  goal?: string;
+  query?: string;
+  user_id?: string;
+  session_id?: string;
+  folio_id?: string;
+  notebook_id?: string;
+  project_id?: string;
+  current_url?: string;
+  current_title?: string;
+  selected_text?: string;
+  open_tabs?: Array<Record<string, unknown>>;
+  working_set?: Array<Record<string, unknown>>;
+  exclusions?: Array<Record<string, unknown>>;
+  memory_scope?: string;
+  graph_layers?: string[];
+  tool_scope?: string[];
+  retrieval_policy?: Record<string, unknown>;
+  output_target?: string;
+  risk_mode?: string;
+  permission_policy?: Record<string, unknown>;
+  trace_policy?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ContextCommandState {
+  command_id: string;
+  goal?: string | null;
+  query?: string | null;
+  user_id?: string | null;
+  session_id?: string | null;
+  folio_id?: string | null;
+  notebook_id?: string | null;
+  project_id?: string | null;
+  current_page?: Record<string, unknown> | null;
+  selected_text?: string | null;
+  working_set: Array<Record<string, unknown>>;
+  exclusions: Array<Record<string, unknown>>;
+  hot_context: Array<Record<string, unknown>>;
+  canonical_context: Array<Record<string, unknown>>;
+  memory_scope?: string;
+  graph_layers: string[];
+  tool_scope: string[];
+  retrieval_policy?: Record<string, unknown>;
+  output_target?: string;
+  risk_mode?: string;
+  permission_policy?: Record<string, unknown>;
+  trace_policy?: Record<string, unknown>;
+  warnings: string[];
+  metadata: Record<string, unknown>;
+}
+
+export interface ContextCommandPreview {
+  command_id: string;
+  goal?: string | null;
+  memory_scope?: string;
+  risk_mode?: string;
+  graph_layers?: string[];
+  tool_scope?: string[];
+  working_set_count: number;
+  hot_context_count?: number;
+  canonical_context_count?: number;
+  excluded_count?: number;
+  permissions?: Record<string, boolean>;
+  warnings?: string[];
+}
+
+export interface ContextCommandResolveResponse {
+  state: ContextCommandState;
+  preview: ContextCommandPreview;
+}
+
+export interface ActionRailGenerateRequest {
+  context_command_id?: string;
+  context_command?: Record<string, unknown>;
+  perception_bundle?: Record<string, unknown>;
+  user_id?: string;
+  session_id?: string;
+  folio_id?: string;
+  current_url?: string;
+  selected_text?: string;
+  max_actions?: number;
+  include_disabled?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ActionRailAction extends Action {
+  input_refs?: Array<Record<string, unknown>>;
+  required_permissions?: Array<Record<string, unknown>>;
+  confirmation_required?: boolean;
+  payload?: Record<string, unknown>;
+  disabled_reason?: string | null;
+  provenance?: Record<string, unknown>;
+  trace?: string[];
+}
+
+export interface ActionRailBundle {
+  rail_id: string;
+  actions: ActionRailAction[];
+  grouped: Record<string, ActionRailAction[]>;
+  context_summary: Record<string, unknown>;
+  warnings: string[];
+  metadata: Record<string, unknown>;
+}
+
+export interface ActionRailPreviewRequest {
+  action_id?: string;
+  action?: Record<string, unknown>;
+}
+
+export interface ActionRailPreview {
+  action_id: string;
+  action_type: string;
+  execution_route: string;
+  confirmation_required: boolean;
+  required_permissions: Array<Record<string, unknown>>;
+  payload: Record<string, unknown>;
+  receipt_preview: {
+    status: string;
+    risk: string;
+    score: number;
+    does_not_execute: boolean;
+  };
+}
+
+export interface ActionSelectedRequest {
+  action_id: string;
+  user_id?: string;
+  session_id?: string;
+  folio_id?: string;
+}
+
+export interface LearningProfileInstallRequest {
+  enabled_by_default?: boolean;
+}
+
+export interface LearningProfileInstallResponse {
+  profile: {
+    profile_id: string;
+    installed: boolean;
+    enabled_by_default: boolean;
+    plugin_ids: string[];
+  };
+}
+
+export interface LearningProfileToolkitRequest {
+  task_type: string;
+  permissions?: string[];
+  budget_tokens?: number;
+}
+
+export interface LearningToolkit {
+  profile_id: string;
+  task_type: string;
+  budget_tokens: number;
+  selected_tools: Array<Record<string, unknown>>;
+  blocked_tools: Array<Record<string, unknown>>;
+  validators: string[];
+  plugin_ids: string[];
+}
+
+export interface LearningProfileToolkitResponse {
+  toolkit: LearningToolkit;
+}
+
+export interface LearningContextSpendPlanRequest {
+  profile_id: string;
+  run_id?: string;
+  task_signature: string;
+  budget_tokens: number;
+  candidate_atoms: Array<Record<string, unknown>>;
+}
+
+export interface LearningContextSpendPlan {
+  spend_plan_id: string;
+  profile_id: string;
+  run_id: string;
+  task_signature: string;
+  budget_tokens: number;
+  budget_allocation: Record<string, number>;
+  hydration_policy: Record<string, string[]>;
+  expected_savings: Record<string, unknown>;
+  cache_keys: Record<string, unknown>;
+  degradations: Record<string, unknown>;
+}
+
+export interface LearningContextSpendPlanResponse {
+  spend_plan: LearningContextSpendPlan;
+}
+
+export interface LearningStructuralSignalRequest {
+  plugin_id: string;
+  profile_id?: string;
+  task_signature_hash: string;
+  task_type: string;
+  graph_motif_hash: string;
+  method_id: string;
+  validator_id: string;
+  outcome: Record<string, unknown>;
+  token_metrics?: Record<string, unknown>;
+  privacy: Record<string, unknown>;
+  plugin_version?: string;
+}
+
+export interface LearningStructuralSignalResponse {
+  signal: {
+    signal_id: string;
+    plugin_id: string;
+    profile_id: string;
+    task_type: string;
+    privacy: Record<string, unknown>;
+  };
 }
 
 export interface HarnessStep {
@@ -190,6 +526,46 @@ export interface HarnessRun {
   validations: Array<Record<string, unknown>>;
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+export interface HarnessEvent {
+  event_id: string;
+  run_id: string;
+  seq: number;
+  type: string;
+  payload: Record<string, unknown>;
+  state_hash_before: string;
+  state_hash_after: string;
+  created_at?: string | null;
+}
+
+export interface HarnessGuardViolation {
+  code: string;
+  message: string;
+  required_state: string;
+  received_state: string;
+  missing_fields: string[];
+  details: Record<string, unknown>;
+}
+
+export interface HarnessTransitionRequest {
+  type: string;
+  payload?: Record<string, unknown>;
+  actor?: string;
+  idempotency_key?: string;
+}
+
+export interface HarnessTransitionResult {
+  run: Record<string, unknown>;
+  event: HarnessEvent;
+  effects: Array<Record<string, unknown>>;
+  state_hash_before: string;
+  state_hash_after: string;
+}
+
+export interface HarnessStateHashResponse {
+  run_id: string;
+  state_hash: string;
 }
 
 export interface HarnessBeginRequest {

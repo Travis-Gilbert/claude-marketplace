@@ -22,10 +22,15 @@ Apply CLAUDE.md response + independence discipline throughout.
 
 ## Output
 
-`docs/plans/<slug>/review-report.md`:
+Report location mirrors `/execute`:
+
+- Slug input: `docs/plans/<slug>/review-report.md`.
+- Path input: `<plan-dir>/<plan-stem>.review-report.md` in the plan's directory.
+
+Content:
 
 ```markdown
-# Review Report: <slug>
+# Review Report: <slug or plan stem>
 
 _Generated: YYYY-MM-DD_
 

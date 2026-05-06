@@ -1,7 +1,7 @@
 {
   "name": "production-theorem",
-  "version": "0.1.0",
-  "description": "Production-grade theorem workflow for brainstorming, planning, execution, TDD, review, and execution reporting.",
+  "version": "0.2.0",
+  "description": "Orchestrate: one-command planning, context, plugin delegation, execution, validation, Redis harness awareness, and learning.",
   "skills": "./skills/",
   "agents": "./agents/",
   "keywords": [
@@ -12,12 +12,21 @@
     "production-readiness",
     "harness-sdk",
     "workflow-orchestration",
-    "execution-reporting"
+    "execution-reporting",
+    "orchestrate",
+    "context-control",
+    "graph-harness",
+    "epistemic-graphrag",
+    "plugin-routing",
+    "action-rail",
+    "federated-learning",
+    "redis-harness",
+    "thg-product"
   ],
   "interface": {
-    "displayName": "Production-Theorem",
-    "shortDescription": "Production-shaped brainstorming, planning, and execution.",
-    "longDescription": "Controlled production workflow that turns ambiguity into grounded decisions, plans into auditable checklists, and execution into validated reports with explicit reconciliation and learning.",
+    "displayName": "Orchestrate",
+    "shortDescription": "One command for checklist-driven planning, context, delegation, execution, and reporting.",
+    "longDescription": "Orchestrate is the default Production-Theorem surface. It turns ambiguity into grounded decisions, plans into auditable checklists, hidden plugin and Redis harness work into delegated phases, and execution into validated reports with explicit reconciliation and learning.",
     "developerName": "Travis Gilbert",
     "category": "Developer Tools",
     "capabilities": [
@@ -26,10 +35,10 @@
       "Analyze"
     ],
     "defaultPrompt": [
-      "Use theorize to interrogate a vague implementation idea before we plan it.",
-      "Use planning-theorem to create a production-grade plan with checklist IDs and validation.",
-      "Use execute to carry an approved plan through implementation, testing, simplification, and reporting.",
-      "If the work touches the paired harness SDK product or product graph client, consult the codex-sdk-harness-product agent first."
+      "Use orchestrate as the default command for planning, implementation, debugging, review, context preparation, validation, and execution reporting.",
+      "Orchestrate delegates internally to theorize, planning-theorem, execute, SDK harness product awareness, Redis harness agents, and other installed specialists.",
+      "Use stable checklist IDs from plan through report; do not claim done unless the checklist reconciliation supports it.",
+      "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing."
     ]
   }
 }

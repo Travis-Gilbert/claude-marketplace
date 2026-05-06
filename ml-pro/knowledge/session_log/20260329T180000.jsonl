@@ -1,0 +1,12 @@
+{"event":"session_start","timestamp":"2026-03-29T18:00:00Z","project":"codex-plugins"}
+{"event":"agent_invoked","agent":"ml-build","trigger":"building epistemic knowledge layer for spec-guard plugin"}
+{"event":"claim_consulted","claim_id":"no-ml-pro-claims","relevance_score":0.0}
+{"event":"suggestion","suggestion_id":"sug-001","file":"spec-guard/knowledge/claims.jsonl","claim_refs":[]}
+{"event":"suggestion_outcome","suggestion_id":"sug-001","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-002","file":"spec-compliance/knowledge/claims.jsonl","claim_refs":[]}
+{"event":"suggestion_outcome","suggestion_id":"sug-002","outcome":"accepted"}
+{"event":"suggestion","suggestion_id":"sug-003","file":"scripts/epistemic/config.py","claim_refs":[]}
+{"event":"suggestion_outcome","suggestion_id":"sug-003","outcome":"accepted"}
+{"event":"candidate_claim","description":"Epistemic knowledge layers for non-ML plugins should use manually seeded claims from spec documents rather than the automated markdown seeder, since hook/command plugins lack the agent/skill markdown that the seeder parses"}
+{"event":"candidate_claim","description":"Domain mapping entries in HEADING_DOMAIN_MAP should be plugin-prefixed in comments to prevent collisions when multiple plugins share similar terminology"}
+{"event":"session_end","timestamp":"2026-03-29T19:00:00Z","duration_minutes":60,"files_changed":["spec-guard/knowledge/claims.jsonl","spec-guard/knowledge/manifest.json","spec-compliance/knowledge/claims.jsonl","spec-compliance/knowledge/manifest.json","scripts/epistemic/config.py"]}

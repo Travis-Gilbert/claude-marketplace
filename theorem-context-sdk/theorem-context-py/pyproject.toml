@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "theorem-context"
 version = "0.1.0"
-description = "Context Theorem SDK: compile context for AI agents from your knowledge graph."
+description = "Theorem Context SDK: compile context for AI agents from your knowledge graph."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
@@ -16,6 +16,10 @@ dependencies = [
   "httpx>=0.27",
   "pydantic>=2.5",
 ]
+
+[project.scripts]
+theorem = "theorem_context.cli:main"
+theorem-context = "theorem_context.cli:main"
 
 [project.optional-dependencies]
 dev = [

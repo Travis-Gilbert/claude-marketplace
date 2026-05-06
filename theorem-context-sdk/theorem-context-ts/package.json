@@ -1,7 +1,7 @@
 {
   "name": "@theorem/context",
   "version": "0.1.0",
-  "description": "Context Theorem SDK: compile context for AI agents from your knowledge graph.",
+  "description": "Theorem Context SDK: compile context for AI agents from your knowledge graph.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",

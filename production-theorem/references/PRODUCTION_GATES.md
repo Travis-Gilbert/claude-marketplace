@@ -43,6 +43,18 @@ A task is production-ready only when it passes the relevant gates or explicitly 
 - auth, tenant, and base URL expectations are explicit
 - performance budget or degradation story is understood
 
+### Orchestrate / Redis Harness Changes
+
+- Orchestrate remains the default user-facing surface unless host settings
+  explicitly expose direct plugin commands
+- stable checklist IDs are preserved from plan through report
+- Redis operational state is not described as canonical graph truth
+- Redis key names, service URLs, bearer tokens, and tenant identifiers are not
+  leaked in reports or logs
+- Redis unavailable or harness writeback unavailable paths are explicit
+- `redis-harness-operator` or `redis-product-safety` is consulted for Redis,
+  THG product, RESP/Valkey, or tenant keyspace work
+
 ### UI Changes
 
 - empty states
