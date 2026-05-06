@@ -1,4 +1,4 @@
-# Codex Plugins
+# Epistemic Plugins
 
 Most Claude Code plugins give you a set of slash commands and some domain knowledge. These plugins do something different: they learn.
 
