@@ -27,7 +27,7 @@ Turn fuzzy intent into a production-shaped problem model. Do not drift into thea
 
 1. Reframe the request in production terms.
 2. Inspect the narrowest relevant code/doc surface first.
-3. If the topic touches THG, Database Harness, ToolGraph, ContextArtifact, replay, fork, compare, or `THG_MODE`, route a context pass through `thg-harness-awareness` before concluding anything.
+3. If the topic touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, or tenant-scoped product graph routes, route a context pass through `codex-sdk-harness-product` before concluding anything.
 4. Separate facts from assumptions.
 5. Build a small option set with concrete tradeoffs.
 6. Recommend one path.
@@ -50,13 +50,14 @@ Check whichever sources match the request:
 - Active plans under `docs/plans/`
 - Durable navigation docs such as `docs/codebase-map.md`
 - Existing plugin or skill assets if the request is workflow-related
-- THG and harness seams:
-  - `apps/notebook/harness/`
-  - `apps/notebook/api/harness.py`
-  - `apps/notebook/graph_kernel/thg/`
-  - `theseus_native/`
-  - `theseus-pro/skills/database-harness/SKILL.md`
-  - `docs/theseus-code-install.md`
+- Codex harness product seams:
+  - `theorem-context-sdk/README.md`
+  - `theorem-context-sdk/theorem-context-ts/README.md`
+  - `theorem-context-sdk/theorem-context-ts/src/client.ts`
+  - `theorem-context-sdk/theorem-context-ts/src/product.ts`
+  - `theorem-context-sdk/theorem-context-py/README.md`
+  - `theorem-context-sdk/theorem-context-py/theorem_context/client.py`
+  - `theorem-context-sdk/theorem-context-py/theorem_context/product.py`
 
 ## Interrogation Rules
 
@@ -64,7 +65,7 @@ Check whichever sources match the request:
 - Include a recommended answer with every user-facing question.
 - Resolve dependency order explicitly. Do not ask downstream questions before upstream decisions are settled.
 - Challenge convenience solutions that hide deferred work, operational risk, or validation gaps.
-- Call out "same words, different system" collisions, especially around "graph", "memory", "canonical", "harness", and "context".
+- Call out "same words, different system" collisions, especially around "harness", "product", "runtime", "SDK", "context", and "canonical".
 
 ## Output Contract
 
@@ -130,4 +131,4 @@ Consult `../../references/EPISTEMIC_PRIMITIVES.md` when the distinction matters.
 - Do not present brainstormed options as accepted decisions.
 - Do not invent repo facts.
 - Do not hide unresolved conflict inside "recommended direction".
-- Do not skip THG/harness grounding when the request touches those surfaces.
+- Do not skip SDK harness product grounding when the request touches those surfaces.

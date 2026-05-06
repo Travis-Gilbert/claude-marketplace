@@ -53,9 +53,9 @@ Every execution report should record:
 - outcomes worth preserving
 - revisions that future runs should inherit
 
-## Theseus / THG Mapping
+## SDK Harness Mapping
 
-When the environment supports THG or Database Harness writeback:
+When the environment supports the paired harness SDK product or product graph writeback:
 
 - `ProcessRecord` maps naturally onto recorded run and step events
 - `ContextArtifact` maps onto packed context outputs

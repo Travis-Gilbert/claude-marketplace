@@ -34,14 +34,14 @@ A task is production-ready only when it passes the relevant gates or explicitly 
 - rate-limiting or abuse considerations
 - structured error responses
 
-### THG / Database Harness / Graph Changes
+### SDK Harness / THG Product / Graph Changes
 
 - source provenance is still visible
-- confidence or tension handling is still honest
-- replay, fork, compare, and patch behavior are grounded in tests or live code
-- cache or hot-state behavior is not mislabeled as canonical memory
+- TypeScript and Python SDK surfaces stay consistent where they are meant to mirror each other
+- replay, fork, compare, patch, and THG product behaviors are grounded in tests or shipped client code
+- default harness SDK client behavior is not conflated with tenant-scoped product graph behavior
+- auth, tenant, and base URL expectations are explicit
 - performance budget or degradation story is understood
-- `THG_MODE` boundaries are preserved
 
 ### UI Changes
 

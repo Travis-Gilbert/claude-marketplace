@@ -11,8 +11,8 @@
     "tdd",
     "code-review",
     "production-readiness",
-    "thg",
-    "database-harness",
-    "theseus"
+    "harness-sdk",
+    "workflow-orchestration",
+    "execution-reporting"
   ]
 }

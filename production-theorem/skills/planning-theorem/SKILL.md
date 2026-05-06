@@ -32,13 +32,13 @@ Treat these as internal phases, not separate commands:
 - spec-to-checklist
 - context compilation
 - docs update planning
-- THG/harness context pass
+- SDK harness product context pass
 
 ## Planning Flow
 
 1. Reconcile specs or user instructions against the live repo.
 2. Read the smallest set of files that makes the plan real.
-3. If the work touches THG, Database Harness, ToolGraph, ContextArtifact, replay, fork, compare, native THG, or provider switching, consult `thg-harness-awareness` before finalizing checklist items.
+3. If the work touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, tenant-scoped product graph routes, or TypeScript/Python SDK parity, consult `codex-sdk-harness-product` before finalizing checklist items.
 4. Define the production goal in user-visible, system, data, and operational terms.
 5. Build a codebase-grounded checklist with stable IDs like `PT-001`.
 6. Attach acceptance criteria, validation, risk, and ownership/route for every item.
@@ -65,20 +65,20 @@ Every item must be independently auditable. If an item matters but is not being 
 Use these routes by default:
 
 - ambiguity or option pressure -> `/theorize`
-- THG or Database Harness state questions -> `thg-harness-awareness`
+- SDK harness product questions -> `codex-sdk-harness-product`
 - implementation and TDD -> `/execute`
 - docs or ADR persistence -> local docs update step inside the plan
 - review, simplification, diagnosis, and test hardening -> phases inside `/execute`
 
-## THG / Database Harness Rule
+## SDK Harness Product Rule
 
-For harness-related plans:
+For SDK harness product plans:
 
-- preserve the product framing as THG / Database-as-Harness, not "just Redis"
-- distinguish hot state from canonical memory
-- treat permission gating and ToolGraph selection as authoritative
-- treat `ContextArtifact` output as the reusable export
-- require explicit evidence for claims about replay, fork, compare, patch, or provider behavior
+- preserve the framing as a Codex-facing database/SDK harness product, not a generic backend implementation task
+- distinguish client contract from server/runtime implementation
+- treat harness patch validation as a proposal/review flow, not automatic promotion
+- treat the tenant-scoped product graph client as a distinct surface from the default harness SDK client
+- require explicit evidence for claims about replay, fork, compare, patch, SDK parity, or product-route behavior
 
 ## Output Contract
 
@@ -167,4 +167,4 @@ Load these on demand:
 - Prefer one real path over a buffet of maybe-paths.
 - Do not leave validation as "to be figured out later".
 - Do not let the executive summary become fluff; keep it concise.
-- Do not claim canonical THG or harness behavior without code evidence.
+- Do not claim SDK harness or product graph behavior without code evidence.
