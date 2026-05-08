@@ -18,6 +18,7 @@ report.
 - Primary command: `/orchestrate`
 - Compatibility aliases in prose:
   - `/plan` -> `/orchestrate mode=plan`
+  - `/planning-theorem handoff=spark` -> `/orchestrate mode=plan handoff=spark`
   - `/planning-theorem` -> `/orchestrate mode=plan`
   - `/theorize` -> `/orchestrate mode=theorize`
   - `/brainstorm` -> `/orchestrate mode=theorize`
@@ -77,6 +78,51 @@ Treat these as internal phases, not separate public commands:
 - report
 - remember
 - federation_signal
+
+## Handoff Mode
+
+Use `handoff=spark` when the user wants to keep planning and product intent in
+the parent thread while delegating a bounded implementation slice to a fast
+coding worker.
+
+Default handoff shape:
+
+1. write the plan or checklist artifact
+2. choose the first bounded checklist items
+3. define write scope and validation scope explicitly
+4. delegate the implementation slice to Spark
+5. keep the planner in-thread
+6. review the returned implementation against the plan before declaring done
+
+Good fit:
+
+- multi-file implementation slices
+- product/runtime migrations
+- work where planner continuity matters
+- slices that benefit from tight write ownership
+
+Bad fit:
+
+- trivial one-file edits
+- tasks where planning overhead exceeds implementation cost
+- work that cannot be scoped tightly enough for delegated coding
+
+## Host Repo Opt-In
+
+If the host repository includes an opt-in note in `AGENTS.md` or `CLAUDE.md`,
+honor it as a preference signal for Orchestrate and harness usage.
+
+Recommended behavior:
+
+- prefer `prepare`, `preview`, `run`, or equivalent harness-backed surfaces for
+  multi-file, high-risk, long-running, or context-heavy work
+- prefer `/orchestrate mode=plan handoff=spark` when the repo explicitly opts
+  into planner-plus-worker execution
+- do not force harness or Orchestrate for trivial or clearly self-contained
+  requests
+
+Load `../../references/HOST_REPO_OPT_IN.md` when the user asks how to wire this
+into `AGENTS.md` or `CLAUDE.md`.
 
 ## Redis And Harness Rules
 

@@ -16,6 +16,11 @@ Create a production-grade planning artifact that can be executed directly. Groun
 - Compatibility alias to document and honor in prose: `/plan`
 - Deliverable: `Planning-Theorem Artifact`
 
+When the user requests a handoff workflow, support:
+
+- `/planning-theorem handoff=spark`
+- `/orchestrate mode=plan handoff=spark`
+
 ## Mission
 
 - Establish the current condition from source code, tests, docs, and runtime seams.
@@ -47,6 +52,9 @@ Treat these as internal phases, not separate commands:
 6. Attach acceptance criteria, validation, risk, and ownership/route for every item.
 7. Record explicit non-goals and deferrals.
 8. Define how `/execute` must reconcile against the plan.
+9. If `handoff=spark` is requested, select the first bounded checklist items,
+   define write scope and validation scope, delegate the slice, and remain in
+   the parent thread to review the result against the artifact.
 
 ## Checklist Rules
 
@@ -72,6 +80,23 @@ Use these routes by default:
 - implementation and TDD -> `/execute`
 - docs or ADR persistence -> local docs update step inside the plan
 - review, simplification, diagnosis, and test hardening -> phases inside `/execute`
+
+## Host Repo Opt-In
+
+If `AGENTS.md` or `CLAUDE.md` contains a repository opt-in note preferring
+Orchestrate or harness usage, treat it as a host policy for complex work.
+
+Honor the opt-in for:
+
+- multi-file implementation
+- architecture or migration work
+- runs that benefit from harness-backed context preparation
+- delegated plan-plus-worker execution
+
+Do not over-apply the opt-in to trivial asks.
+
+Load `../../references/HOST_REPO_OPT_IN.md` when the user wants a copyable repo
+snippet.
 
 ## SDK Harness Product Rule
 

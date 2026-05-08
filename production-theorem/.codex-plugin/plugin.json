@@ -1,6 +1,6 @@
 {
   "name": "production-theorem",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Orchestrate: one-command planning, context, plugin delegation, execution, validation, Redis harness awareness, and learning.",
   "skills": "./skills/",
   "agents": "./agents/",
@@ -36,9 +36,11 @@
     ],
     "defaultPrompt": [
       "Use orchestrate as the default command for planning, implementation, debugging, review, context preparation, validation, and execution reporting.",
+      "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /orchestrate mode=plan handoff=spark and keep the planner in-thread to review what was built.",
       "Orchestrate delegates internally to theorize, planning-theorem, execute, SDK harness product awareness, Redis harness agents, and other installed specialists.",
       "Use stable checklist IDs from plan through report; do not claim done unless the checklist reconciliation supports it.",
-      "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing."
+      "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing.",
+      "If a host repository opts in through AGENTS.md or CLAUDE.md, prefer harness-backed prepare, preview, and run surfaces for multi-file, high-risk, or long-running work, but do not force harness orchestration for trivial requests."
     ]
   }
 }
