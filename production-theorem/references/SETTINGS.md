@@ -13,6 +13,12 @@ risk_mode: balanced
 default_budget_tokens: 6000
 redis_harness_mode: auto
 harness_writeback_mode: best_effort_reported
+plan_handoff_mode: manual
+honor_repo_opt_in: true
+repo_opt_in_files:
+  - AGENTS.md
+  - CLAUDE.md
+repo_opt_in_scope: complex_only
 ```
 
 ## Exposure Modes
@@ -38,6 +44,22 @@ harness_writeback_mode: best_effort_reported
 | `off` | Do not propose learning candidates. |
 | `supervised` | Propose learning/writeback candidates for human review. |
 | `automatic` | Reserved for hosts with explicit trust and review gates. |
+
+## Plan Handoff Modes
+
+| Mode | Meaning |
+|---|---|
+| `manual` | Default. Use handoff only when the user explicitly asks for it. |
+| `suggested` | Suggest `handoff=spark` when a plan resolves into bounded implementation slices. |
+| `always_for_complex` | Use `handoff=spark` by default for complex multi-file work unless the user prefers otherwise. |
+
+## Repo Opt-In
+
+| Setting | Meaning |
+|---|---|
+| `honor_repo_opt_in` | If true, read AGENTS.md and CLAUDE.md as host preference signals for Orchestrate/harness usage. |
+| `repo_opt_in_files` | Host files that may contain the opt-in note. |
+| `repo_opt_in_scope` | Limits opt-in behavior to `complex_only` by default so trivial tasks are not over-orchestrated. |
 
 ## Guardrail
 
