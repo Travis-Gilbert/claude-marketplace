@@ -149,6 +149,50 @@ export interface CompileRequest {
   metadata?: Record<string, unknown>;
 }
 
+export type OrchestrateMode =
+  | 'plan'
+  | 'review'
+  | 'fix'
+  | 'refactor'
+  | 'research'
+  | 'execute'
+  | 'debug'
+  | 'other'
+  | string;
+
+export interface OrchestrateRequest {
+  task: string;
+  mode?: OrchestrateMode;
+  actor?: string;
+  repo?: string;
+  target?: string;
+  profile_id?: string;
+  risk_mode?: string;
+  budget_tokens?: number;
+  invariants?: string;
+  scope?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  max_actions?: number;
+  resolve_context_command?: boolean;
+  compile_context?: boolean;
+  attach_artifact?: boolean;
+  generate_action_rail?: boolean;
+}
+
+export interface OrchestrateResult {
+  run: HarnessRun;
+  context_command: ContextCommandResolveResponse | null;
+  artifact: ContextArtifact | null;
+  artifact_attachment: ArtifactAttachResponse | null;
+  action_rail: ActionRailBundle | null;
+  report: {
+    status: 'ready';
+    checklist: Array<Record<string, unknown>>;
+    harness_writeback: 'recorded' | 'not_requested';
+    next_actions: Array<Record<string, unknown>>;
+  };
+}
+
 export interface OutcomeRequest {
   agentUsed?: string;
   accepted?: boolean;
@@ -190,6 +234,52 @@ export type ArtifactExport =
   | ArtifactSignedExport
   | ArtifactMarkdownExport
   | ArtifactPdfExport;
+
+export interface ArtifactForkResponse {
+  forked: boolean;
+  source_artifact_id: string;
+  cloned_atom_count: number;
+  artifact: ContextArtifact;
+}
+
+export interface ArtifactAttachResponse {
+  attached: boolean;
+  harness_attached: boolean;
+  attachment: Record<string, unknown>;
+}
+
+export interface GraphFocusNode {
+  id: number;
+  title: string;
+  slug: string;
+  url: string;
+  source_system: string;
+  object_type: string;
+  object_type_name: string;
+  properties: Record<string, unknown>;
+}
+
+export interface GraphFocusEdge {
+  id: number;
+  from_object: number;
+  to_object: number;
+  edge_type: string;
+  reason: string;
+  strength: number;
+  engine: string;
+}
+
+export interface GraphFocusResponse {
+  stub: false;
+  seed_ids: number[];
+  nodes: GraphFocusNode[];
+  edges: GraphFocusEdge[];
+}
+
+export interface GraphPatchesListResponse {
+  stub: false;
+  patches: Array<Record<string, unknown>>;
+}
 
 export interface ContextCommandPayload {
   goal?: string;
@@ -498,6 +588,105 @@ export interface HarnessContextRequest {
   repo?: string;
   task_type?: TaskType | string;
   invariants?: string;
+}
+
+export interface HarnessContextWebRequest {
+  query?: string;
+  mode?: string;
+  budget_tokens?: number;
+  explicit_targets?: string[];
+  allow_generated_artifacts?: boolean;
+  folio_id?: string;
+}
+
+export interface ContextWebBudget {
+  max_tokens: number;
+  max_atoms: number;
+  max_edges: number;
+  max_paths: number;
+  max_tools: number;
+}
+
+export interface ContextWebCitation {
+  source_id: string;
+  source_type: string;
+  locator: string;
+  excerpt_hash: string;
+}
+
+export interface ContextWebAtom {
+  id: string;
+  kind: string;
+  title: string;
+  summary: string;
+  source_ref: string;
+  score: number;
+  estimated_tokens: number;
+  channels: string[];
+  citations: ContextWebCitation[];
+  labels: string[];
+}
+
+export interface ContextWebEdge {
+  from_id: string;
+  to_id: string;
+  relation: string;
+  reason: string;
+  score: number;
+}
+
+export interface ContextWebPath {
+  node_ids: string[];
+  edge_relations: string[];
+  score: number;
+}
+
+export interface ContextWebTokenLedger {
+  raw_candidate_tokens: number;
+  packed_tokens: number;
+  saved_tokens: number;
+  tool_schema_tokens_avoided: number;
+  hydration_tokens_avoided: number;
+  cache_hits: number;
+}
+
+export interface ContextWebSpendPlan {
+  spend_plan_id: string;
+  budget_allocation: Record<string, number>;
+  hydration_policy: Record<string, string[]>;
+  expected_savings: Record<string, unknown>;
+  cache_keys: Record<string, unknown>;
+  degradations: string[];
+}
+
+export interface ContextWebPack {
+  run_id: string;
+  query: string;
+  mode: string;
+  budget: ContextWebBudget;
+  atoms: ContextWebAtom[];
+  edges: ContextWebEdge[];
+  paths: ContextWebPath[];
+  tools_used: Array<Record<string, unknown>>;
+  source_mix: Record<string, number>;
+  token_ledger: ContextWebTokenLedger;
+  provenance: Record<string, unknown>;
+  spend_plan: ContextWebSpendPlan;
+  state_hash: string;
+}
+
+export interface ContextWebExplainResponse {
+  run_id: string;
+  pack_id: string;
+  atom_id: string;
+  included: boolean;
+  why_included: string;
+  why_excluded: string;
+  policies_applied: string[];
+  mode: string;
+  source_mix: Record<string, number>;
+  budget: Record<string, unknown>;
+  provenance: Record<string, unknown>;
 }
 
 export interface HarnessPatchRequest {

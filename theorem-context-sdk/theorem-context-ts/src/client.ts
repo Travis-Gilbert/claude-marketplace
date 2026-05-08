@@ -13,11 +13,8 @@
  *   cc.context.graph.patches.list()
  *
  * Artifact exports are live for signed JSON and Markdown. PDF remains a
- * backend stub response. Artifact fork/attach, graph.focus, and
- * graph.patches.list are not implemented server-side yet; the SDK raises
- * an explicit unsupported-surface error rather than returning success-
- * shaped placeholders. The compile path, audit, list/get, outcome, and
- * remember are fully wired.
+ * backend stub response. Artifact fork/attach, graph.focus, graph.patches.list,
+ * compile, audit, list/get, outcome, and remember are fully wired.
  */
 
 import type {
@@ -28,15 +25,22 @@ import type {
   ActionSelectedRequest,
   ArtifactExport,
   ArtifactExportFormat,
+  ArtifactAttachResponse,
+  ArtifactForkResponse,
   CompileEvent,
   CompileRequest,
   ContextArtifact,
   ContextCommandPayload,
   ContextCommandPreview,
   ContextCommandResolveResponse,
+  ContextWebExplainResponse,
+  ContextWebPack,
+  GraphFocusResponse,
+  GraphPatchesListResponse,
   HarnessBeginRequest,
   HarnessCompareRequest,
   HarnessContextRequest,
+  HarnessContextWebRequest,
   HarnessEvent,
   HarnessForkRequest,
   HarnessPatchRequest,
@@ -56,6 +60,8 @@ import type {
   LearningStructuralSignalRequest,
   LearningStructuralSignalResponse,
   OutcomeRequest,
+  OrchestrateRequest,
+  OrchestrateResult,
   THGCommandRequest,
   THGCypherRequest,
   THGResult,
@@ -66,7 +72,6 @@ import {
   HarnessError,
   RequestTimeoutError,
   ServerUnavailableError,
-  UnsupportedSurfaceError,
 } from './errors.js';
 
 export interface TheoremContextClientOptions {
@@ -107,12 +112,12 @@ export class TheoremContextClient {
         markdown: 'live',
         pdf: 'stub',
       },
-      fork: 'unsupported',
-      attach: 'unsupported',
+      fork: 'live',
+      attach: 'live',
     },
     graph: {
-      focus: 'stub',
-      patches: 'stub',
+      focus: 'live',
+      patches: 'live',
     },
     harness: {
       public_run_model: 'AgentRunState',
@@ -166,6 +171,13 @@ export class TheoremContextClient {
     step: this.recordHarnessStep.bind(this),
     search: this.searchHarness.bind(this),
     context: this.compileHarnessContext.bind(this),
+    contextWeb: this.compileHarnessContextWeb.bind(this),
+    contextWebMini: this.compileHarnessContextWebMini.bind(this),
+    contextWebReviewDelta: this.compileHarnessContextWebReviewDelta.bind(this),
+    contextWebResearch: this.compileHarnessContextWebResearch.bind(this),
+    contextWebBrowserFolio: this.compileHarnessContextWebBrowserFolio.bind(this),
+    contextWebExplain: this.explainHarnessContextWeb.bind(this),
+    graphragContext: this.compileHarnessGraphRAGContext.bind(this),
     transition: this.transitionHarness.bind(this),
     events: this.harnessEvents.bind(this),
     stateHash: this.harnessStateHash.bind(this),
@@ -332,6 +344,127 @@ export class TheoremContextClient {
     };
   }
 
+  async orchestrate(request: OrchestrateRequest): Promise<OrchestrateResult> {
+    const task = request.task.trim();
+    if (!task) {
+      throw new CompileError('orchestrate failed: task is required');
+    }
+    const mode = request.mode ?? 'plan';
+    const metadata = {
+      ...(request.metadata ?? {}),
+      orchestrate: true,
+      mode,
+    };
+    const run = await this.beginHarness({
+      task,
+      actor: request.actor ?? 'codex',
+      scope: compactRecord({
+        ...(request.scope ?? {}),
+        orchestrate: true,
+        mode,
+        repo: request.repo,
+        target: request.target,
+        profile_id: request.profile_id,
+        risk_mode: request.risk_mode,
+      }),
+    });
+
+    const contextCommand =
+      request.resolve_context_command === false
+        ? null
+        : await this.resolveContextCommand({
+            goal: task,
+            query: task,
+            output_target: 'orchestrate',
+            risk_mode: request.risk_mode,
+            metadata: { ...metadata, run_id: run.run_id },
+          });
+
+    const artifact =
+      request.compile_context === false
+        ? null
+        : ((await this.compileHarnessContext(run.run_id, {
+            task,
+            repo: request.repo,
+            task_type: taskTypeForOrchestrateMode(mode),
+            budget_tokens: request.budget_tokens ?? 6000,
+            invariants: request.invariants,
+          })) as ContextArtifact);
+
+    const artifactAttachment =
+      artifact && request.attach_artifact !== false
+        ? await this.attachArtifact(artifact.id, run.run_id, {
+            metadata: {
+              source: 'orchestrate',
+              mode,
+              profile_id: request.profile_id,
+            },
+          })
+        : null;
+
+    const contextCommandPayload: Record<string, unknown> = contextCommand?.state
+      ? { ...contextCommand.state }
+      : {
+          goal: task,
+          query: task,
+          metadata,
+        };
+
+    const actionRail =
+      request.generate_action_rail === false
+        ? null
+        : await this.generateActionRail({
+            context_command_id: contextCommand?.state?.command_id,
+            context_command: contextCommandPayload,
+            max_actions: request.max_actions ?? 8,
+            include_disabled: true,
+            metadata: {
+              ...metadata,
+              run_id: run.run_id,
+              artifact_id: artifact?.id,
+            },
+          });
+
+    return {
+      run,
+      context_command: contextCommand,
+      artifact,
+      artifact_attachment: artifactAttachment,
+      action_rail: actionRail,
+      report: {
+        status: 'ready',
+        checklist: [
+          {
+            id: 'ORCH-SDK-001',
+            task: 'Begin Redis-backed harness run',
+            status: 'done',
+            evidence: run.run_id,
+          },
+          {
+            id: 'ORCH-SDK-002',
+            task: 'Resolve context command',
+            status: contextCommand ? 'done' : 'skipped',
+            evidence: contextCommand?.state?.command_id ?? null,
+          },
+          {
+            id: 'ORCH-SDK-003',
+            task: 'Compile and attach context artifact',
+            status: artifact ? 'done' : 'skipped',
+            evidence: artifact?.id ?? null,
+          },
+          {
+            id: 'ORCH-SDK-004',
+            task: 'Generate action rail',
+            status: actionRail ? 'done' : 'skipped',
+            evidence: actionRail?.rail_id ?? null,
+          },
+        ],
+        harness_writeback: artifactAttachment ? 'recorded' : 'not_requested',
+        next_actions: actionRail?.actions.map((action) => ({ ...action })) ?? [],
+      },
+    };
+  }
+
   async remember(input: { observation: string; evidence?: string[] }): Promise<{
     id: number;
     slug: string;
@@ -471,21 +604,41 @@ export class TheoremContextClient {
     };
   }
 
-  async forkArtifact(_artifactId: string): Promise<never> {
-    throw new UnsupportedSurfaceError(
-      'context.artifacts.fork',
-      'Artifact fork is not implemented by the backend yet.',
+  async forkArtifact(
+    artifactId: string,
+    options: Record<string, unknown> = {},
+  ): Promise<ArtifactForkResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/context/artifacts/${artifactId}/fork/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(options),
+      },
+      'artifact fork',
     );
+    return (await response.json()) as ArtifactForkResponse;
   }
 
   async attachArtifact(
-    _artifactId: string,
-    _target: string,
-  ): Promise<never> {
-    throw new UnsupportedSurfaceError(
-      'context.artifacts.attach',
-      'Artifact attach is not implemented by the backend yet.',
+    artifactId: string,
+    target: string,
+    options: { target_type?: string; metadata?: Record<string, unknown> } = {},
+  ): Promise<ArtifactAttachResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/context/artifacts/${artifactId}/attach/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          target,
+          target_type: options.target_type ?? 'harness_run',
+          metadata: options.metadata ?? {},
+        }),
+      },
+      'artifact attach',
     );
+    return (await response.json()) as ArtifactAttachResponse;
   }
 
   async resolveContextCommand(
@@ -678,12 +831,26 @@ export class TheoremContextClient {
     return { results: body.results ?? [] };
   }
 
-  async graphFocus(_seedIds: number[]): Promise<{ stub: true }> {
-    return { stub: true };
+  async graphFocus(seedIds: number[]): Promise<GraphFocusResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/context/graph/focus/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({ seed_ids: seedIds }),
+      },
+      'graph focus',
+    );
+    return (await response.json()) as GraphFocusResponse;
   }
 
-  async graphPatchesList(): Promise<{ stub: true; patches: [] }> {
-    return { stub: true, patches: [] };
+  async graphPatchesList(): Promise<GraphPatchesListResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/context/graph/patches/`,
+      { method: 'GET', headers: this.headers() },
+      'graph patches list',
+    );
+    return (await response.json()) as GraphPatchesListResponse;
   }
 
   async beginHarness(request: HarnessBeginRequest): Promise<HarnessRun> {
@@ -766,6 +933,122 @@ export class TheoremContextClient {
       artifact: ContextArtifact | Record<string, unknown>;
     };
     return body.artifact;
+  }
+
+  async compileHarnessContextWeb(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/',
+      'harness context-web',
+    );
+  }
+
+  async compileHarnessContextWebMini(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/mini/',
+      'harness context-web mini',
+    );
+  }
+
+  async compileHarnessContextWebReviewDelta(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/review-delta/',
+      'harness context-web review delta',
+    );
+  }
+
+  async compileHarnessContextWebResearch(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/research/',
+      'harness context-web research',
+    );
+  }
+
+  async compileHarnessContextWebBrowserFolio(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/browser-folio/',
+      'harness context-web browser folio',
+    );
+  }
+
+  async explainHarnessContextWeb(
+    runId: string,
+    packId: string,
+    atomId: string,
+  ): Promise<ContextWebExplainResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${runId}/context-web/${packId}/explain/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({ atom_id: atomId }),
+      },
+      'harness context-web explain',
+      'harness',
+    );
+    const body = (await response.json()) as {
+      explanation: ContextWebExplainResponse;
+    };
+    return body.explanation;
+  }
+
+  async compileHarnessGraphRAGContext(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'graphrag-context/',
+      'harness graphrag context',
+    );
+  }
+
+  private async requestHarnessContextWeb(
+    runId: string,
+    request: HarnessContextWebRequest,
+    path: string,
+    surface: string,
+  ): Promise<ContextWebPack> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${runId}/${path}`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      surface,
+      'harness',
+    );
+    const body = (await response.json()) as {
+      context_web_pack?: ContextWebPack;
+      context_pack?: ContextWebPack;
+    };
+    return (body.context_web_pack ?? body.context_pack) as ContextWebPack;
   }
 
   async transitionHarness(
@@ -1074,6 +1357,21 @@ function parseSseChunk(chunk: string): CompileEvent | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function compactRecord(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined && value !== ''),
+  );
+}
+
+function taskTypeForOrchestrateMode(mode: string): string {
+  if (mode === 'execute' || mode === 'debug') return 'fix';
+  if (mode === 'plan' || mode === 'review' || mode === 'fix'
+    || mode === 'refactor' || mode === 'research') {
+    return mode;
+  }
+  return 'other';
 }
 
 function derivePluginsBaseUrl(baseUrl: string): string {

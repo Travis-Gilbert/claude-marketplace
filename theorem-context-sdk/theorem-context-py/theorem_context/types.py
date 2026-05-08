@@ -140,6 +140,25 @@ class CompileRequest(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class OrchestrateRequest(BaseModel):
+    task: str
+    mode: str = 'plan'
+    actor: str = 'codex'
+    repo: str | None = None
+    target: str | None = None
+    profile_id: str | None = None
+    risk_mode: str | None = None
+    budget_tokens: int = 6000
+    invariants: str | None = None
+    scope: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    max_actions: int = 8
+    resolve_context_command: bool = True
+    compile_context: bool = True
+    attach_artifact: bool = True
+    generate_action_rail: bool = True
+
+
 class OutcomeRequest(BaseModel):
     agentUsed: str | None = None
     accepted: bool | None = None
@@ -179,6 +198,52 @@ class ArtifactPdfExport(BaseModel):
 
 
 ArtifactExport = ArtifactSignedExport | ArtifactMarkdownExport | ArtifactPdfExport
+
+
+class ArtifactForkResponse(BaseModel):
+    forked: bool = False
+    source_artifact_id: str = ''
+    cloned_atom_count: int = 0
+    artifact: ContextArtifact
+
+
+class ArtifactAttachResponse(BaseModel):
+    attached: bool = False
+    harness_attached: bool = False
+    attachment: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphFocusNode(BaseModel):
+    id: int
+    title: str = ''
+    slug: str = ''
+    url: str = ''
+    source_system: str = ''
+    object_type: str = ''
+    object_type_name: str = ''
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class GraphFocusEdge(BaseModel):
+    id: int
+    from_object: int
+    to_object: int
+    edge_type: str = ''
+    reason: str = ''
+    strength: float = 0.0
+    engine: str = ''
+
+
+class GraphFocusResponse(BaseModel):
+    stub: bool = False
+    seed_ids: list[int] = Field(default_factory=list)
+    nodes: list[GraphFocusNode] = Field(default_factory=list)
+    edges: list[GraphFocusEdge] = Field(default_factory=list)
+
+
+class GraphPatchesListResponse(BaseModel):
+    stub: bool = False
+    patches: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ContextCommandRequest(BaseModel):
@@ -297,6 +362,22 @@ class HarnessRun(BaseModel):
     updated_at: str | None = None
 
 
+class OrchestrateReport(BaseModel):
+    status: Literal['ready'] = 'ready'
+    checklist: list[dict[str, Any]] = Field(default_factory=list)
+    harness_writeback: Literal['recorded', 'not_requested'] = 'not_requested'
+    next_actions: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class OrchestrateResult(BaseModel):
+    run: HarnessRun
+    context_command: dict[str, Any] | None = None
+    artifact: ContextArtifact | None = None
+    artifact_attachment: ArtifactAttachResponse | None = None
+    action_rail: dict[str, Any] | None = None
+    report: OrchestrateReport = Field(default_factory=OrchestrateReport)
+
+
 class HarnessEvent(BaseModel):
     event_id: str
     run_id: str
@@ -357,6 +438,105 @@ class HarnessContextRequest(BaseModel):
     repo: str | None = None
     task_type: str = 'search'
     invariants: str | None = None
+
+
+class HarnessContextWebRequest(BaseModel):
+    query: str | None = None
+    mode: str = 'standard'
+    budget_tokens: int = 4000
+    explicit_targets: list[str] = Field(default_factory=list)
+    allow_generated_artifacts: bool = False
+    folio_id: str | None = None
+
+
+class ContextWebBudget(BaseModel):
+    max_tokens: int = 4000
+    max_atoms: int = 24
+    max_edges: int = 48
+    max_paths: int = 8
+    max_tools: int = 5
+
+
+class ContextWebCitation(BaseModel):
+    source_id: str
+    source_type: str
+    locator: str = ''
+    excerpt_hash: str = ''
+
+
+class ContextWebAtom(BaseModel):
+    id: str
+    kind: str = 'file'
+    title: str = ''
+    summary: str = ''
+    source_ref: str = ''
+    score: float = 0.0
+    estimated_tokens: int = 0
+    channels: list[str] = Field(default_factory=list)
+    citations: list[ContextWebCitation] = Field(default_factory=list)
+    labels: list[str] = Field(default_factory=list)
+
+
+class ContextWebEdge(BaseModel):
+    from_id: str
+    to_id: str
+    relation: str
+    reason: str = ''
+    score: float = 0.0
+
+
+class ContextWebPath(BaseModel):
+    node_ids: list[str] = Field(default_factory=list)
+    edge_relations: list[str] = Field(default_factory=list)
+    score: float = 0.0
+
+
+class ContextWebTokenLedger(BaseModel):
+    raw_candidate_tokens: int = 0
+    packed_tokens: int = 0
+    saved_tokens: int = 0
+    tool_schema_tokens_avoided: int = 0
+    hydration_tokens_avoided: int = 0
+    cache_hits: int = 0
+
+
+class ContextWebSpendPlan(BaseModel):
+    spend_plan_id: str = ''
+    budget_allocation: dict[str, int] = Field(default_factory=dict)
+    hydration_policy: dict[str, list[str]] = Field(default_factory=dict)
+    expected_savings: dict[str, Any] = Field(default_factory=dict)
+    cache_keys: dict[str, Any] = Field(default_factory=dict)
+    degradations: list[str] = Field(default_factory=list)
+
+
+class ContextWebPack(BaseModel):
+    run_id: str
+    query: str
+    mode: str = 'standard'
+    budget: ContextWebBudget = Field(default_factory=ContextWebBudget)
+    atoms: list[ContextWebAtom] = Field(default_factory=list)
+    edges: list[ContextWebEdge] = Field(default_factory=list)
+    paths: list[ContextWebPath] = Field(default_factory=list)
+    tools_used: list[dict[str, Any]] = Field(default_factory=list)
+    source_mix: dict[str, int] = Field(default_factory=dict)
+    token_ledger: ContextWebTokenLedger = Field(default_factory=ContextWebTokenLedger)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    spend_plan: ContextWebSpendPlan = Field(default_factory=ContextWebSpendPlan)
+    state_hash: str = ''
+
+
+class ContextWebExplainResponse(BaseModel):
+    run_id: str
+    pack_id: str
+    atom_id: str
+    included: bool = False
+    why_included: str = ''
+    why_excluded: str = ''
+    policies_applied: list[str] = Field(default_factory=list)
+    mode: str = ''
+    source_mix: dict[str, int] = Field(default_factory=dict)
+    budget: dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class HarnessPatchRequest(BaseModel):
