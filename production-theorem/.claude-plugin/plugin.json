@@ -25,5 +25,18 @@
     "thg-product",
     "ui-visual-gates",
     "do-not-downgrade"
-  ]
+  ],
+  "mcpServers": {
+    "theorem-context": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
+      ]
+    },
+    "theseus": {
+      "type": "http",
+      "url": "https://theseus-mcp-production.up.railway.app/mcp",
+      "description": "Theseus knowledge graph (full Mode 3 surface)"
+    }
+  }
 }
