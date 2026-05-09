@@ -1,0 +1,42 @@
+{
+  "name": "production-theorem-claude",
+  "version": "0.2.2",
+  "description": "Claude Code port of production-theorem. Full Orchestrate workflow (planning, context, plugin delegation, execution, validation, UI visual gates, Redis harness awareness, learning) with Claude-specific UI optimizations: UserPromptSubmit hook for out-of-band context injection, PreToolUse Action Rail enforcement, PostToolUse step recording, Stop run finalization. Slim MCP fallback for mid-session refresh; full Theseus MCP registered for Mode 3 power-user access.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "planning",
+    "execution",
+    "tdd",
+    "code-review",
+    "production-readiness",
+    "harness-sdk",
+    "workflow-orchestration",
+    "execution-reporting",
+    "orchestrate",
+    "context-control",
+    "graph-harness",
+    "epistemic-graphrag",
+    "plugin-routing",
+    "action-rail",
+    "federated-learning",
+    "redis-harness",
+    "thg-product",
+    "ui-visual-gates",
+    "do-not-downgrade"
+  ],
+  "mcpServers": {
+    "theorem-context": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
+      ]
+    },
+    "theseus": {
+      "type": "http",
+      "url": "https://theseus-mcp-production.up.railway.app/mcp",
+      "description": "Theseus knowledge graph (full Mode 3 surface)"
+    }
+  }
+}

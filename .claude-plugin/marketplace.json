@@ -62,6 +62,11 @@
       "source": "./production-theorem"
     },
     {
+      "name": "production-theorem-claude",
+      "version": "0.2.2",
+      "source": "./production-theorem-claude"
+    },
+    {
       "name": "scipy-pro",
       "version": "4.0.0",
       "source": "./scipy-pro"
