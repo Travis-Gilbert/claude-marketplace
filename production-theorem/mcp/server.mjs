@@ -1,12 +1,15 @@
 // Theorem Context Claude Code: slim MCP server (Mode 2 fallback).
 //
 // Most context arrives via the UserPromptSubmit hook (Mode 1, no model-visible
-// tool). These three tools exist only for cases the hook can't cover:
+// tool). These tools exist for cases the hook can't cover:
 //   - orchestrate_refresh: recompile when context goes stale mid-session
 //   - harness_replay: show the event timeline of the current or specified run
 //   - harness_describe_current: show what artifact is currently injected
+//   - product_*: expose the Context Theorem product boundary for saved-context
+//     and review-queue work so the plugin can operate the backend that now
+//     exists without dropping to raw HTTP
 //
-// Deliberately small surface. The fat Theseus MCP at theseus-mcp-production
+// Deliberately bounded surface. The fat Theseus MCP at theseus-mcp-production
 // is registered separately in plugin.json for Mode 3 power-user access.
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -73,6 +76,63 @@ async function theoremGet(path) {
   return res.json();
 }
 
+async function theoremPut(path, body) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!res.ok) {
+    throw new Error(`PUT ${path} -> ${res.status}: ${(await res.text()).slice(0, 400)}`);
+  }
+  return res.json();
+}
+
+async function theoremDelete(path) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!res.ok) {
+    throw new Error(`DELETE ${path} -> ${res.status}: ${(await res.text()).slice(0, 400)}`);
+  }
+  if (res.status === 204) {
+    return { ok: true };
+  }
+  return res.json();
+}
+
+function jsonText(value) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+  };
+}
+
+function requireString(args, key) {
+  const value = args?.[key];
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`'${key}' is required.`);
+  }
+  return value.trim();
+}
+
+function buildQuery(params) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value === undefined || value === null || value === "") continue;
+    if (Array.isArray(value)) {
+      if (value.length === 0) continue;
+      search.set(key, value.join(","));
+      continue;
+    }
+    search.set(key, String(value));
+  }
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
+
 const TOOLS = [
   {
     name: "orchestrate_refresh",
@@ -117,6 +177,163 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {},
+    },
+  },
+  {
+    name: "product_bootstrap",
+    description:
+      "Return the Context Theorem product bootstrap state for the authenticated account: tenants, role, write access, and available projects/keys summary.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "saved_contexts_list",
+    description:
+      "List saved context entries for a tenant, optionally scoped to a project and optionally including muted entries.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        project_slug: { type: "string" },
+        include_muted: { type: "boolean", default: false },
+      },
+      required: ["tenant_slug"],
+    },
+  },
+  {
+    name: "saved_context_create",
+    description:
+      "Create a saved context entry under a tenant/project. Use for durable context, policy, or evidence that should be recalled later.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        title: { type: "string" },
+        content: { type: "string" },
+        memory_role: { type: "string" },
+        summary: { type: "string" },
+        project_slug: { type: "string" },
+        kind: { type: "string" },
+        metadata: { type: "object" },
+        scope: { type: "object" },
+      },
+      required: ["tenant_slug", "title", "content", "memory_role"],
+    },
+  },
+  {
+    name: "saved_context_update",
+    description:
+      "Update an existing saved context entry's content, title, summary, metadata, scope, or role.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        entry_slug: { type: "string" },
+        title: { type: "string" },
+        content: { type: "string" },
+        memory_role: { type: "string" },
+        summary: { type: "string" },
+        kind: { type: "string" },
+        metadata: { type: "object" },
+        scope: { type: "object" },
+      },
+      required: ["tenant_slug", "entry_slug", "title", "content", "memory_role"],
+    },
+  },
+  {
+    name: "saved_context_mute",
+    description:
+      "Mute a saved context entry so prepare/recall no longer includes it without deleting the record.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        entry_slug: { type: "string" },
+      },
+      required: ["tenant_slug", "entry_slug"],
+    },
+  },
+  {
+    name: "saved_context_activate",
+    description:
+      "Re-activate a previously muted saved context entry.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        entry_slug: { type: "string" },
+      },
+      required: ["tenant_slug", "entry_slug"],
+    },
+  },
+  {
+    name: "saved_context_delete",
+    description:
+      "Delete a saved context entry permanently.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        entry_slug: { type: "string" },
+      },
+      required: ["tenant_slug", "entry_slug"],
+    },
+  },
+  {
+    name: "saved_context_preview_recall",
+    description:
+      "Preview what saved context would be recalled for a tenant/project/task/profile/mode combination before running prepare.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        task: { type: "string" },
+        project_slug: { type: "string" },
+        mode: { type: "string" },
+        modes: { type: "array", items: { type: "string" } },
+        profile_id: { type: "string" },
+        profile_ids: { type: "array", items: { type: "string" } },
+        permissions: { type: "array", items: { type: "string" } },
+      },
+      required: ["tenant_slug", "task"],
+    },
+  },
+  {
+    name: "memory_patch_review_queue",
+    description:
+      "List reviewable memory patches for a tenant, optionally scoped by project or review status.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        project_slug: { type: "string" },
+        review_status: { type: "string" },
+        limit: { type: "integer" },
+      },
+      required: ["tenant_slug"],
+    },
+  },
+  {
+    name: "memory_patch_review_update",
+    description:
+      "Update a memory patch review decision, with optional direct promotion into saved context.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        run_id: { type: "string" },
+        patch_id: { type: "string" },
+        review_status: { type: "string" },
+        promote_to_saved_context: { type: "boolean" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        project_slug: { type: "string" },
+        kind: { type: "string" },
+        metadata: { type: "object" },
+      },
+      required: ["tenant_slug", "run_id", "patch_id", "review_status"],
     },
   },
 ];
@@ -219,6 +436,137 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       }
       const raw = readFileSync(artifactPath, "utf8");
       return { content: [{ type: "text", text: raw }] };
+    }
+
+    if (name === "product_bootstrap") {
+      const result = await theoremGet("/product/bootstrap/");
+      return jsonText(result);
+    }
+
+    if (name === "saved_contexts_list") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const query = buildQuery({
+        project_slug: args?.project_slug,
+        include_muted: args?.include_muted === true ? "true" : undefined,
+      });
+      const result = await theoremGet(
+        `/product/tenants/${tenantSlug}/saved-contexts/${query}`
+      );
+      return jsonText(result);
+    }
+
+    if (name === "saved_context_create") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const result = await theoremPost(
+        `/product/tenants/${tenantSlug}/saved-contexts/`,
+        {
+          title: requireString(args, "title"),
+          content: requireString(args, "content"),
+          memory_role: requireString(args, "memory_role"),
+          summary: args?.summary ?? "",
+          project_slug: args?.project_slug ?? null,
+          kind: args?.kind ?? "note",
+          metadata: args?.metadata ?? {},
+          scope: args?.scope ?? {},
+        }
+      );
+      return jsonText(result);
+    }
+
+    if (name === "saved_context_update") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const entrySlug = requireString(args, "entry_slug");
+      const result = await theoremPut(
+        `/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/`,
+        {
+          title: requireString(args, "title"),
+          content: requireString(args, "content"),
+          memory_role: requireString(args, "memory_role"),
+          summary: args?.summary ?? "",
+          kind: args?.kind ?? "note",
+          metadata: args?.metadata ?? {},
+          scope: args?.scope ?? {},
+        }
+      );
+      return jsonText(result);
+    }
+
+    if (name === "saved_context_mute") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const entrySlug = requireString(args, "entry_slug");
+      const result = await theoremPost(
+        `/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/mute/`,
+        {}
+      );
+      return jsonText(result);
+    }
+
+    if (name === "saved_context_activate") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const entrySlug = requireString(args, "entry_slug");
+      const result = await theoremPost(
+        `/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/activate/`,
+        {}
+      );
+      return jsonText(result);
+    }
+
+    if (name === "saved_context_delete") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const entrySlug = requireString(args, "entry_slug");
+      const result = await theoremDelete(
+        `/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/`
+      );
+      return jsonText(result);
+    }
+
+    if (name === "saved_context_preview_recall") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const result = await theoremPost(
+        `/product/tenants/${tenantSlug}/saved-contexts/preview-recall/`,
+        {
+          task: requireString(args, "task"),
+          project_slug: args?.project_slug ?? null,
+          mode: args?.mode ?? null,
+          modes: args?.modes ?? [],
+          profile_id: args?.profile_id ?? null,
+          profile_ids: args?.profile_ids ?? [],
+          permissions: args?.permissions ?? [],
+        }
+      );
+      return jsonText(result);
+    }
+
+    if (name === "memory_patch_review_queue") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const query = buildQuery({
+        project_slug: args?.project_slug,
+        review_status: args?.review_status,
+        limit: args?.limit,
+      });
+      const result = await theoremGet(
+        `/product/tenants/${tenantSlug}/memory-patches/review/${query}`
+      );
+      return jsonText(result);
+    }
+
+    if (name === "memory_patch_review_update") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const runId = requireString(args, "run_id");
+      const patchId = requireString(args, "patch_id");
+      const result = await theoremPost(
+        `/product/tenants/${tenantSlug}/memory-patches/review/${runId}/${patchId}/`,
+        {
+          review_status: requireString(args, "review_status"),
+          promote_to_saved_context: args?.promote_to_saved_context === true,
+          title: args?.title ?? undefined,
+          summary: args?.summary ?? undefined,
+          project_slug: args?.project_slug ?? undefined,
+          kind: args?.kind ?? undefined,
+          metadata: args?.metadata ?? undefined,
+        }
+      );
+      return jsonText(result);
     }
 
     return {

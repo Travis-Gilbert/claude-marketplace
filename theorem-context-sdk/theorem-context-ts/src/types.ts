@@ -1148,10 +1148,16 @@ export interface ProductTenantSummary {
   name: string;
   slug: string;
   is_active: boolean;
+  role: string;
+  billing_plan: string;
+  billing_email: string;
+  monthly_request_quota: number;
+  monthly_token_quota: number;
   configuration: Record<string, unknown>;
   metadata: Record<string, unknown>;
   projects_count: number;
   api_keys_count: number;
+  members_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -1214,6 +1220,25 @@ export interface ProductUsageKeySummary {
   count: number;
 }
 
+export interface ProductUsageProjectSummary {
+  project_slug: string | null;
+  count: number;
+  token_total: number;
+}
+
+export interface ProductBillingSummary {
+  plan: string;
+  billing_email: string;
+  monthly_request_quota: number;
+  monthly_request_usage: number;
+  monthly_request_remaining_estimate: number | null;
+  monthly_token_quota: number;
+  monthly_token_usage: number;
+  monthly_token_remaining_estimate: number | null;
+  request_over_quota: boolean;
+  token_over_quota: boolean;
+}
+
 export interface ProductUsageSummary {
   tenant_slug: string;
   days: number;
@@ -1225,6 +1250,8 @@ export interface ProductUsageSummary {
   by_day: ProductUsagePoint[];
   by_category: ProductUsageCategory[];
   by_key: ProductUsageKeySummary[];
+  by_project: ProductUsageProjectSummary[];
+  billing: ProductBillingSummary;
 }
 
 export interface ProductBootstrapResponse {
@@ -1232,6 +1259,7 @@ export interface ProductBootstrapResponse {
   mode: string;
   auth_required: boolean;
   bootstrap_fallback_allowed: boolean;
+  write_access: boolean;
   tenants: ProductTenantSummary[];
   default_tenant_slug: string | null;
 }
@@ -1239,6 +1267,21 @@ export interface ProductBootstrapResponse {
 export interface ProductTenantCreateRequest {
   name: string;
   slug?: string;
+  billing_plan?: string;
+  billing_email?: string;
+  monthly_request_quota?: number;
+  monthly_token_quota?: number;
+  configuration?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProductTenantUpdateRequest {
+  name?: string;
+  billing_plan?: string;
+  billing_email?: string;
+  monthly_request_quota?: number;
+  monthly_token_quota?: number;
+  is_active?: boolean;
   configuration?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
 }
@@ -1259,6 +1302,29 @@ export interface ProductAPIKeyCreateRequest {
   can_import?: boolean;
   can_webhook?: boolean;
   can_sessions?: boolean;
+}
+
+export interface ProductTenantMemberSummary {
+  id: number;
+  tenant_slug: string;
+  user_id: number;
+  username: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductTenantMemberCreateRequest {
+  username?: string;
+  email?: string;
+  role?: string;
+}
+
+export interface ProductTenantMemberUpdateRequest {
+  role?: string;
+  is_active?: boolean;
 }
 
 export interface SavedContextSummary {
@@ -1299,6 +1365,67 @@ export interface SavedContextUpdateRequest {
   project_slug?: string | null;
   scope?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
+}
+
+export interface SavedContextPromoteMemoryPatchRequest {
+  run_id: string;
+  patch_id: string;
+  title?: string;
+  summary?: string;
+  project_slug?: string;
+  kind?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SavedContextRecallPreviewRequest {
+  project_slug?: string;
+  repo?: string;
+  target?: string;
+  mode?: string;
+  profile_id?: string;
+  permissions?: string[];
+}
+
+export interface SavedContextRecallPreviewResponse {
+  saved_contexts: SavedContextSummary[];
+  counts: {
+    evidence: number;
+    operational_policy: number;
+  };
+}
+
+export interface MemoryPatchReviewUpdateRequest {
+  review_status: string;
+  promote_to_saved_context?: boolean;
+  title?: string;
+  summary?: string;
+  project_slug?: string;
+  kind?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MemoryPatchReviewItem {
+  run_id: string;
+  task: string;
+  actor: string;
+  scope: Record<string, unknown>;
+  run_created_at: string;
+  run_updated_at: string;
+  patch: Record<string, unknown>;
+  validation?: Record<string, unknown> | null;
+  promotion: Record<string, unknown>;
+}
+
+export interface MemoryPatchReviewQueueResponse {
+  memory_patches: MemoryPatchReviewItem[];
+  counts: Record<string, number>;
+  saved_context?: SavedContextSummary | null;
+}
+
+export interface MemoryPatchReviewUpdateResponse {
+  memory_patch: MemoryPatchReviewItem;
+  validation: Record<string, unknown>;
+  saved_context: SavedContextSummary | null;
 }
 
 export interface HarnessPatchRequest {

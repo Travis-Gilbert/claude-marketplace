@@ -1013,10 +1013,16 @@ class ProductTenantSummary(BaseModel):
     name: str
     slug: str
     is_active: bool = True
+    role: str = 'owner'
+    billing_plan: str = 'researcher'
+    billing_email: str = ''
+    monthly_request_quota: int = 0
+    monthly_token_quota: int = 0
     configuration: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
     projects_count: int = 0
     api_keys_count: int = 0
+    members_count: int = 0
     created_at: str = ''
     updated_at: str = ''
 
@@ -1079,6 +1085,25 @@ class ProductUsageKeySummary(BaseModel):
     count: int = 0
 
 
+class ProductUsageProjectSummary(BaseModel):
+    project_slug: str | None = None
+    count: int = 0
+    token_total: int = 0
+
+
+class ProductBillingSummary(BaseModel):
+    plan: str = ''
+    billing_email: str = ''
+    monthly_request_quota: int = 0
+    monthly_request_usage: int = 0
+    monthly_request_remaining_estimate: int | None = None
+    monthly_token_quota: int = 0
+    monthly_token_usage: int = 0
+    monthly_token_remaining_estimate: int | None = None
+    request_over_quota: bool = False
+    token_over_quota: bool = False
+
+
 class ProductUsageSummary(BaseModel):
     tenant_slug: str
     days: int = 0
@@ -1090,6 +1115,8 @@ class ProductUsageSummary(BaseModel):
     by_day: list[ProductUsagePoint] = Field(default_factory=list)
     by_category: list[ProductUsageCategory] = Field(default_factory=list)
     by_key: list[ProductUsageKeySummary] = Field(default_factory=list)
+    by_project: list[ProductUsageProjectSummary] = Field(default_factory=list)
+    billing: ProductBillingSummary = Field(default_factory=ProductBillingSummary)
 
 
 class ProductBootstrapResponse(BaseModel):
@@ -1097,6 +1124,7 @@ class ProductBootstrapResponse(BaseModel):
     mode: str = 'bootstrap_fallback'
     auth_required: bool = False
     bootstrap_fallback_allowed: bool = False
+    write_access: bool = False
     tenants: list[ProductTenantSummary] = Field(default_factory=list)
     default_tenant_slug: str | None = None
 
@@ -1104,6 +1132,21 @@ class ProductBootstrapResponse(BaseModel):
 class ProductTenantCreateRequest(BaseModel):
     name: str
     slug: str | None = None
+    billing_plan: str = 'researcher'
+    billing_email: str = ''
+    monthly_request_quota: int = 10000
+    monthly_token_quota: int = 1000000
+    configuration: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class ProductTenantUpdateRequest(BaseModel):
+    name: str | None = None
+    billing_plan: str | None = None
+    billing_email: str | None = None
+    monthly_request_quota: int | None = None
+    monthly_token_quota: int | None = None
+    is_active: bool | None = None
     configuration: dict[str, Any] | None = None
     metadata: dict[str, Any] | None = None
 
@@ -1124,6 +1167,29 @@ class ProductAPIKeyCreateRequest(BaseModel):
     can_import: bool = False
     can_webhook: bool = False
     can_sessions: bool = True
+
+
+class ProductTenantMemberSummary(BaseModel):
+    id: int
+    tenant_slug: str
+    user_id: int
+    username: str
+    email: str
+    role: str = 'member'
+    is_active: bool = True
+    created_at: str = ''
+    updated_at: str = ''
+
+
+class ProductTenantMemberCreateRequest(BaseModel):
+    username: str | None = None
+    email: str | None = None
+    role: str = 'member'
+
+
+class ProductTenantMemberUpdateRequest(BaseModel):
+    role: str | None = None
+    is_active: bool | None = None
 
 
 class SavedContextSummary(BaseModel):
@@ -1164,6 +1230,63 @@ class SavedContextUpdateRequest(BaseModel):
     project_slug: str | None = None
     scope: dict[str, Any] | None = None
     metadata: dict[str, Any] | None = None
+
+
+class SavedContextPromoteMemoryPatchRequest(BaseModel):
+    run_id: str
+    patch_id: str
+    title: str | None = None
+    summary: str = ''
+    project_slug: str | None = None
+    kind: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class SavedContextRecallPreviewRequest(BaseModel):
+    project_slug: str | None = None
+    repo: str | None = None
+    target: str | None = None
+    mode: str = ''
+    profile_id: str | None = None
+    permissions: list[str] | None = None
+
+
+class SavedContextRecallPreviewResponse(BaseModel):
+    saved_contexts: list[SavedContextSummary] = Field(default_factory=list)
+    counts: dict[str, int] = Field(default_factory=dict)
+
+
+class MemoryPatchReviewUpdateRequest(BaseModel):
+    review_status: str
+    promote_to_saved_context: bool = False
+    title: str | None = None
+    summary: str = ''
+    project_slug: str | None = None
+    kind: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class MemoryPatchReviewItem(BaseModel):
+    run_id: str
+    task: str = ''
+    actor: str = ''
+    scope: dict[str, Any] = Field(default_factory=dict)
+    run_created_at: str = ''
+    run_updated_at: str = ''
+    patch: dict[str, Any] = Field(default_factory=dict)
+    validation: dict[str, Any] | None = None
+    promotion: dict[str, Any] = Field(default_factory=dict)
+
+
+class MemoryPatchReviewQueueResponse(BaseModel):
+    memory_patches: list[MemoryPatchReviewItem] = Field(default_factory=list)
+    counts: dict[str, int] = Field(default_factory=dict)
+
+
+class MemoryPatchReviewUpdateResponse(BaseModel):
+    memory_patch: MemoryPatchReviewItem
+    validation: dict[str, Any] = Field(default_factory=dict)
+    saved_context: SavedContextSummary | None = None
 
 
 class HarnessPatchRequest(BaseModel):
