@@ -27,6 +27,15 @@ Implement like the change is heading toward production. Reconcile every action a
 
 If no plan exists, create a minimal execution checklist first, then execute it.
 
+## UI Visual Execution Rule
+
+For work that changes visible UI, visual design, renderer architecture,
+graph/canvas surfaces, dashboards, diagrams, animation, or screenshot-sensitive
+flows, load `../../references/UI_VISUAL_PROJECT_GATES.md` before editing. Treat
+the UI Visual Milestone as part of the execution checklist, not as optional
+polish. Runtime complete, Product complete, and Vision complete must be reported
+separately.
+
 ## Execution Flow
 
 ### 1. Preflight
@@ -36,6 +45,9 @@ If no plan exists, create a minimal execution checklist first, then execute it.
 - read the relevant plan, docs, and code seams
 - record target behavior and main risks
 - if the task touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, or tenant-scoped product graph routes, consult `codex-sdk-harness-product` before editing
+- for UI visual work, capture or identify current baseline screenshots, target
+  reference screenshots, and "do not change" references before editing; if
+  unavailable, record that as a validation gap
 
 ### 2. Checklist Loop
 
@@ -48,6 +60,10 @@ For each checklist item:
 5. run validation
 6. simplify and review changed code without altering intended behavior
 7. update status and evidence
+
+For UI visual items, do not replace the primary visible path until the
+before/after/target review supports an equal-or-better outcome or the report
+marks Product complete as no/partial.
 
 ### 3. TDD Discipline
 
@@ -95,6 +111,8 @@ Run the narrowest checks that prove the work:
 - lint and type/static checks when available
 - build or smoke checks where relevant
 - migration, data, or runtime checks where relevant
+- for UI visual work, before/after/target screenshot review, populated-data
+  smoke, constrained viewport smoke, and Do Not Downgrade gate review
 
 If something cannot run, state exactly why and preserve whatever evidence is still available.
 
@@ -133,6 +151,20 @@ Return this report shape:
 | Command/check | Result | Notes |
 |---|---|---|
 
+## UI Visual Milestone
+Include only for UI visual work.
+
+| Gate | Status | Evidence | Notes |
+|---|---|---|---|
+| Runtime complete | yes/no/partial | | |
+| Product complete | yes/no/partial | | |
+| Vision complete | yes/no/partial | | |
+| Baseline screenshots captured | yes/no/partial | | |
+| Target references captured | yes/no/partial | | |
+| Do Not Downgrade gate | pass/fail/not-run | | |
+| Screenshot review | equal-or-better/mixed/worse/not-run | | |
+| Reversible boundary | yes/no/partial | | |
+
 ## Incomplete or Blocked Work
 - What was not done:
 - Why:
@@ -156,6 +188,8 @@ Return this report shape:
 - [ ] Docs/ADR updated or explicitly deferred.
 - [ ] No hidden TODOs or silent deferrals.
 - [ ] Security/performance risks considered.
+- [ ] UI visual work has before/after/target evidence or an explicit validation gap.
+- [ ] UI visual work passes the Do Not Downgrade gate before Product complete.
 - [ ] Follow-up plan proposed if needed.
 
 ## Compound Engineering Effect
@@ -182,6 +216,7 @@ Never report "done" unless the checklist reconciliation supports it.
 Load these when needed:
 
 - `../../references/PRODUCTION_GATES.md`
+- `../../references/UI_VISUAL_PROJECT_GATES.md`
 - `../../references/REPORTING.md`
 - `../../references/ARTIFACT_SCHEMAS.md`
 - `../../references/EPISTEMIC_PRIMITIVES.md`
@@ -192,3 +227,5 @@ Load these when needed:
 - Do not bury failed validation in prose.
 - Do not stop at implementation if tests, simplification, or reporting are still undone.
 - Do not claim production readiness when gates remain open.
+- Do not claim a UI visual refactor is Product complete when only nonblank
+  rendering or type/build checks passed.

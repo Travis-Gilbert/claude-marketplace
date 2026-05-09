@@ -47,6 +47,25 @@ Every Orchestrate run is checklist-first.
 Load `../../references/CHECKLIST_MANIFESTO.md` when the task is complex,
 multi-file, high-risk, or user-facing.
 
+## UI Visual Project Milestone
+
+When work touches a visible UI surface, visual design, renderer, graph/canvas,
+dashboard, diagram, animation, or screenshot-sensitive user flow, load
+`../../references/UI_VISUAL_PROJECT_GATES.md` and add a UI Visual Milestone to
+the plan, execution checklist, and report.
+
+The milestone separates three labels that must not be collapsed:
+
+- Runtime complete: the code path works and passes focused checks.
+- Product complete: the enabled user experience is equal-or-better than the
+  baseline and passes visual gates.
+- Vision complete: the result reaches the stated ambition, not just a slice.
+
+For UI visual projects, require before/after/target screenshot evidence when
+possible, record a Vision Delta before implementation, run a Do Not Downgrade
+gate before replacing a mature surface, and keep the product boundary reversible
+until the new surface is equal-or-better.
+
 ## Mission
 
 - Convert ambiguous user intent into a grounded operating model.
@@ -148,16 +167,22 @@ separate write-scoped task.
    - Inspect git status when relevant.
    - Read current files, plans, tests, manifests, or docs.
    - Establish current condition before proposing changes.
+   - For UI visual work, capture or identify baseline, target, and "do not
+     change" screenshots or explain why they are unavailable.
 
 2. **Resolve**
    - Classify task type.
    - Identify user-visible goal, system behavior, data/model changes,
      operational impact, and non-regression constraints.
+   - For UI visual work, write the Vision Delta and name what must not visually
+     downgrade before selecting the implementation path.
 
 3. **Plan**
    - If ambiguity remains, run internal theorize mode.
    - Build a stable checklist with IDs.
    - Attach acceptance criteria, validation, risk, and owner/agent route.
+   - For UI visual work, include the UI Visual Milestone gates as checklist
+     items or an explicit gated plan section.
 
 4. **Delegate**
    - Select hidden plugins/agents based on task type, language, repo surface,
@@ -186,12 +211,16 @@ separate write-scoped task.
    - Prefer public behavior checks.
    - Run focused tests first.
    - If tests cannot run, state why and preserve available evidence.
+   - For UI visual work, compare before/after/target screenshots and run the Do
+     Not Downgrade gate before marking Product complete.
 
 9. **Report**
    - Reconcile every checklist/action.
    - State final condition.
    - Identify incomplete or blocked work.
    - Recommend next action.
+   - For UI visual work, report Runtime complete, Product complete, and Vision
+     complete separately.
 
 10. **Learn**
     - Record candidate graph/writeback items:
@@ -278,6 +307,18 @@ Describe what exists now, with file/test/doc/runtime grounding.
 - Operational impact:
 - What must not regress:
 
+## UI Visual Milestone
+Include only for UI visual work.
+
+| Gate | Requirement | Evidence/validator | Status |
+|---|---|---|---|
+| Runtime complete | Code path works. | Tests/smoke/build. | planned |
+| Product complete | Enabled surface is equal-or-better than baseline. | Before/after/target review. | planned |
+| Vision complete | Stated ambition is reached or delta is named. | Vision Delta. | planned |
+| Baseline capture | Current and target visuals are captured or unavailable with reason. | Screenshots/references. | planned |
+| Do Not Downgrade | Mature surface is preserved or replaced only by equal-or-better UX. | Visual gate review. | planned |
+| Reversible boundary | Rollback/baseline path exists. | Route/mode/commit boundary. | planned |
+
 ## Context Stack
 | Context | Source | Trust | Why it matters |
 |---|---|---|---|
@@ -312,6 +353,8 @@ Describe what exists now, with file/test/doc/runtime grounding.
 - [ ] Rollback/revert path exists.
 - [ ] Docs/ADR updated or explicitly deferred.
 - [ ] Redis/harness writeback is proven or explicitly deferred.
+- [ ] UI visual work has before/after/target evidence or an explicit validation gap.
+- [ ] UI visual work passes the Do Not Downgrade gate before Product complete.
 - [ ] Final report can reconcile every checklist item.
 
 ## Epistemic Ledger
@@ -364,6 +407,20 @@ Use this when work was executed or validated.
 | Command/check | Result | Notes |
 |---|---|---|
 
+## UI Visual Milestone
+Include only for UI visual work.
+
+| Gate | Status | Evidence | Notes |
+|---|---|---|---|
+| Runtime complete | yes/no/partial | | |
+| Product complete | yes/no/partial | | |
+| Vision complete | yes/no/partial | | |
+| Baseline screenshots captured | yes/no/partial | | |
+| Target references captured | yes/no/partial | | |
+| Do Not Downgrade gate | pass/fail/not-run | | |
+| Screenshot review | equal-or-better/mixed/worse/not-run | | |
+| Reversible boundary | yes/no/partial | | |
+
 ## Incomplete or Blocked Work
 - What was not done:
 - Why:
@@ -412,6 +469,7 @@ Load these when relevant:
 - `../../references/ORCHESTRATE_REPORTING.md`
 - `../../references/SETTINGS.md`
 - `../../references/PRODUCTION_GATES.md`
+- `../../references/UI_VISUAL_PROJECT_GATES.md`
 - `../../references/ARTIFACT_SCHEMAS.md`
 - `../../references/EPISTEMIC_PRIMITIVES.md`
 - `../../references/REPORTING.md`

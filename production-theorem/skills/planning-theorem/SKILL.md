@@ -30,6 +30,16 @@ When the user requests a handoff workflow, support:
 - Make validation, rollback, observability, and migration risk explicit.
 - Leave no silent deferrals.
 
+## UI Visual Project Rule
+
+For plans that touch visible UI, renderer architecture, graph/canvas surfaces,
+dashboards, diagrams, animation, visual design, or screenshot-sensitive flows,
+load `../../references/UI_VISUAL_PROJECT_GATES.md` and include a UI Visual
+Milestone. The plan must split Runtime complete, Product complete, and Vision
+complete; capture or identify before/after/target screenshot evidence; define
+the Vision Delta; require a Do Not Downgrade gate; and preserve a reversible
+product boundary until the new visible surface is equal-or-better.
+
 ## Internal Modes
 
 Treat these as internal phases, not separate commands:
@@ -48,11 +58,13 @@ Treat these as internal phases, not separate commands:
 2. Read the smallest set of files that makes the plan real.
 3. If the work touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, tenant-scoped product graph routes, or TypeScript/Python SDK parity, consult `codex-sdk-harness-product` before finalizing checklist items.
 4. Define the production goal in user-visible, system, data, and operational terms.
-5. Build a codebase-grounded checklist with stable IDs like `PT-001`.
-6. Attach acceptance criteria, validation, risk, and ownership/route for every item.
-7. Record explicit non-goals and deferrals.
-8. Define how `/execute` must reconcile against the plan.
-9. If `handoff=spark` is requested, select the first bounded checklist items,
+5. For UI visual work, define the visual baseline, target references, Vision
+   Delta, and Do Not Downgrade criteria before the checklist is locked.
+6. Build a codebase-grounded checklist with stable IDs like `PT-001`.
+7. Attach acceptance criteria, validation, risk, and ownership/route for every item.
+8. Record explicit non-goals and deferrals.
+9. Define how `/execute` must reconcile against the plan.
+10. If `handoff=spark` is requested, select the first bounded checklist items,
    define write scope and validation scope, delegate the slice, and remain in
    the parent thread to review the result against the artifact.
 
@@ -133,6 +145,28 @@ Explain what the user is trying to make true.
 - Operational impact:
 - What must not regress:
 
+## UI Visual Milestone
+Include only for UI visual work.
+
+| Gate | Requirement | Evidence/validator | Status |
+|---|---|---|---|
+| Runtime complete | Code path works. | Tests/smoke/build. | planned |
+| Product complete | Enabled surface is equal-or-better than baseline. | Before/after/target review. | planned |
+| Vision complete | Stated ambition is reached or delta is named. | Vision Delta. | planned |
+| Baseline capture | Current and target visuals are captured or unavailable with reason. | Screenshots/references. | planned |
+| Do Not Downgrade | Mature surface is preserved or replaced only by equal-or-better UX. | Visual gate review. | planned |
+| Reversible boundary | Rollback/baseline path exists. | Route/mode/commit boundary. | planned |
+
+## Vision Delta
+Include only for UI visual work.
+
+- Target vision:
+- Current visual condition:
+- This plan makes true:
+- This plan does not make true:
+- Visual downgrade risks:
+- Remaining renderer/data/interaction/design gaps:
+
 ## Codebase Grounding
 | Area | Evidence | Notes |
 |---|---|---|
@@ -162,6 +196,8 @@ Explain what the user is trying to make true.
 - [ ] Observability/logging considered.
 - [ ] Rollback/revert path exists.
 - [ ] Docs/ADR updated or explicitly deferred.
+- [ ] UI visual work has before/after/target evidence or an explicit validation gap.
+- [ ] UI visual work passes the Do Not Downgrade gate before Product complete.
 - [ ] Execution report can reconcile every checklist item.
 
 ## Epistemic Ledger
@@ -185,6 +221,7 @@ Load these on demand:
 
 - `../../references/ROUTING.md`
 - `../../references/PRODUCTION_GATES.md`
+- `../../references/UI_VISUAL_PROJECT_GATES.md`
 - `../../references/ARTIFACT_SCHEMAS.md`
 - `../../references/EPISTEMIC_PRIMITIVES.md`
 - `../../references/REPORTING.md`
@@ -196,3 +233,4 @@ Load these on demand:
 - Do not leave validation as "to be figured out later".
 - Do not let the executive summary become fluff; keep it concise.
 - Do not claim SDK harness or product graph behavior without code evidence.
+- Do not call a UI visual plan complete when only the runtime slice is defined.
