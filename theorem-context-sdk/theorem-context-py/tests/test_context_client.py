@@ -334,12 +334,131 @@ def test_context_graph_namespace_maps_focus_and_patches_routes() -> None:
     asyncio.run(run())
 
 
-def test_orchestrate_composes_harness_context_artifact_and_action_rail_routes() -> None:
+def test_inference_namespace_maps_bgi_backend_routes() -> None:
     requests: list[httpx.Request] = []
 
     async def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        if request.url.path.endswith('/harness/runs/'):
+        if request.url.path.endswith('/inference/registry/'):
+            return httpx.Response(
+                200,
+                json={
+                    'version': '2026.05.01',
+                    'count': 1,
+                    'entries': [
+                        {
+                            'kernel_id': 'context_web_packer',
+                            'epistemic_job': 'ingest',
+                            'inference_family': 'expression',
+                            'consumes_view': ['text'],
+                            'produces': ['artifact'],
+                            'truth_type': 'relevance',
+                            'validator': 'source corroboration',
+                            'writeback_policy': 'proposal-only',
+                        },
+                    ],
+                    'index': {},
+                },
+            )
+        if request.url.path.endswith('/inference/expression/deterministic_brief/'):
+            return httpx.Response(
+                200,
+                json={
+                    'engine_id': 'deterministic_brief',
+                    'artifact_type': 'brief',
+                    'payload': {'text': 'ready'},
+                    'receipt_hash': 'hash:brief',
+                    'writeback_policy': 'read-only',
+                },
+            )
+        if request.url.path.endswith('/inference/solver/context-capsule/'):
+            return httpx.Response(
+                200,
+                json={
+                    'provider': 'z3-reference',
+                    'formula_hash': 'hash:solver',
+                    'input_view_refs': ['artifact:1'],
+                    'status': 'unsat',
+                    'model': {},
+                    'counterexample': {},
+                    'unsat_core_ref': 'core:1',
+                    'unknown_reason': '',
+                    'timeout_ms': None,
+                    'writeback_proposals': [],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                'run_id': 'discovery-1',
+                'objective': 'find stronger validators',
+                'status': 'running',
+                'context_refs': ['artifact:1'],
+                'candidates': [
+                    {
+                        'candidate_id': 'candidate-1',
+                        'hypothesis': 'native receipts can compact safely',
+                        'action': {'kind': 'benchmark'},
+                        'expected_value': 0.8,
+                        'metadata': {},
+                    },
+                ],
+                'outcomes': [],
+                'writeback_proposals': [],
+                'events': [],
+                'append_only': True,
+                'canonical_graph_mutation': False,
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            registry = await client.inference.registry()
+            expression = await client.inference.expression.render(
+                'deterministic_brief',
+                result={'status': 'ready'},
+            )
+            solver = await client.inference.solver.context_capsule(
+                capsule={'user_task': {'token_count': 5}},
+                budget_tokens=100,
+                input_view_refs=['artifact:1'],
+            )
+            preview = await client.inference.discovery_runs.preview(
+                objective='find stronger validators',
+                hypothesis='native receipts can compact safely',
+                action={'kind': 'benchmark'},
+                context_refs=['artifact:1'],
+                expected_value=0.8,
+            )
+        finally:
+            await client.aclose()
+
+        assert [request.url.path for request in requests] == [
+            '/api/v2/theseus/inference/registry/',
+            '/api/v2/theseus/inference/expression/deterministic_brief/',
+            '/api/v2/theseus/inference/solver/context-capsule/',
+            '/api/v2/theseus/inference/discovery-runs/preview/',
+        ]
+        assert registry.entries[0].kernel_id == 'context_web_packer'
+        assert expression.payload['text'] == 'ready'
+        assert solver.status == 'unsat'
+        assert preview.append_only is True
+        assert preview.canonical_graph_mutation is False
+        assert preview.candidates[0].candidate_id == 'candidate-1'
+
+    asyncio.run(run())
+
+
+def test_orchestrate_uses_server_authoritative_route() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/orchestrate/run/'):
             return httpx.Response(
                 200,
                 json={
@@ -355,60 +474,79 @@ def test_orchestrate_composes_harness_context_artifact_and_action_rail_routes() 
                         'memory_patches': [],
                         'validations': [],
                     },
-                },
-            )
-        if request.url.path.endswith('/context-command/resolve/'):
-            return httpx.Response(
-                200,
-                json={
-                    'state': {
-                        'command_id': 'ctx:1',
-                        'goal': 'Fix the SDK parity test',
-                        'working_set': [],
-                        'exclusions': [],
-                        'hot_context': [],
-                        'canonical_context': [],
-                        'graph_layers': [],
-                        'tool_scope': [],
+                    'decision': {
+                        'run_id': 'run:orch',
+                        'task': 'Fix the SDK parity test',
+                        'task_signature': 'sig:1',
+                        'selected_profile_id': 'developer-core',
+                        'selected_pack_ids': ['pack:context-web'],
+                        'selected_skill_ids': [],
+                        'selected_agent_ids': [],
+                        'selected_tool_ids': ['context_web.pack'],
+                        'selected_validator_ids': [],
+                        'selected_renderer_ids': [],
+                        'selected_compute_backend_ids': [],
+                        'rejected_candidates': [],
+                        'context_plan': {
+                            'max_tokens': 6000,
+                            'metadata_tokens': 300,
+                            'skill_body_tokens': 900,
+                            'reference_tokens': 900,
+                            'tool_schema_tokens': 120,
+                            'context_artifact_tokens': 3780,
+                        },
+                        'risk': {
+                            'shell_risk': 0.2,
+                            'network_risk': 0.2,
+                            'data_exposure_risk': 0.1,
+                            'over_orchestration_risk': 0.2,
+                        },
+                        'why_selected': {'developer-core': 'selected'},
+                        'policies_applied': ['server_orchestrate_v1'],
+                        'user_overrides': [],
+                        'federated_priors_used': [],
+                    },
+                    'context_command': {
+                        'state': {
+                            'command_id': 'ctx:1',
+                            'goal': 'Fix the SDK parity test',
+                            'working_set': [],
+                            'exclusions': [],
+                            'hot_context': [],
+                            'canonical_context': [],
+                            'graph_layers': [],
+                            'tool_scope': [],
+                            'warnings': [],
+                            'metadata': {},
+                        },
+                        'preview': {
+                            'command_id': 'ctx:1',
+                            'working_set_count': 0,
+                        },
+                    },
+                    'artifact': _artifact_json('artifact-orch'),
+                    'artifact_attachment': {
+                        'attached': True,
+                        'harness_attached': True,
+                        'attachment': {
+                            'artifact_id': 'artifact-orch',
+                            'target': 'run:orch',
+                        },
+                    },
+                    'action_rail': {
+                        'rail_id': 'rail:1',
+                        'actions': [{'action_id': 'act:1', 'label': 'Run focused tests'}],
+                        'grouped': {},
+                        'context_summary': {},
                         'warnings': [],
                         'metadata': {},
                     },
-                    'preview': {
-                        'command_id': 'ctx:1',
-                        'working_set_count': 0,
+                    'report': {
+                        'status': 'ready',
+                        'checklist': [{'id': 'ORCH-SERVER-001'}],
+                        'harness_writeback': 'recorded',
+                        'next_actions': [],
                     },
-                },
-            )
-        if request.url.path.endswith('/harness/runs/run:orch/context/'):
-            return httpx.Response(
-                200,
-                json={
-                    'artifact': _artifact_json('artifact-orch'),
-                    'contract': {},
-                },
-            )
-        if request.url.path.endswith('/attach/'):
-            return httpx.Response(
-                200,
-                json={
-                    'attached': True,
-                    'harness_attached': True,
-                    'attachment': {
-                        'artifact_id': 'artifact-orch',
-                        'target': 'run:orch',
-                    },
-                },
-            )
-        if request.url.path.endswith('/action-rail/generate/'):
-            return httpx.Response(
-                200,
-                json={
-                    'rail_id': 'rail:1',
-                    'actions': [{'action_id': 'act:1', 'label': 'Run focused tests'}],
-                    'grouped': {},
-                    'context_summary': {},
-                    'warnings': [],
-                    'metadata': {},
                 },
             )
         return httpx.Response(404)
@@ -428,19 +566,464 @@ def test_orchestrate_composes_harness_context_artifact_and_action_rail_routes() 
             await client.aclose()
 
         assert result.run.run_id == 'run:orch'
+        assert result.decision.selected_profile_id == 'developer-core'
         assert result.context_command['state']['command_id'] == 'ctx:1'
         assert result.artifact.id == 'artifact-orch'
         assert result.artifact_attachment.harness_attached is True
         assert result.action_rail['rail_id'] == 'rail:1'
-        assert result.report.checklist[0]['id'] == 'ORCH-SDK-001'
+        assert result.report.checklist[0]['id'] == 'ORCH-SERVER-001'
         assert result.report.harness_writeback == 'recorded'
         assert [request.url.path for request in requests] == [
-            '/api/v2/theseus/harness/runs/',
-            '/api/v2/theseus/context-command/resolve/',
-            '/api/v2/theseus/harness/runs/run:orch/context/',
-            '/api/v2/theseus/context/artifacts/artifact-orch/attach/',
-            '/api/v2/theseus/action-rail/generate/',
+            '/api/v2/theseus/orchestrate/run/',
         ]
+
+    asyncio.run(run())
+
+
+def test_orchestrate_preview_uses_server_preview_route() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/orchestrate/preview/'):
+            return httpx.Response(
+                200,
+                json={
+                    'decision': {
+                        'run_id': '',
+                        'task': 'Fix the SDK parity test',
+                        'task_signature': 'sig:preview',
+                        'selected_profile_id': 'developer-core',
+                        'selected_pack_ids': ['pack:context-web'],
+                        'selected_skill_ids': [],
+                        'selected_agent_ids': [],
+                        'selected_tool_ids': ['context_web.pack'],
+                        'selected_validator_ids': [],
+                        'selected_renderer_ids': [],
+                        'selected_compute_backend_ids': [],
+                        'rejected_candidates': [],
+                        'context_plan': {
+                            'max_tokens': 6000,
+                            'metadata_tokens': 300,
+                            'skill_body_tokens': 900,
+                            'reference_tokens': 900,
+                            'tool_schema_tokens': 120,
+                            'context_artifact_tokens': 3780,
+                        },
+                        'risk': {
+                            'shell_risk': 0.2,
+                            'network_risk': 0.2,
+                            'data_exposure_risk': 0.1,
+                            'over_orchestration_risk': 0.2,
+                        },
+                        'why_selected': {'developer-core': 'selected'},
+                        'policies_applied': ['server_orchestrate_v1'],
+                        'user_overrides': [],
+                        'federated_priors_used': [],
+                    },
+                    'toolkit': {
+                        'profile_id': 'developer-core',
+                        'selected_tools': [{'tool_id': 'context_web.pack'}],
+                    },
+                    'report': {
+                        'status': 'preview',
+                        'checklist': [{'id': 'ORCH-PREVIEW-001'}],
+                        'harness_writeback': 'not_requested',
+                        'next_actions': [],
+                    },
+                },
+            )
+        return httpx.Response(404)
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            result = await client.orchestrate_preview(
+                task='Fix the SDK parity test',
+                mode='fix',
+            )
+        finally:
+            await client.aclose()
+
+        assert result.decision.selected_profile_id == 'developer-core'
+        assert result.report.status == 'preview'
+        assert result.toolkit['profile_id'] == 'developer-core'
+        assert [request.url.path for request in requests] == [
+            '/api/v2/theseus/orchestrate/preview/',
+        ]
+
+    asyncio.run(run())
+
+
+def test_orchestrate_prepare_uses_server_prepare_route() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/orchestrate/prepare/'):
+            return httpx.Response(
+                200,
+                json={
+                    'decision': {
+                        'run_id': '',
+                        'task': 'Prepare memory recall policy',
+                        'task_signature': 'sig:prepare',
+                        'selected_profile_id': 'developer-core',
+                        'selected_pack_ids': ['pack:context-web'],
+                        'selected_skill_ids': [],
+                        'selected_agent_ids': [],
+                        'selected_tool_ids': ['context_web.pack'],
+                        'selected_validator_ids': [],
+                        'selected_renderer_ids': [],
+                        'selected_compute_backend_ids': [],
+                        'rejected_candidates': [],
+                        'context_plan': {
+                            'max_tokens': 6000,
+                            'metadata_tokens': 300,
+                            'skill_body_tokens': 900,
+                            'reference_tokens': 900,
+                            'tool_schema_tokens': 120,
+                            'context_artifact_tokens': 3780,
+                        },
+                        'risk': {
+                            'shell_risk': 0.2,
+                            'network_risk': 0.2,
+                            'data_exposure_risk': 0.1,
+                            'over_orchestration_risk': 0.2,
+                        },
+                        'why_selected': {'developer-core': 'selected'},
+                        'policies_applied': ['server_orchestrate_v1'],
+                        'user_overrides': [],
+                        'federated_priors_used': [],
+                    },
+                    'toolkit': {
+                        'profile_id': 'developer-core',
+                        'selected_tools': [{'tool_id': 'context_web.pack'}],
+                    },
+                    'report': {
+                        'status': 'preview',
+                        'checklist': [{'id': 'ORCH-PREVIEW-001'}],
+                        'harness_writeback': 'not_requested',
+                        'next_actions': ['Review proposed policy before promotion'],
+                        'memory_recall': {
+                            'section': 'memory_recall',
+                            'proposed_policy_count': 1,
+                        },
+                    },
+                    'memory': {
+                        'evidence': [],
+                        'operational_policy': [],
+                        'memory_banks': [
+                            {
+                                'bank_id': 'memory_bank:repo',
+                                'kind': 'repo',
+                                'scope': 'repo',
+                                'selector': 'Travis-Gilbert/Index-API',
+                                'rationale': 'Repository-scoped recall for continuity.',
+                            },
+                        ],
+                        'evidence_hash': 'hash:evidence',
+                        'policy_hash': 'hash:policy',
+                        'recall_policy': {
+                            'policy_id': 'recall-policy:developer-core',
+                            'kind': 'runtime_recall_scope',
+                            'scope_filters': ['repo:Travis-Gilbert/Index-API'],
+                            'selected_banks': ['memory_bank:repo'],
+                            'rationale': 'Recall is constrained by selected banks.',
+                            'status': 'active',
+                        },
+                    },
+                    'memory_contract': {
+                        'evidence': [],
+                        'operational_policy': [],
+                        'memory_banks': [
+                            {
+                                'bank_id': 'memory_bank:repo',
+                                'kind': 'repo',
+                                'scope': 'repo',
+                                'selector': 'Travis-Gilbert/Index-API',
+                                'rationale': 'Repository-scoped recall for continuity.',
+                            },
+                        ],
+                        'evidence_hash': 'hash:evidence',
+                        'policy_hash': 'hash:policy',
+                        'recall_policy': {
+                            'policy_id': 'recall-policy:developer-core',
+                            'kind': 'runtime_recall_scope',
+                            'scope_filters': ['repo:Travis-Gilbert/Index-API'],
+                            'selected_banks': ['memory_bank:repo'],
+                            'rationale': 'Recall is constrained by selected banks.',
+                            'status': 'active',
+                        },
+                    },
+                    'memory_policy_proposals': [
+                        {
+                            'proposal_id': 'proposal:1',
+                            'proposal_type': 'operational_policy',
+                            'target_scope': 'repo',
+                            'payload': {
+                                'policy_id': 'policy:1',
+                                'kind': 'runtime_permissions',
+                                'scope': 'orchestrate.permissions',
+                                'status': 'proposed',
+                            },
+                            'proposal_intent': {
+                                'source_category': 'orchestrate_prepare',
+                                'target_category': 'operational_policy',
+                                'proposed_action': 'upsert',
+                                'promotion_intent': 'review',
+                            },
+                        },
+                    ],
+                    'memory_recall': {
+                        'read_first': ['Task signature and selected profile'],
+                        'risks': ['network access'],
+                        'do_not': ['Promote policy automatically'],
+                        'next_actions': ['Review proposed policy before promotion'],
+                        'hydration_handles': [],
+                        'recalled_evidence': ['evidence:1'],
+                        'selected_banks': ['repo:Travis-Gilbert/Index-API'],
+                        'recall_policy': ['repo:Travis-Gilbert/Index-API'],
+                        'active_policy': [],
+                        'proposed_policy': ['policy:1'],
+                    },
+                    'memory_recall_trace': {
+                        'section': 'memory_recall',
+                        'read_first': ['Task signature and selected profile'],
+                        'risks': ['network access'],
+                        'do_not': ['Promote policy automatically'],
+                        'next_actions': ['Review proposed policy before promotion'],
+                        'selected_banks': ['repo:Travis-Gilbert/Index-API'],
+                        'recall_policy': ['repo:Travis-Gilbert/Index-API'],
+                        'recalled_evidence_count': 1,
+                        'active_policy_count': 0,
+                        'proposed_policy_count': 1,
+                        'selected_bank_count': 1,
+                        'hydration_handle_count': 0,
+                    },
+                },
+            )
+        return httpx.Response(404)
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            result = await client.orchestrate_prepare(
+                task='Prepare memory recall policy',
+                mode='plan',
+            )
+        finally:
+            await client.aclose()
+
+        assert result.memory_recall is not None
+        assert result.memory_recall.proposed_policy == ['policy:1']
+        assert result.memory.memory_banks[0].kind == 'repo'
+        assert result.memory.recall_policy is not None
+        assert result.memory.recall_policy.selected_banks == ['memory_bank:repo']
+        assert result.memory_recall.selected_banks == [
+            'repo:Travis-Gilbert/Index-API',
+        ]
+        assert result.memory_policy_proposals[0].proposal_id == 'proposal:1'
+        assert result.memory_recall_trace.selected_bank_count == 1
+        assert result.memory_recall_trace.proposed_policy_count == 1
+        assert [request.url.path for request in requests] == [
+            '/api/v2/theseus/orchestrate/prepare/',
+        ]
+
+    asyncio.run(run())
+
+
+def test_harness_context_web_namespace_maps_modes_and_explain_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/context-web/browser-folio/'):
+            return httpx.Response(
+                200,
+                json={
+                    'context_web_pack': {
+                        'run_id': 'run:web',
+                        'query': 'what is active in this folio?',
+                        'mode': 'browser_folio',
+                        'budget': {'max_tokens': 4000, 'max_atoms': 24, 'max_edges': 48, 'max_paths': 8, 'max_tools': 5},
+                        'atoms': [{'id': 'folio:folio-1', 'kind': 'context_artifact', 'title': 'Browser folio folio-1'}],
+                        'edges': [],
+                        'paths': [],
+                        'tools_used': [],
+                        'source_mix': {'trusted_repo_memory': 1},
+                        'token_ledger': {},
+                        'provenance': {'mode_semantics': {'folio_id': 'folio-1'}},
+                        'spend_plan': {},
+                        'state_hash': 'pack:web',
+                    },
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                'explanation': {
+                    'run_id': 'run:web',
+                    'pack_id': 'pack:web',
+                    'atom_id': 'folio:folio-1',
+                    'included': True,
+                    'why_included': 'Selected as the active browser folio anchor.',
+                    'why_excluded': '',
+                    'policies_applied': ['browser_folio'],
+                    'mode': 'browser_folio',
+                    'source_mix': {'trusted_repo_memory': 1},
+                    'budget': {'max_tokens': 4000},
+                    'provenance': {'mode_semantics': {'folio_id': 'folio-1'}},
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            pack = await client.harness.context_web_browser_folio(
+                'run:web',
+                query='what is active in this folio?',
+                folio_id='folio-1',
+            )
+            explanation = await client.harness.context_web_explain(
+                'run:web',
+                'pack:web',
+                atom_id='folio:folio-1',
+            )
+        finally:
+            await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/harness/runs/run:web/context-web/browser-folio/'
+        assert json.loads(requests[0].content)['folio_id'] == 'folio-1'
+        assert pack.mode == 'browser_folio'
+        assert pack.provenance['mode_semantics']['folio_id'] == 'folio-1'
+        assert requests[1].url.path == '/api/v2/theseus/harness/runs/run:web/context-web/pack:web/explain/'
+        assert explanation.included is True
+        assert explanation.why_included == 'Selected as the active browser folio anchor.'
+
+
+def test_harness_context_web_spend_plan_and_index_update_helpers() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/context-web/spend-plan/'):
+            return httpx.Response(
+                200,
+                json={
+                    'run_id': 'run:web',
+                    'mode': 'standard',
+                    'pack_id': 'pack:spend',
+                    'spend_plan': {
+                        'spend_plan_id': 'spend:1',
+                        'budget_allocation': {'code_symbols': 1800},
+                        'hydration_policy': {
+                            'excerpt': ['file:apps/orchestrate/runtime/orchestrate.py'],
+                        },
+                        'expected_savings': {
+                            'raw_candidate_tokens': 2400,
+                            'capsule_tokens': 900,
+                        },
+                        'cache_keys': {'profile_id': 'developer-core'},
+                        'degradations': [],
+                    },
+                    'evaluation': {
+                        'naive_tokens': 2400,
+                        'context_web_tokens': 900,
+                        'compression_ratio': 2.667,
+                        'graph_overhead': 48,
+                        'trivial_change_penalty': 0,
+                        'useful_when': ['multi_file'],
+                        'not_useful_when': ['tiny_one_file_edit'],
+                    },
+                    'validation': {
+                        'findings': [],
+                        'scores': {'lost_in_middle_risk': 0.12},
+                        'passed': True,
+                    },
+                    'top_atoms': [
+                        {
+                            'id': 'file:apps/orchestrate/runtime/orchestrate.py',
+                            'kind': 'file',
+                            'title': 'orchestrate.py',
+                            'summary': 'Server-authoritative orchestrate runtime.',
+                            'source_ref': 'apps/orchestrate/runtime/orchestrate.py',
+                            'score': 0.88,
+                            'estimated_tokens': 120,
+                            'channels': ['trusted_repo_memory'],
+                            'citations': [],
+                            'labels': ['ContextWebCandidate'],
+                            'hydration_level': 'excerpt',
+                        },
+                    ],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                'result': {
+                    'command': 'THG.CONTEXT_WEB.INDEX.UPDATE',
+                    'status': 'ok',
+                    'payload': {
+                        'repo_id': 'Travis-Gilbert/Index-API',
+                        'commit_sha': 'abc123',
+                        'changed_files': ['apps/orchestrate/runtime/orchestrate.py'],
+                        'file_hashes': {
+                            'apps/orchestrate/runtime/orchestrate.py': 'hash:file',
+                        },
+                        'symbol_hashes': {
+                            'orchestrate_prepare': 'hash:symbol',
+                        },
+                        'last_incremental_update': '2026-05-08T00:00:00+00:00',
+                        'graph_state_hash': 'hash:graph',
+                        'index_state_hash': 'hash:index',
+                        'update_strategy': 'incremental',
+                    },
+                    'nodes': [],
+                    'edges': [],
+                    'events': [],
+                    'state_hash': 'hash:result',
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            spend_plan = await client.harness.context_web_spend_plan(
+                'run:web',
+                query='What should we spend on context?',
+            )
+            index = await client.harness.thg.context_web.update_index(
+                repo_id='Travis-Gilbert/Index-API',
+                commit_sha='abc123',
+                changed_files=['apps/orchestrate/runtime/orchestrate.py'],
+                symbols=['orchestrate_prepare'],
+            )
+        finally:
+            await client.aclose()
+
+        assert [request.url.path for request in requests] == [
+            '/api/v2/theseus/harness/runs/run:web/context-web/spend-plan/',
+            '/api/v2/theseus/harness/thg/command/',
+        ]
+        assert spend_plan.spend_plan.spend_plan_id == 'spend:1'
+        assert spend_plan.top_atoms[0].hydration_level == 'excerpt'
+        assert index.repo_id == 'Travis-Gilbert/Index-API'
+        assert index.update_strategy == 'incremental'
 
     asyncio.run(run())
 

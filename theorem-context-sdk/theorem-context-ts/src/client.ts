@@ -33,11 +33,22 @@ import type {
   ContextCommandPayload,
   ContextCommandPreview,
   ContextCommandResolveResponse,
+  DiscoveryPreviewRequest,
+  DiscoveryRunPreview,
+  ExpressionRenderRequest,
+  ExpressionRenderResult,
+  ContextWebIndex,
+  ContextWebIndexUpdateRequest,
+  ContextWebExplainResponse,
+  ContextWebPack,
+  ContextWebSpendPlanResponse,
   GraphFocusResponse,
   GraphPatchesListResponse,
+  InferenceRegistryReport,
   HarnessBeginRequest,
   HarnessCompareRequest,
   HarnessContextRequest,
+  HarnessContextWebRequest,
   HarnessEvent,
   HarnessForkRequest,
   HarnessPatchRequest,
@@ -58,7 +69,11 @@ import type {
   LearningStructuralSignalResponse,
   OutcomeRequest,
   OrchestrateRequest,
+  OrchestratePreviewResult,
+  OrchestratePrepareResult,
   OrchestrateResult,
+  SolverContextCapsuleRequest,
+  SolverResult,
   THGCommandRequest,
   THGCypherRequest,
   THGResult,
@@ -128,9 +143,22 @@ export class TheoremContextClient {
       context_spend_plan: 'live',
       structural_signals: 'live',
     },
+    orchestrate: {
+      run: 'live',
+      preview: 'live',
+      prepare: 'live',
+      authority: 'server',
+      decision_runtime: 'live',
+    },
     thg: {
       profiles: 'live',
       plugins: 'live',
+    },
+    inference: {
+      registry: 'live',
+      expression: 'live',
+      solver: 'live',
+      discovery_run_preview: 'live',
     },
   } as const;
 
@@ -168,6 +196,14 @@ export class TheoremContextClient {
     step: this.recordHarnessStep.bind(this),
     search: this.searchHarness.bind(this),
     context: this.compileHarnessContext.bind(this),
+    contextWeb: this.compileHarnessContextWeb.bind(this),
+    contextWebMini: this.compileHarnessContextWebMini.bind(this),
+    contextWebReviewDelta: this.compileHarnessContextWebReviewDelta.bind(this),
+    contextWebResearch: this.compileHarnessContextWebResearch.bind(this),
+    contextWebBrowserFolio: this.compileHarnessContextWebBrowserFolio.bind(this),
+    contextWebSpendPlan: this.compileHarnessContextWebSpendPlan.bind(this),
+    contextWebExplain: this.explainHarnessContextWeb.bind(this),
+    graphragContext: this.compileHarnessGraphRAGContext.bind(this),
     transition: this.transitionHarness.bind(this),
     events: this.harnessEvents.bind(this),
     stateHash: this.harnessStateHash.bind(this),
@@ -185,6 +221,9 @@ export class TheoremContextClient {
         resolve: this.thgProfileResolve.bind(this),
         toolkit: this.thgProfileToolkit.bind(this),
         budget: this.thgProfileBudget.bind(this),
+      },
+      contextWeb: {
+        updateIndex: this.thgContextWebUpdateIndex.bind(this),
       },
       plugins: {
         runBegin: this.thgPluginRunBegin.bind(this),
@@ -224,6 +263,19 @@ export class TheoremContextClient {
     },
   };
 
+  readonly inference = {
+    registry: this.inferenceRegistry.bind(this),
+    expression: {
+      render: this.renderInferenceExpression.bind(this),
+    },
+    solver: {
+      contextCapsule: this.solveInferenceContextCapsule.bind(this),
+    },
+    discoveryRuns: {
+      preview: this.previewDiscoveryRun.bind(this),
+    },
+  };
+
   readonly runs = this.harness;
 
   readonly thg = {
@@ -235,12 +287,19 @@ export class TheoremContextClient {
       toolkit: this.thgProfileToolkit.bind(this),
       budget: this.thgProfileBudget.bind(this),
     },
+    contextWeb: {
+      updateIndex: this.thgContextWebUpdateIndex.bind(this),
+    },
     plugins: {
       runBegin: this.thgPluginRunBegin.bind(this),
       runStep: this.thgPluginRunStep.bind(this),
       claimConsult: this.thgPluginClaimConsult.bind(this),
       outcomeRecord: this.thgPluginOutcomeRecord.bind(this),
     },
+  };
+
+  readonly contextWeb = {
+    updateIndex: this.thgContextWebUpdateIndex.bind(this),
   };
 
   private headers(): Record<string, string> {
@@ -339,120 +398,63 @@ export class TheoremContextClient {
     if (!task) {
       throw new CompileError('orchestrate failed: task is required');
     }
-    const mode = request.mode ?? 'plan';
-    const metadata = {
-      ...(request.metadata ?? {}),
-      orchestrate: true,
-      mode,
-    };
-    const run = await this.beginHarness({
-      task,
-      actor: request.actor ?? 'codex',
-      scope: compactRecord({
-        ...(request.scope ?? {}),
-        orchestrate: true,
-        mode,
-        repo: request.repo,
-        target: request.target,
-        profile_id: request.profile_id,
-        risk_mode: request.risk_mode,
-      }),
-    });
-
-    const contextCommand =
-      request.resolve_context_command === false
-        ? null
-        : await this.resolveContextCommand({
-            goal: task,
-            query: task,
-            output_target: 'orchestrate',
-            risk_mode: request.risk_mode,
-            metadata: { ...metadata, run_id: run.run_id },
-          });
-
-    const artifact =
-      request.compile_context === false
-        ? null
-        : ((await this.compileHarnessContext(run.run_id, {
-            task,
-            repo: request.repo,
-            task_type: taskTypeForOrchestrateMode(mode),
-            budget_tokens: request.budget_tokens ?? 6000,
-            invariants: request.invariants,
-          })) as ContextArtifact);
-
-    const artifactAttachment =
-      artifact && request.attach_artifact !== false
-        ? await this.attachArtifact(artifact.id, run.run_id, {
-            metadata: {
-              source: 'orchestrate',
-              mode,
-              profile_id: request.profile_id,
-            },
-          })
-        : null;
-
-    const contextCommandPayload: Record<string, unknown> = contextCommand?.state
-      ? { ...contextCommand.state }
-      : {
-          goal: task,
-          query: task,
-          metadata,
-        };
-
-    const actionRail =
-      request.generate_action_rail === false
-        ? null
-        : await this.generateActionRail({
-            context_command_id: contextCommand?.state?.command_id,
-            context_command: contextCommandPayload,
-            max_actions: request.max_actions ?? 8,
-            include_disabled: true,
-            metadata: {
-              ...metadata,
-              run_id: run.run_id,
-              artifact_id: artifact?.id,
-            },
-          });
-
-    return {
-      run,
-      context_command: contextCommand,
-      artifact,
-      artifact_attachment: artifactAttachment,
-      action_rail: actionRail,
-      report: {
-        status: 'ready',
-        checklist: [
-          {
-            id: 'ORCH-SDK-001',
-            task: 'Begin Redis-backed harness run',
-            status: 'done',
-            evidence: run.run_id,
-          },
-          {
-            id: 'ORCH-SDK-002',
-            task: 'Resolve context command',
-            status: contextCommand ? 'done' : 'skipped',
-            evidence: contextCommand?.state?.command_id ?? null,
-          },
-          {
-            id: 'ORCH-SDK-003',
-            task: 'Compile and attach context artifact',
-            status: artifact ? 'done' : 'skipped',
-            evidence: artifact?.id ?? null,
-          },
-          {
-            id: 'ORCH-SDK-004',
-            task: 'Generate action rail',
-            status: actionRail ? 'done' : 'skipped',
-            evidence: actionRail?.rail_id ?? null,
-          },
-        ],
-        harness_writeback: artifactAttachment ? 'recorded' : 'not_requested',
-        next_actions: actionRail?.actions.map((action) => ({ ...action })) ?? [],
+    const response = await this.request(
+      `${this.baseUrl}/orchestrate/run/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          ...request,
+          task,
+        }),
       },
-    };
+      'orchestrate',
+    );
+    return (await response.json()) as OrchestrateResult;
+  }
+
+  async orchestratePreview(
+    request: OrchestrateRequest,
+  ): Promise<OrchestratePreviewResult> {
+    const task = request.task.trim();
+    if (!task) {
+      throw new CompileError('orchestrate preview failed: task is required');
+    }
+    const response = await this.request(
+      `${this.baseUrl}/orchestrate/preview/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          ...request,
+          task,
+        }),
+      },
+      'orchestrate preview',
+    );
+    return (await response.json()) as OrchestratePreviewResult;
+  }
+
+  async orchestratePrepare(
+    request: OrchestrateRequest,
+  ): Promise<OrchestratePrepareResult> {
+    const task = request.task.trim();
+    if (!task) {
+      throw new CompileError('orchestrate prepare failed: task is required');
+    }
+    const response = await this.request(
+      `${this.baseUrl}/orchestrate/prepare/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          ...request,
+          task,
+        }),
+      },
+      'orchestrate prepare',
+    );
+    return (await response.json()) as OrchestratePrepareResult;
   }
 
   async remember(input: { observation: string; evidence?: string[] }): Promise<{
@@ -843,6 +845,61 @@ export class TheoremContextClient {
     return (await response.json()) as GraphPatchesListResponse;
   }
 
+  async inferenceRegistry(): Promise<InferenceRegistryReport> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/registry/`,
+      { method: 'GET', headers: this.headers() },
+      'inference registry',
+    );
+    return (await response.json()) as InferenceRegistryReport;
+  }
+
+  async renderInferenceExpression(
+    engineId: string,
+    request: ExpressionRenderRequest,
+  ): Promise<ExpressionRenderResult> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/expression/${engineId}/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference expression render',
+    );
+    return (await response.json()) as ExpressionRenderResult;
+  }
+
+  async solveInferenceContextCapsule(
+    request: SolverContextCapsuleRequest,
+  ): Promise<SolverResult> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/solver/context-capsule/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference solver context capsule',
+    );
+    return (await response.json()) as SolverResult;
+  }
+
+  async previewDiscoveryRun(
+    request: DiscoveryPreviewRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/preview/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery run preview',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
   async beginHarness(request: HarnessBeginRequest): Promise<HarnessRun> {
     const response = await this.request(
       `${this.baseUrl}/harness/runs/`,
@@ -923,6 +980,139 @@ export class TheoremContextClient {
       artifact: ContextArtifact | Record<string, unknown>;
     };
     return body.artifact;
+  }
+
+  async compileHarnessContextWeb(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/',
+      'harness context-web',
+    );
+  }
+
+  async compileHarnessContextWebMini(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/mini/',
+      'harness context-web mini',
+    );
+  }
+
+  async compileHarnessContextWebReviewDelta(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/review-delta/',
+      'harness context-web review delta',
+    );
+  }
+
+  async compileHarnessContextWebResearch(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/research/',
+      'harness context-web research',
+    );
+  }
+
+  async compileHarnessContextWebBrowserFolio(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'context-web/browser-folio/',
+      'harness context-web browser folio',
+    );
+  }
+
+  async compileHarnessContextWebSpendPlan(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebSpendPlanResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${runId}/context-web/spend-plan/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'harness context-web spend plan',
+      'harness',
+    );
+    return (await response.json()) as ContextWebSpendPlanResponse;
+  }
+
+  async explainHarnessContextWeb(
+    runId: string,
+    packId: string,
+    atomId: string,
+  ): Promise<ContextWebExplainResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${runId}/context-web/${packId}/explain/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({ atom_id: atomId }),
+      },
+      'harness context-web explain',
+      'harness',
+    );
+    const body = (await response.json()) as {
+      explanation: ContextWebExplainResponse;
+    };
+    return body.explanation;
+  }
+
+  async compileHarnessGraphRAGContext(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebPack> {
+    return this.requestHarnessContextWeb(
+      runId,
+      request,
+      'graphrag-context/',
+      'harness graphrag context',
+    );
+  }
+
+  private async requestHarnessContextWeb(
+    runId: string,
+    request: HarnessContextWebRequest,
+    path: string,
+    surface: string,
+  ): Promise<ContextWebPack> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${runId}/${path}`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      surface,
+      'harness',
+    );
+    const body = (await response.json()) as {
+      context_web_pack?: ContextWebPack;
+      context_pack?: ContextWebPack;
+    };
+    return (body.context_web_pack ?? body.context_pack) as ContextWebPack;
   }
 
   async transitionHarness(
@@ -1108,6 +1298,16 @@ export class TheoremContextClient {
 
   async thgProfileBudget(payload: Record<string, unknown>): Promise<THGResult> {
     return this.thgCommand('THG.PROFILE.BUDGET', payload);
+  }
+
+  async thgContextWebUpdateIndex(
+    payload: ContextWebIndexUpdateRequest,
+  ): Promise<ContextWebIndex> {
+    const result = await this.thgCommand(
+      'THG.CONTEXT_WEB.INDEX.UPDATE',
+      payload as Record<string, unknown>,
+    );
+    return result.payload as unknown as ContextWebIndex;
   }
 
   async thgPluginRunBegin(payload: Record<string, unknown>): Promise<THGResult> {

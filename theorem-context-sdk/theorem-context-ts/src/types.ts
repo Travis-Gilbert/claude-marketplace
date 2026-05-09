@@ -177,20 +177,190 @@ export interface OrchestrateRequest {
   compile_context?: boolean;
   attach_artifact?: boolean;
   generate_action_rail?: boolean;
+  submit_operational_policy_patches?: boolean;
+  queue_operational_policy_patches?: boolean;
+}
+
+export interface OrchestrateRejectedCandidate {
+  id: string;
+  kind: string;
+  reason: string;
+}
+
+export interface OrchestrateContextPlan {
+  max_tokens: number;
+  metadata_tokens: number;
+  skill_body_tokens: number;
+  reference_tokens: number;
+  tool_schema_tokens: number;
+  context_artifact_tokens: number;
+}
+
+export interface OrchestrateRiskSummary {
+  shell_risk: number;
+  network_risk: number;
+  data_exposure_risk: number;
+  over_orchestration_risk: number;
+}
+
+export interface OrchestrateDecision {
+  run_id: string;
+  task: string;
+  task_signature: string;
+  selected_profile_id: string;
+  selected_pack_ids: string[];
+  selected_skill_ids: string[];
+  selected_agent_ids: string[];
+  selected_tool_ids: string[];
+  selected_validator_ids: string[];
+  selected_renderer_ids: string[];
+  selected_compute_backend_ids: string[];
+  rejected_candidates: OrchestrateRejectedCandidate[];
+  context_plan: OrchestrateContextPlan;
+  risk: OrchestrateRiskSummary;
+  why_selected: Record<string, string>;
+  policies_applied: string[];
+  user_overrides: string[];
+  federated_priors_used: string[];
+}
+
+export interface OrchestrateReport {
+  status: 'ready' | 'preview';
+  checklist: Array<Record<string, unknown>>;
+  harness_writeback: 'recorded' | 'not_requested';
+  next_actions: Array<Record<string, unknown> | string>;
+  memory_recall?: OrchestrateMemoryRecallTrace;
+  memory_policy_patch_requests?: string[];
 }
 
 export interface OrchestrateResult {
   run: HarnessRun;
+  decision: OrchestrateDecision;
+  memory?: OrchestratePrepareMemoryContract;
+  memory_contract?: OrchestratePrepareMemoryContract;
+  memory_policy_proposals?: OrchestrateMemoryPolicyProposal[];
+  memory_policy_patch_requests?: Array<Record<string, unknown>>;
+  memory_recall?: OrchestratePrepareRecallPreview | null;
+  memory_recall_trace?: OrchestrateMemoryRecallTrace;
   context_command: ContextCommandResolveResponse | null;
   artifact: ContextArtifact | null;
   artifact_attachment: ArtifactAttachResponse | null;
   action_rail: ActionRailBundle | null;
-  report: {
-    status: 'ready';
-    checklist: Array<Record<string, unknown>>;
-    harness_writeback: 'recorded' | 'not_requested';
-    next_actions: Array<Record<string, unknown>>;
-  };
+  report: OrchestrateReport;
+}
+
+export interface OrchestratePreviewResult {
+  decision: OrchestrateDecision;
+  toolkit: Record<string, unknown>;
+  report: OrchestrateReport;
+}
+
+export interface OrchestratePrepareHydrationHandle {
+  handle_id: string;
+  handle_type: string;
+  source: string;
+  reason: string;
+  scope: string;
+  status: string;
+}
+
+export interface OrchestratePrepareRecallPreview {
+  read_first: string[];
+  risks: string[];
+  do_not: string[];
+  next_actions: string[];
+  hydration_handles: OrchestratePrepareHydrationHandle[];
+  recalled_evidence: string[];
+  selected_banks: string[];
+  recall_policy: string[];
+  active_policy: string[];
+  proposed_policy: string[];
+}
+
+export interface OrchestratePrepareMemoryBank {
+  bank_id: string;
+  kind: string;
+  scope: string;
+  selector: string;
+  rationale: string;
+}
+
+export interface OrchestratePrepareRecallPolicy {
+  policy_id: string;
+  kind: string;
+  scope_filters: string[];
+  selected_banks: string[];
+  rationale: string;
+  status: string;
+}
+
+export interface OrchestratePrepareMemoryEvidence {
+  evidence_id: string;
+  kind: string;
+  source: string;
+  immutable: boolean;
+  payload: Record<string, unknown>;
+  rationale: string;
+}
+
+export interface OrchestratePrepareMemoryPolicy {
+  policy_id: string;
+  kind: string;
+  scope: string;
+  editable: boolean;
+  payload: Record<string, unknown>;
+  rationale: string;
+  status: string;
+}
+
+export interface OrchestratePrepareMemoryContract {
+  evidence: OrchestratePrepareMemoryEvidence[];
+  operational_policy: OrchestratePrepareMemoryPolicy[];
+  memory_banks: OrchestratePrepareMemoryBank[];
+  evidence_hash: string;
+  policy_hash: string;
+  recall_policy?: OrchestratePrepareRecallPolicy | null;
+  recall_preview?: OrchestratePrepareRecallPreview | null;
+}
+
+export interface OrchestrateMemoryPolicyProposalIntent {
+  source_category: string;
+  target_category: string;
+  proposed_action: string;
+  promotion_intent: string;
+}
+
+export interface OrchestrateMemoryPolicyProposal {
+  proposal_id: string;
+  proposal_type: string;
+  target_scope: string;
+  payload: Record<string, unknown>;
+  proposal_intent: OrchestrateMemoryPolicyProposalIntent;
+}
+
+export interface OrchestrateMemoryRecallTrace {
+  section?: string;
+  read_first?: string[];
+  risks?: string[];
+  do_not?: string[];
+  next_actions?: string[];
+  selected_banks?: string[];
+  recall_policy?: string[];
+  recalled_evidence_count?: number;
+  active_policy_count?: number;
+  proposed_policy_count?: number;
+  selected_bank_count?: number;
+  hydration_handle_count?: number;
+  proposed_policy_patches?: number;
+  events?: Array<Record<string, unknown>>;
+}
+
+export interface OrchestratePrepareResult extends OrchestratePreviewResult {
+  memory: OrchestratePrepareMemoryContract;
+  memory_contract: OrchestratePrepareMemoryContract;
+  memory_policy_proposals: OrchestrateMemoryPolicyProposal[];
+  memory_recall: OrchestratePrepareRecallPreview | null;
+  memory_recall_trace: OrchestrateMemoryRecallTrace;
 }
 
 export interface OutcomeRequest {
@@ -279,6 +449,127 @@ export interface GraphFocusResponse {
 export interface GraphPatchesListResponse {
   stub: false;
   patches: Array<Record<string, unknown>>;
+}
+
+export interface InferenceKernelContract {
+  kernel_id: string;
+  epistemic_job: string;
+  inference_family: string;
+  consumes_view: string[];
+  produces: string[];
+  truth_type: string;
+  validator: string;
+  writeback_policy: string;
+  source_module?: string;
+  owner?: string;
+  description?: string;
+  source?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface InferenceRegistryReport {
+  version: string;
+  count: number;
+  entries: InferenceKernelContract[];
+  index: Record<string, InferenceKernelContract>;
+}
+
+export interface ExpressionRenderRequest {
+  result: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ExpressionRenderResult {
+  engine_id: string;
+  artifact_type: string;
+  payload: Record<string, unknown>;
+  receipt_hash: string;
+  writeback_policy: string;
+}
+
+export interface SolverContextCapsuleRequest {
+  capsule: Record<string, unknown>;
+  budget_tokens: number;
+  token_ledger?: Record<string, unknown>;
+  atoms?: Array<Record<string, unknown>>;
+  exports?: Record<string, unknown>;
+  input_view_refs?: string[];
+}
+
+export interface SolverResult {
+  provider: string;
+  formula_hash: string;
+  input_view_refs: string[];
+  status: string;
+  model: Record<string, unknown>;
+  counterexample: Record<string, unknown>;
+  unsat_core_ref: string;
+  unknown_reason: string;
+  timeout_ms?: number | null;
+  writeback_proposals: Array<Record<string, unknown>>;
+}
+
+export interface DiscoveryPreviewRequest {
+  objective: string;
+  hypothesis: string;
+  action: Record<string, unknown>;
+  context_refs?: string[];
+  expected_value?: number;
+}
+
+export interface DiscoveryEvent {
+  event_type: string;
+  payload: Record<string, unknown>;
+  event_hash: string;
+}
+
+export interface DiscoveryCandidate {
+  candidate_id: string;
+  hypothesis: string;
+  action: Record<string, unknown>;
+  expected_value: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface ValidatorReceipt {
+  validator_id: string;
+  status: string;
+  command: string;
+  output_summary: string;
+  counterexample: Record<string, unknown>;
+  duration_ms: number;
+  receipt_hash: string;
+}
+
+export interface DiscoveryOutcome {
+  outcome_id: string;
+  candidate_id: string;
+  validator_receipts: ValidatorReceipt[];
+  passed: boolean;
+  summary: string;
+}
+
+export interface DiscoveryWritebackProposal {
+  proposal_id: string;
+  target: string;
+  reason: string;
+  payload: Record<string, unknown>;
+  review_required: boolean;
+  writeback_policy: string;
+}
+
+export interface DiscoveryRunPreview {
+  run_id: string;
+  objective: string;
+  status: string;
+  context_refs: string[];
+  candidates: DiscoveryCandidate[];
+  outcomes: DiscoveryOutcome[];
+  writeback_proposals: DiscoveryWritebackProposal[];
+  events: DiscoveryEvent[];
+  append_only: boolean;
+  canonical_graph_mutation: boolean;
 }
 
 export interface ContextCommandPayload {
@@ -590,9 +881,182 @@ export interface HarnessContextRequest {
   invariants?: string;
 }
 
+export interface HarnessContextWebRequest {
+  query?: string;
+  mode?: string;
+  budget_tokens?: number;
+  explicit_targets?: string[];
+  allow_generated_artifacts?: boolean;
+  folio_id?: string;
+}
+
+export interface ContextWebBudget {
+  max_tokens: number;
+  max_atoms: number;
+  max_edges: number;
+  max_paths: number;
+  max_tools: number;
+}
+
+export interface ContextWebCitation {
+  source_id: string;
+  source_type: string;
+  locator: string;
+  excerpt_hash: string;
+}
+
+export interface ContextWebAtom {
+  id: string;
+  kind: string;
+  title: string;
+  summary: string;
+  source_ref: string;
+  score: number;
+  estimated_tokens: number;
+  channels: string[];
+  citations: ContextWebCitation[];
+  labels: string[];
+  trigger_description?: string;
+  why_relevant?: string;
+  hydration_level?: string;
+  hydration_handle?: string;
+}
+
+export interface ContextWebEdge {
+  from_id: string;
+  to_id: string;
+  relation: string;
+  reason: string;
+  score: number;
+}
+
+export interface ContextWebPath {
+  node_ids: string[];
+  edge_relations: string[];
+  score: number;
+}
+
+export interface ContextWebTokenLedger {
+  raw_candidate_tokens: number;
+  packed_tokens: number;
+  saved_tokens: number;
+  tool_schema_tokens_avoided: number;
+  hydration_tokens_avoided: number;
+  cache_hits: number;
+}
+
+export interface ContextWebSpendPlan {
+  spend_plan_id: string;
+  budget_allocation: Record<string, number>;
+  hydration_policy: Record<string, string[]>;
+  expected_savings: Record<string, unknown>;
+  cache_keys: Record<string, unknown>;
+  degradations: string[];
+}
+
+export interface ContextWebValidatorFinding {
+  validator_id: string;
+  severity: string;
+  score: number;
+  summary: string;
+  affected_atom_ids: string[];
+}
+
+export interface ContextWebValidationSummary {
+  findings: ContextWebValidatorFinding[];
+  scores: Record<string, number>;
+  passed: boolean;
+}
+
+export interface ContextWebEvaluation {
+  naive_tokens: number;
+  context_web_tokens: number;
+  compression_ratio: number;
+  graph_overhead: number;
+  trivial_change_penalty: number;
+  useful_when: string[];
+  not_useful_when: string[];
+}
+
+export interface ContextWebIndex {
+  repo_id: string;
+  commit_sha: string;
+  changed_files: string[];
+  file_hashes: Record<string, string>;
+  symbol_hashes: Record<string, string>;
+  last_incremental_update: string;
+  graph_state_hash: string;
+  index_state_hash: string;
+  update_strategy: string;
+}
+
+export interface ContextWebSpendPlanResponse {
+  run_id: string;
+  mode: string;
+  pack_id: string;
+  spend_plan: ContextWebSpendPlan;
+  evaluation: ContextWebEvaluation;
+  validation: ContextWebValidationSummary;
+  top_atoms: ContextWebAtom[];
+}
+
+export interface ContextWebIndexUpdateRequest {
+  repo_id?: string;
+  repo?: string;
+  commit_sha?: string;
+  commitSha?: string;
+  changed_files?: string[];
+  changedFiles?: string[];
+  file_hashes?: Record<string, string>;
+  fileHashes?: Record<string, string>;
+  symbol_hashes?: Record<string, string>;
+  symbolHashes?: Record<string, string>;
+  symbols?: string[];
+}
+
+export interface ContextWebPack {
+  run_id: string;
+  query: string;
+  mode: string;
+  budget: ContextWebBudget;
+  atoms: ContextWebAtom[];
+  edges: ContextWebEdge[];
+  paths: ContextWebPath[];
+  tools_used: Array<Record<string, unknown>>;
+  source_mix: Record<string, number>;
+  token_ledger: ContextWebTokenLedger;
+  provenance: Record<string, unknown>;
+  spend_plan: ContextWebSpendPlan;
+  validation?: ContextWebValidationSummary;
+  evaluation?: ContextWebEvaluation;
+  index?: ContextWebIndex;
+  state_hash: string;
+}
+
+export interface ContextWebExplainResponse {
+  run_id: string;
+  pack_id: string;
+  atom_id: string;
+  included: boolean;
+  why_included: string;
+  why_excluded: string;
+  policies_applied: string[];
+  mode: string;
+  source_mix: Record<string, number>;
+  budget: Record<string, unknown>;
+  provenance: Record<string, unknown>;
+}
+
 export interface HarnessPatchRequest {
   patch: Record<string, unknown>;
   validate?: boolean;
+  source_category?: string;
+  target_category?: string;
+  target_scope?: string;
+  proposed_action?: string;
+  promotion_intent?: string;
+  review_status?: string;
+  queue_for_review?: boolean;
 }
 
 export interface HarnessForkRequest {

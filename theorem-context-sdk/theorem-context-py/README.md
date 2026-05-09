@@ -1,6 +1,6 @@
 # Context-Theorem (Python)
 
-Python SDK for the Theorem Context Compiler.
+Python SDK for Context Theorem.
 
 ```bash
 pip install Context-Theorem
@@ -66,6 +66,38 @@ Artifact `fork()` clones the compiled artifact and atom rows into a new
 artifact with fork provenance. Artifact `attach()` records provenance and, for
 harness-run targets, links the artifact into the run state. Graph focus and
 graph patches call the live read-only graph context endpoints.
+
+## BGI Inference Substrate
+
+```python
+registry = await cc.inference.registry()
+
+solver = await cc.inference.solver.context_capsule(
+    capsule={'user_task': {'text': 'prove this context is safe'}},
+    budget_tokens=8000,
+    input_view_refs=['artifact:123'],
+)
+
+brief = await cc.inference.expression.render(
+    'deterministic_brief',
+    result=solver.model_dump(),
+    metadata={'audience': 'operator'},
+)
+
+preview = await cc.inference.discovery_runs.preview(
+    objective='find stronger validators for this context artifact',
+    hypothesis='native parity receipts reduce validation cost',
+    action={'kind': 'benchmark', 'target': 'receipt_compaction'},
+    context_refs=['artifact:123'],
+    expected_value=0.8,
+)
+```
+
+These methods call the BGI backend substrate under
+`/api/v2/theseus/inference/...`. Registry, solver, expression, and
+DiscoveryRun preview surfaces are live and read-only/proposal-only by default;
+the preview response explicitly reports `append_only` and
+`canonical_graph_mutation`.
 
 The SDK also exports typed error classes for higher-level branching:
 `AuthError`, `CompileError`, `HarnessError`, `RequestTimeoutError`,
@@ -139,7 +171,19 @@ result = await cc.orchestrate(
     budget_tokens=6000,
 )
 
-print(result.run.run_id, result.artifact.id, result.action_rail['rail_id'])
+print(
+    result.run.run_id,
+    result.decision.selected_profile_id,
+    result.artifact.id if result.artifact else None,
+    result.action_rail['rail_id'] if result.action_rail else None,
+)
+
+preview = await cc.orchestrate_preview(
+    task='Fix the failing SDK harness parity test',
+    mode='fix',
+)
+
+print(preview.decision.selected_tool_ids)
 ```
 
 CLI:
@@ -148,10 +192,12 @@ CLI:
 context-theorem orchestrate "Fix the failing SDK harness parity test" --mode fix
 ```
 
-`orchestrate()` is a composed SDK convenience over shipped routes. It begins a
-Redis-backed harness run, resolves a Context Command, compiles and attaches a
-Context Artifact, and generates an Action Rail. It does not promote memory
-patches or claim canonical graph writes.
+`orchestrate()` now calls the server-authoritative
+`/api/v2/theseus/orchestrate/run/` route. The runtime selects a profile,
+compiles the visible toolkit, records an Orchestrate decision into the harness
+run, resolves a Context Command, compiles and attaches a Context Artifact, and
+generates an Action Rail. It still does not promote memory patches or claim
+canonical graph writes.
 
 ## Codex Bundle
 

@@ -157,6 +157,51 @@ class OrchestrateRequest(BaseModel):
     compile_context: bool = True
     attach_artifact: bool = True
     generate_action_rail: bool = True
+    submit_operational_policy_patches: bool = False
+    queue_operational_policy_patches: bool = False
+
+
+class OrchestrateRejectedCandidate(BaseModel):
+    id: str
+    kind: str
+    reason: str
+
+
+class OrchestrateContextPlan(BaseModel):
+    max_tokens: int = 0
+    metadata_tokens: int = 0
+    skill_body_tokens: int = 0
+    reference_tokens: int = 0
+    tool_schema_tokens: int = 0
+    context_artifact_tokens: int = 0
+
+
+class OrchestrateRiskSummary(BaseModel):
+    shell_risk: float = 0.0
+    network_risk: float = 0.0
+    data_exposure_risk: float = 0.0
+    over_orchestration_risk: float = 0.0
+
+
+class OrchestrateDecision(BaseModel):
+    run_id: str = ''
+    task: str
+    task_signature: str = ''
+    selected_profile_id: str = ''
+    selected_pack_ids: list[str] = Field(default_factory=list)
+    selected_skill_ids: list[str] = Field(default_factory=list)
+    selected_agent_ids: list[str] = Field(default_factory=list)
+    selected_tool_ids: list[str] = Field(default_factory=list)
+    selected_validator_ids: list[str] = Field(default_factory=list)
+    selected_renderer_ids: list[str] = Field(default_factory=list)
+    selected_compute_backend_ids: list[str] = Field(default_factory=list)
+    rejected_candidates: list[OrchestrateRejectedCandidate] = Field(default_factory=list)
+    context_plan: OrchestrateContextPlan = Field(default_factory=OrchestrateContextPlan)
+    risk: OrchestrateRiskSummary = Field(default_factory=OrchestrateRiskSummary)
+    why_selected: dict[str, str] = Field(default_factory=dict)
+    policies_applied: list[str] = Field(default_factory=list)
+    user_overrides: list[str] = Field(default_factory=list)
+    federated_priors_used: list[str] = Field(default_factory=list)
 
 
 class OutcomeRequest(BaseModel):
@@ -244,6 +289,127 @@ class GraphFocusResponse(BaseModel):
 class GraphPatchesListResponse(BaseModel):
     stub: bool = False
     patches: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class InferenceKernelContract(BaseModel):
+    kernel_id: str
+    epistemic_job: str = ''
+    inference_family: str = ''
+    consumes_view: list[str] = Field(default_factory=list)
+    produces: list[str] = Field(default_factory=list)
+    truth_type: str = ''
+    validator: str = ''
+    writeback_policy: str = ''
+    source_module: str = ''
+    owner: str = ''
+    description: str = ''
+    source: str = ''
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class InferenceRegistryReport(BaseModel):
+    version: str = ''
+    count: int = 0
+    entries: list[InferenceKernelContract] = Field(default_factory=list)
+    index: dict[str, InferenceKernelContract] = Field(default_factory=dict)
+
+
+class ExpressionRenderRequest(BaseModel):
+    result: dict[str, Any]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ExpressionRenderResult(BaseModel):
+    engine_id: str
+    artifact_type: str = ''
+    payload: dict[str, Any] = Field(default_factory=dict)
+    receipt_hash: str = ''
+    writeback_policy: str = 'read-only'
+
+
+class SolverContextCapsuleRequest(BaseModel):
+    capsule: dict[str, Any]
+    budget_tokens: int
+    token_ledger: dict[str, Any] = Field(default_factory=dict)
+    atoms: list[dict[str, Any]] = Field(default_factory=list)
+    exports: dict[str, Any] = Field(default_factory=dict)
+    input_view_refs: list[str] = Field(default_factory=list)
+
+
+class SolverResult(BaseModel):
+    provider: str = ''
+    formula_hash: str = ''
+    input_view_refs: list[str] = Field(default_factory=list)
+    status: str = ''
+    model: dict[str, Any] = Field(default_factory=dict)
+    counterexample: dict[str, Any] = Field(default_factory=dict)
+    unsat_core_ref: str = ''
+    unknown_reason: str = ''
+    timeout_ms: int | None = None
+    writeback_proposals: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class DiscoveryPreviewRequest(BaseModel):
+    objective: str
+    hypothesis: str
+    action: dict[str, Any]
+    context_refs: list[str] = Field(default_factory=list)
+    expected_value: float = 0.0
+
+
+class DiscoveryEvent(BaseModel):
+    event_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    event_hash: str = ''
+
+
+class DiscoveryCandidate(BaseModel):
+    candidate_id: str
+    hypothesis: str
+    action: dict[str, Any] = Field(default_factory=dict)
+    expected_value: float = 0.0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ValidatorReceipt(BaseModel):
+    validator_id: str
+    status: str = 'unknown'
+    command: str = ''
+    output_summary: str = ''
+    counterexample: dict[str, Any] = Field(default_factory=dict)
+    duration_ms: int = 0
+    receipt_hash: str = ''
+
+
+class DiscoveryOutcome(BaseModel):
+    outcome_id: str
+    candidate_id: str
+    validator_receipts: list[ValidatorReceipt] = Field(default_factory=list)
+    passed: bool = False
+    summary: str = ''
+
+
+class DiscoveryWritebackProposal(BaseModel):
+    proposal_id: str
+    target: str
+    reason: str = ''
+    payload: dict[str, Any] = Field(default_factory=dict)
+    review_required: bool = True
+    writeback_policy: str = 'proposal-only'
+
+
+class DiscoveryRunPreview(BaseModel):
+    run_id: str
+    objective: str
+    status: str = 'running'
+    context_refs: list[str] = Field(default_factory=list)
+    candidates: list[DiscoveryCandidate] = Field(default_factory=list)
+    outcomes: list[DiscoveryOutcome] = Field(default_factory=list)
+    writeback_proposals: list[DiscoveryWritebackProposal] = Field(default_factory=list)
+    events: list[DiscoveryEvent] = Field(default_factory=list)
+    append_only: bool = True
+    canonical_graph_mutation: bool = False
 
 
 class ContextCommandRequest(BaseModel):
@@ -363,19 +529,159 @@ class HarnessRun(BaseModel):
 
 
 class OrchestrateReport(BaseModel):
-    status: Literal['ready'] = 'ready'
+    status: Literal['ready', 'preview'] = 'ready'
     checklist: list[dict[str, Any]] = Field(default_factory=list)
     harness_writeback: Literal['recorded', 'not_requested'] = 'not_requested'
-    next_actions: list[dict[str, Any]] = Field(default_factory=list)
+    next_actions: list[dict[str, Any] | str] = Field(default_factory=list)
+    memory_recall: dict[str, Any] | None = None
+    memory_policy_patch_requests: list[str] = Field(default_factory=list)
 
 
 class OrchestrateResult(BaseModel):
     run: HarnessRun
+    decision: OrchestrateDecision
+    memory: dict[str, Any] = Field(default_factory=dict)
+    memory_contract: dict[str, Any] = Field(default_factory=dict)
+    memory_policy_proposals: list[dict[str, Any]] = Field(default_factory=list)
+    memory_policy_patch_requests: list[dict[str, Any]] = Field(default_factory=list)
+    memory_recall: dict[str, Any] | None = None
+    memory_recall_trace: dict[str, Any] = Field(default_factory=dict)
     context_command: dict[str, Any] | None = None
     artifact: ContextArtifact | None = None
     artifact_attachment: ArtifactAttachResponse | None = None
     action_rail: dict[str, Any] | None = None
     report: OrchestrateReport = Field(default_factory=OrchestrateReport)
+
+
+class OrchestratePreviewResult(BaseModel):
+    decision: OrchestrateDecision
+    toolkit: dict[str, Any] = Field(default_factory=dict)
+    report: OrchestrateReport = Field(default_factory=OrchestrateReport)
+
+
+class OrchestratePrepareHydrationHandle(BaseModel):
+    handle_id: str = ''
+    handle_type: str = ''
+    source: str = ''
+    reason: str = ''
+    scope: str = ''
+    status: str = ''
+
+
+class OrchestratePrepareRecallPreview(BaseModel):
+    read_first: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+    do_not: list[str] = Field(default_factory=list)
+    next_actions: list[str] = Field(default_factory=list)
+    hydration_handles: list[OrchestratePrepareHydrationHandle] = Field(
+        default_factory=list,
+    )
+    recalled_evidence: list[str] = Field(default_factory=list)
+    selected_banks: list[str] = Field(default_factory=list)
+    recall_policy: list[str] = Field(default_factory=list)
+    active_policy: list[str] = Field(default_factory=list)
+    proposed_policy: list[str] = Field(default_factory=list)
+
+
+class OrchestratePrepareMemoryBank(BaseModel):
+    bank_id: str = ''
+    kind: str = ''
+    scope: str = ''
+    selector: str = ''
+    rationale: str = ''
+
+
+class OrchestratePrepareRecallPolicy(BaseModel):
+    policy_id: str = ''
+    kind: str = ''
+    scope_filters: list[str] = Field(default_factory=list)
+    selected_banks: list[str] = Field(default_factory=list)
+    rationale: str = ''
+    status: str = 'active'
+
+
+class OrchestratePrepareMemoryEvidence(BaseModel):
+    evidence_id: str = ''
+    kind: str = ''
+    source: str = ''
+    immutable: bool = True
+    payload: dict[str, Any] = Field(default_factory=dict)
+    rationale: str = ''
+
+
+class OrchestratePrepareMemoryPolicy(BaseModel):
+    policy_id: str = ''
+    kind: str = ''
+    scope: str = ''
+    editable: bool = True
+    payload: dict[str, Any] = Field(default_factory=dict)
+    rationale: str = ''
+    status: str = 'active'
+
+
+class OrchestratePrepareMemoryContract(BaseModel):
+    evidence: list[OrchestratePrepareMemoryEvidence] = Field(default_factory=list)
+    operational_policy: list[OrchestratePrepareMemoryPolicy] = Field(
+        default_factory=list,
+    )
+    memory_banks: list[OrchestratePrepareMemoryBank] = Field(default_factory=list)
+    evidence_hash: str = ''
+    policy_hash: str = ''
+    recall_policy: OrchestratePrepareRecallPolicy | None = None
+    recall_preview: OrchestratePrepareRecallPreview | None = None
+
+
+class OrchestrateMemoryPolicyProposalIntent(BaseModel):
+    source_category: str = ''
+    target_category: str = ''
+    proposed_action: str = ''
+    promotion_intent: str = ''
+
+
+class OrchestrateMemoryPolicyProposal(BaseModel):
+    proposal_id: str = ''
+    proposal_type: str = ''
+    target_scope: str = ''
+    payload: dict[str, Any] = Field(default_factory=dict)
+    proposal_intent: OrchestrateMemoryPolicyProposalIntent = Field(
+        default_factory=OrchestrateMemoryPolicyProposalIntent,
+    )
+
+
+class OrchestrateMemoryRecallTrace(BaseModel):
+    section: str | None = None
+    read_first: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+    do_not: list[str] = Field(default_factory=list)
+    next_actions: list[str] = Field(default_factory=list)
+    selected_banks: list[str] = Field(default_factory=list)
+    recall_policy: list[str] = Field(default_factory=list)
+    recalled_evidence_count: int = 0
+    active_policy_count: int = 0
+    proposed_policy_count: int = 0
+    selected_bank_count: int = 0
+    hydration_handle_count: int = 0
+    proposed_policy_patches: int | None = None
+    events: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class OrchestratePrepareResult(BaseModel):
+    decision: OrchestrateDecision
+    toolkit: dict[str, Any] = Field(default_factory=dict)
+    report: OrchestrateReport = Field(default_factory=OrchestrateReport)
+    memory: OrchestratePrepareMemoryContract = Field(
+        default_factory=OrchestratePrepareMemoryContract,
+    )
+    memory_contract: OrchestratePrepareMemoryContract = Field(
+        default_factory=OrchestratePrepareMemoryContract,
+    )
+    memory_policy_proposals: list[OrchestrateMemoryPolicyProposal] = Field(
+        default_factory=list,
+    )
+    memory_recall: OrchestratePrepareRecallPreview | None = None
+    memory_recall_trace: OrchestrateMemoryRecallTrace = Field(
+        default_factory=OrchestrateMemoryRecallTrace,
+    )
 
 
 class HarnessEvent(BaseModel):
@@ -440,11 +746,184 @@ class HarnessContextRequest(BaseModel):
     invariants: str | None = None
 
 
+class HarnessContextWebRequest(BaseModel):
+    query: str | None = None
+    mode: str = 'standard'
+    budget_tokens: int = 4000
+    explicit_targets: list[str] = Field(default_factory=list)
+    allow_generated_artifacts: bool = False
+    folio_id: str | None = None
+
+
+class ContextWebBudget(BaseModel):
+    max_tokens: int = 4000
+    max_atoms: int = 24
+    max_edges: int = 48
+    max_paths: int = 8
+    max_tools: int = 5
+
+
+class ContextWebCitation(BaseModel):
+    source_id: str
+    source_type: str
+    locator: str = ''
+    excerpt_hash: str = ''
+
+
+class ContextWebAtom(BaseModel):
+    id: str
+    kind: str = 'file'
+    title: str = ''
+    summary: str = ''
+    source_ref: str = ''
+    score: float = 0.0
+    estimated_tokens: int = 0
+    channels: list[str] = Field(default_factory=list)
+    citations: list[ContextWebCitation] = Field(default_factory=list)
+    labels: list[str] = Field(default_factory=list)
+    trigger_description: str = ''
+    why_relevant: str = ''
+    hydration_level: str = 'summary'
+    hydration_handle: str = ''
+
+
+class ContextWebEdge(BaseModel):
+    from_id: str
+    to_id: str
+    relation: str
+    reason: str = ''
+    score: float = 0.0
+
+
+class ContextWebPath(BaseModel):
+    node_ids: list[str] = Field(default_factory=list)
+    edge_relations: list[str] = Field(default_factory=list)
+    score: float = 0.0
+
+
+class ContextWebTokenLedger(BaseModel):
+    raw_candidate_tokens: int = 0
+    packed_tokens: int = 0
+    saved_tokens: int = 0
+    tool_schema_tokens_avoided: int = 0
+    hydration_tokens_avoided: int = 0
+    cache_hits: int = 0
+
+
+class ContextWebSpendPlan(BaseModel):
+    spend_plan_id: str = ''
+    budget_allocation: dict[str, int] = Field(default_factory=dict)
+    hydration_policy: dict[str, list[str]] = Field(default_factory=dict)
+    expected_savings: dict[str, Any] = Field(default_factory=dict)
+    cache_keys: dict[str, Any] = Field(default_factory=dict)
+    degradations: list[str] = Field(default_factory=list)
+
+
+class ContextWebValidatorFinding(BaseModel):
+    validator_id: str
+    severity: str = 'low'
+    score: float = 0.0
+    summary: str = ''
+    affected_atom_ids: list[str] = Field(default_factory=list)
+
+
+class ContextWebValidationSummary(BaseModel):
+    findings: list[ContextWebValidatorFinding] = Field(default_factory=list)
+    scores: dict[str, float] = Field(default_factory=dict)
+    passed: bool = True
+
+
+class ContextWebEvaluation(BaseModel):
+    naive_tokens: int = 0
+    context_web_tokens: int = 0
+    compression_ratio: float = 0.0
+    graph_overhead: int = 0
+    trivial_change_penalty: int = 0
+    useful_when: list[str] = Field(default_factory=list)
+    not_useful_when: list[str] = Field(default_factory=list)
+
+
+class ContextWebIndex(BaseModel):
+    repo_id: str = ''
+    commit_sha: str = ''
+    changed_files: list[str] = Field(default_factory=list)
+    file_hashes: dict[str, str] = Field(default_factory=dict)
+    symbol_hashes: dict[str, str] = Field(default_factory=dict)
+    last_incremental_update: str = ''
+    graph_state_hash: str = ''
+    index_state_hash: str = ''
+    update_strategy: str = 'incremental'
+
+
+class ContextWebSpendPlanResponse(BaseModel):
+    run_id: str = ''
+    mode: str = 'standard'
+    pack_id: str = ''
+    spend_plan: ContextWebSpendPlan = Field(default_factory=ContextWebSpendPlan)
+    evaluation: ContextWebEvaluation = Field(default_factory=ContextWebEvaluation)
+    validation: ContextWebValidationSummary = Field(default_factory=ContextWebValidationSummary)
+    top_atoms: list[ContextWebAtom] = Field(default_factory=list)
+
+
+class ContextWebIndexUpdateRequest(BaseModel):
+    repo_id: str | None = None
+    repo: str | None = None
+    commit_sha: str | None = None
+    commitSha: str | None = None
+    changed_files: list[str] = Field(default_factory=list)
+    changedFiles: list[str] = Field(default_factory=list)
+    file_hashes: dict[str, str] = Field(default_factory=dict)
+    fileHashes: dict[str, str] = Field(default_factory=dict)
+    symbol_hashes: dict[str, str] = Field(default_factory=dict)
+    symbolHashes: dict[str, str] = Field(default_factory=dict)
+    symbols: list[str] = Field(default_factory=list)
+
+
+class ContextWebPack(BaseModel):
+    run_id: str
+    query: str
+    mode: str = 'standard'
+    budget: ContextWebBudget = Field(default_factory=ContextWebBudget)
+    atoms: list[ContextWebAtom] = Field(default_factory=list)
+    edges: list[ContextWebEdge] = Field(default_factory=list)
+    paths: list[ContextWebPath] = Field(default_factory=list)
+    tools_used: list[dict[str, Any]] = Field(default_factory=list)
+    source_mix: dict[str, int] = Field(default_factory=dict)
+    token_ledger: ContextWebTokenLedger = Field(default_factory=ContextWebTokenLedger)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    spend_plan: ContextWebSpendPlan = Field(default_factory=ContextWebSpendPlan)
+    validation: ContextWebValidationSummary = Field(default_factory=ContextWebValidationSummary)
+    evaluation: ContextWebEvaluation = Field(default_factory=ContextWebEvaluation)
+    index: ContextWebIndex = Field(default_factory=ContextWebIndex)
+    state_hash: str = ''
+
+
+class ContextWebExplainResponse(BaseModel):
+    run_id: str
+    pack_id: str
+    atom_id: str
+    included: bool = False
+    why_included: str = ''
+    why_excluded: str = ''
+    policies_applied: list[str] = Field(default_factory=list)
+    mode: str = ''
+    source_mix: dict[str, int] = Field(default_factory=dict)
+    budget: dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+
+
 class HarnessPatchRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     patch: dict[str, Any]
     validate_patch: bool = Field(default=True, alias='validate')
+    source_category: str = 'runtime_prepare'
+    target_category: str = 'operational_policy'
+    target_scope: str = 'global'
+    proposed_action: str = 'upsert'
+    promotion_intent: str = 'review'
+    review_status: str = 'not_queued'
+    queue_for_review: bool = False
 
 
 class HarnessForkRequest(BaseModel):

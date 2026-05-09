@@ -28,11 +28,16 @@ from .types import (
     CompileRequest,
     ContextCommandRequest,
     ContextArtifact,
+    DiscoveryPreviewRequest,
+    DiscoveryRunPreview,
+    ExpressionRenderRequest,
+    ExpressionRenderResult,
     GraphFocusResponse,
     GraphPatchesListResponse,
     HarnessBeginRequest,
     HarnessCompareRequest,
     HarnessContextRequest,
+    HarnessContextWebRequest,
     HarnessEvent,
     HarnessForkRequest,
     HarnessPatchRequest,
@@ -43,14 +48,24 @@ from .types import (
     HarnessStep,
     HarnessTransitionRequest,
     HarnessTransitionResult,
+    InferenceRegistryReport,
+    ContextWebIndex,
+    ContextWebIndexUpdateRequest,
+    ContextWebExplainResponse,
+    ContextWebPack,
+    ContextWebSpendPlanResponse,
     LearningContextSpendPlanRequest,
     LearningProfileInstallRequest,
     LearningProfileToolkitRequest,
     LearningStructuralSignalRequest,
     OutcomeRequest,
     OrchestrateRequest,
+    OrchestratePreviewResult,
+    OrchestratePrepareResult,
     OrchestrateResult,
     OrchestrateReport,
+    SolverContextCapsuleRequest,
+    SolverResult,
     THGCommandRequest,
     THGCypherRequest,
     THGResult,
@@ -243,6 +258,53 @@ class _LearningNamespace:
         self.structural_signals = _LearningStructuralSignalsNamespace(client)
 
 
+class _InferenceExpressionNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def render(
+        self,
+        engine_id: str,
+        *,
+        result: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+    ) -> ExpressionRenderResult:
+        request = ExpressionRenderRequest(
+            result=result,
+            metadata=metadata or {},
+        )
+        return await self._client._inference_expression_render(engine_id, request)
+
+
+class _InferenceSolverNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def context_capsule(self, **kwargs: Any) -> SolverResult:
+        request = SolverContextCapsuleRequest(**kwargs)
+        return await self._client._inference_solver_context_capsule(request)
+
+
+class _InferenceDiscoveryRunsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def preview(self, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryPreviewRequest(**kwargs)
+        return await self._client._inference_discovery_preview(request)
+
+
+class _InferenceNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.expression = _InferenceExpressionNamespace(client)
+        self.solver = _InferenceSolverNamespace(client)
+        self.discovery_runs = _InferenceDiscoveryRunsNamespace(client)
+
+    async def registry(self) -> InferenceRegistryReport:
+        return await self._client._inference_registry()
+
+
 class _THGProfilesNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
@@ -294,10 +356,25 @@ class _THGPluginsNamespace:
 
 
 class _THGNamespace:
+    class _ContextWebNamespace:
+        def __init__(self, client: 'TheoremContextClient') -> None:
+            self._client = client
+
+        async def update_index(self, **payload: Any) -> ContextWebIndex:
+            request = ContextWebIndexUpdateRequest(**payload)
+            result = await self._client._thg_command(
+                THGCommandRequest(
+                    command='THG.CONTEXT_WEB.INDEX.UPDATE',
+                    payload=request.model_dump(exclude_none=True),
+                )
+            )
+            return ContextWebIndex.model_validate(result.payload)
+
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
         self.profiles = _THGProfilesNamespace(client)
         self.plugins = _THGPluginsNamespace(client)
+        self.context_web = self._ContextWebNamespace(client)
 
     async def command(self, command: str, payload: dict[str, Any] | None = None) -> THGResult:
         request = THGCommandRequest(command=command, payload=payload or {})
@@ -350,6 +427,81 @@ class _HarnessNamespace:
     async def context(self, run_id: str, **kwargs: Any) -> dict:
         request = HarnessContextRequest(**kwargs)
         return await self._client._harness_context(run_id, request)
+
+    async def context_web(self, run_id: str, **kwargs: Any) -> ContextWebPack:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web(
+            run_id,
+            request,
+            path='context-web/',
+            surface='harness context-web',
+        )
+
+    async def context_web_mini(self, run_id: str, **kwargs: Any) -> ContextWebPack:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web(
+            run_id,
+            request,
+            path='context-web/mini/',
+            surface='harness context-web mini',
+        )
+
+    async def context_web_review_delta(self, run_id: str, **kwargs: Any) -> ContextWebPack:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web(
+            run_id,
+            request,
+            path='context-web/review-delta/',
+            surface='harness context-web review delta',
+        )
+
+    async def context_web_research(self, run_id: str, **kwargs: Any) -> ContextWebPack:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web(
+            run_id,
+            request,
+            path='context-web/research/',
+            surface='harness context-web research',
+        )
+
+    async def context_web_browser_folio(self, run_id: str, **kwargs: Any) -> ContextWebPack:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web(
+            run_id,
+            request,
+            path='context-web/browser-folio/',
+            surface='harness context-web browser folio',
+        )
+
+    async def context_web_spend_plan(
+        self,
+        run_id: str,
+        **kwargs: Any,
+    ) -> ContextWebSpendPlanResponse:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web_spend_plan(run_id, request)
+
+    async def graphrag_context(self, run_id: str, **kwargs: Any) -> ContextWebPack:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web(
+            run_id,
+            request,
+            path='graphrag-context/',
+            surface='harness graphrag context',
+        )
+
+    async def context_web_explain(
+        self,
+        run_id: str,
+        pack_id: str,
+        *,
+        atom_id: str,
+    ) -> ContextWebExplainResponse:
+        return await self._client._harness_context_web_explain(
+            run_id,
+            pack_id,
+            atom_id=atom_id,
+        )
 
     async def transition(self, run_id: str, **kwargs: Any) -> HarnessTransitionResult:
         request = HarnessTransitionRequest(**kwargs)
@@ -443,6 +595,7 @@ class TheoremContextClient:
         self.context_command = _ContextCommandNamespace(self)
         self.actions = _ActionRailNamespace(self)
         self.learning = _LearningNamespace(self)
+        self.inference = _InferenceNamespace(self)
         self.harness = _HarnessNamespace(self)
         self.runs = self.harness
         self.thg = _THGNamespace(self)
@@ -472,9 +625,22 @@ class TheoremContextClient:
                 'context_spend_plan': 'live',
                 'structural_signals': 'live',
             },
+            'orchestrate': {
+                'run': 'live',
+                'preview': 'live',
+                'prepare': 'live',
+                'authority': 'server',
+                'decision_runtime': 'live',
+            },
             'thg': {
                 'profiles': 'live',
                 'plugins': 'live',
+            },
+            'inference': {
+                'registry': 'live',
+                'expression': 'live',
+                'solver': 'live',
+                'discovery_run_preview': 'live',
             },
         }
 
@@ -492,148 +658,60 @@ class TheoremContextClient:
         task = request.task.strip()
         if not task:
             raise CompileError('orchestrate failed: task is required')
-
-        metadata = {
-            **request.metadata,
-            'orchestrate': True,
-            'mode': request.mode,
-        }
-        run = await self._harness_begin(
-            HarnessBeginRequest(
-                task=task,
-                actor=request.actor,
-                scope=_compact_dict({
-                    **request.scope,
-                    'orchestrate': True,
-                    'mode': request.mode,
-                    'repo': request.repo,
-                    'target': request.target,
-                    'profile_id': request.profile_id,
-                    'risk_mode': request.risk_mode,
-                }),
-            ),
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/orchestrate/run/',
+            surface='orchestrate',
+            headers=self._headers(),
+            content=OrchestrateRequest(
+                **{
+                    **request.model_dump(),
+                    'task': task,
+                }
+            ).model_dump_json(exclude_none=True),
+            kind='harness',
         )
+        return OrchestrateResult.model_validate(response.json())
 
-        context_command = None
-        if request.resolve_context_command:
-            context_command = await self._context_command_resolve(
-                ContextCommandRequest(
-                    goal=task,
-                    query=task,
-                    output_target='orchestrate',
-                    risk_mode=request.risk_mode,
-                    metadata={**metadata, 'run_id': run.run_id},
-                ),
-            )
-
-        artifact = None
-        if request.compile_context:
-            artifact_payload = await self._harness_context(
-                run.run_id,
-                HarnessContextRequest(
-                    task=task,
-                    repo=request.repo,
-                    task_type=_task_type_for_orchestrate_mode(request.mode),
-                    budget_tokens=request.budget_tokens,
-                    invariants=request.invariants,
-                ),
-            )
-            artifact = ContextArtifact.model_validate(artifact_payload)
-
-        artifact_attachment = None
-        if artifact is not None and request.attach_artifact:
-            artifact_attachment = await self._attach_artifact(
-                artifact.id,
-                run.run_id,
-                {
-                    'metadata': {
-                        'source': 'orchestrate',
-                        'mode': request.mode,
-                        'profile_id': request.profile_id,
-                    },
-                },
-            )
-
-        action_rail = None
-        if request.generate_action_rail:
-            state = (
-                context_command.get('state')
-                if isinstance(context_command, dict)
-                else None
-            )
-            action_rail = await self._action_rail_generate(
-                ActionRailGenerateRequest(
-                    context_command_id=(
-                        state.get('command_id') if isinstance(state, dict) else None
-                    ),
-                    context_command=(
-                        state
-                        if isinstance(state, dict)
-                        else {'goal': task, 'query': task, 'metadata': metadata}
-                    ),
-                    max_actions=request.max_actions,
-                    include_disabled=True,
-                    metadata={
-                        **metadata,
-                        'run_id': run.run_id,
-                        'artifact_id': artifact.id if artifact else None,
-                    },
-                ),
-            )
-
-        checklist = [
-            {
-                'id': 'ORCH-SDK-001',
-                'task': 'Begin Redis-backed harness run',
-                'status': 'done',
-                'evidence': run.run_id,
-            },
-            {
-                'id': 'ORCH-SDK-002',
-                'task': 'Resolve context command',
-                'status': 'done' if context_command else 'skipped',
-                'evidence': (
-                    context_command.get('state', {}).get('command_id')
-                    if isinstance(context_command, dict)
-                    else None
-                ),
-            },
-            {
-                'id': 'ORCH-SDK-003',
-                'task': 'Compile and attach context artifact',
-                'status': 'done' if artifact else 'skipped',
-                'evidence': artifact.id if artifact else None,
-            },
-            {
-                'id': 'ORCH-SDK-004',
-                'task': 'Generate action rail',
-                'status': 'done' if action_rail else 'skipped',
-                'evidence': (
-                    action_rail.get('rail_id')
-                    if isinstance(action_rail, dict)
-                    else None
-                ),
-            },
-        ]
-
-        return OrchestrateResult(
-            run=run,
-            context_command=context_command,
-            artifact=artifact,
-            artifact_attachment=artifact_attachment,
-            action_rail=action_rail,
-            report=OrchestrateReport(
-                checklist=checklist,
-                harness_writeback=(
-                    'recorded' if artifact_attachment else 'not_requested'
-                ),
-                next_actions=(
-                    action_rail.get('actions', [])
-                    if isinstance(action_rail, dict)
-                    else []
-                ),
-            ),
+    async def orchestrate_preview(self, **kwargs: Any) -> OrchestratePreviewResult:
+        request = OrchestrateRequest(**kwargs)
+        task = request.task.strip()
+        if not task:
+            raise CompileError('orchestrate preview failed: task is required')
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/orchestrate/preview/',
+            surface='orchestrate preview',
+            headers=self._headers(),
+            content=OrchestrateRequest(
+                **{
+                    **request.model_dump(),
+                    'task': task,
+                }
+            ).model_dump_json(exclude_none=True),
+            kind='harness',
         )
+        return OrchestratePreviewResult.model_validate(response.json())
+
+    async def orchestrate_prepare(self, **kwargs: Any) -> OrchestratePrepareResult:
+        request = OrchestrateRequest(**kwargs)
+        task = request.task.strip()
+        if not task:
+            raise CompileError('orchestrate prepare failed: task is required')
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/orchestrate/prepare/',
+            surface='orchestrate prepare',
+            headers=self._headers(),
+            content=OrchestrateRequest(
+                **{
+                    **request.model_dump(),
+                    'task': task,
+                }
+            ).model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return OrchestratePrepareResult.model_validate(response.json())
 
     def _headers(self) -> dict[str, str]:
         out = {'Content-Type': 'application/json'}
@@ -849,6 +927,55 @@ class TheoremContextClient:
             headers=self._headers(),
         )
         return GraphPatchesListResponse.model_validate(response.json())
+
+    async def _inference_registry(self) -> InferenceRegistryReport:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/registry/',
+            surface='inference registry',
+            headers=self._headers(),
+        )
+        return InferenceRegistryReport.model_validate(response.json())
+
+    async def _inference_expression_render(
+        self,
+        engine_id: str,
+        request: ExpressionRenderRequest,
+    ) -> ExpressionRenderResult:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/expression/{engine_id}/',
+            surface='inference expression render',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ExpressionRenderResult.model_validate(response.json())
+
+    async def _inference_solver_context_capsule(
+        self,
+        request: SolverContextCapsuleRequest,
+    ) -> SolverResult:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/solver/context-capsule/',
+            surface='inference solver context capsule',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SolverResult.model_validate(response.json())
+
+    async def _inference_discovery_preview(
+        self,
+        request: DiscoveryPreviewRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/preview/',
+            surface='inference discovery run preview',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
 
     async def _context_command_resolve(
         self,
@@ -1091,6 +1218,59 @@ class TheoremContextClient:
             content=request.model_dump_json(exclude_none=True),
         )
         return response.json()['artifact']
+
+    async def _harness_context_web(
+        self,
+        run_id: str,
+        request: HarnessContextWebRequest,
+        *,
+        path: str,
+        surface: str,
+    ) -> ContextWebPack:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/runs/{run_id}/{path}',
+            surface=surface,
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        body = response.json()
+        return ContextWebPack.model_validate(
+            body.get('context_web_pack') or body.get('context_pack') or {},
+        )
+
+    async def _harness_context_web_spend_plan(
+        self,
+        run_id: str,
+        request: HarnessContextWebRequest,
+    ) -> ContextWebSpendPlanResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/runs/{run_id}/context-web/spend-plan/',
+            surface='harness context-web spend plan',
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ContextWebSpendPlanResponse.model_validate(response.json())
+
+    async def _harness_context_web_explain(
+        self,
+        run_id: str,
+        pack_id: str,
+        *,
+        atom_id: str,
+    ) -> ContextWebExplainResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/runs/{run_id}/context-web/{pack_id}/explain/',
+            surface='harness context-web explain',
+            kind='harness',
+            headers=self._headers(),
+            json={'atom_id': atom_id},
+        )
+        return ContextWebExplainResponse.model_validate(response.json()['explanation'])
 
     async def _harness_transition(
         self,
