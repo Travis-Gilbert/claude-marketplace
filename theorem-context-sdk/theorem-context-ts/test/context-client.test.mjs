@@ -321,13 +321,169 @@ test('context graph namespace maps focus and patches to live routes', async () =
   assert.equal(patches.patches[0].operation, 'object_upsert');
 });
 
-test('orchestrate composes harness context artifact and action rail routes', async () => {
+test('inference namespace maps BGI backend routes', async () => {
   const requests = [];
   const client = new TheoremContextClient({
     baseUrl: 'http://localhost:8000/api/v2/theseus',
     fetchImpl: async (url, init) => {
       requests.push({ url, init });
-      if (String(url).endsWith('/harness/runs/')) {
+      if (String(url).endsWith('/inference/registry/')) {
+        return jsonResponse({
+          version: '2026.05.01',
+          count: 1,
+          entries: [
+            {
+              kernel_id: 'context_web_packer',
+              epistemic_job: 'ingest',
+              inference_family: 'expression',
+              consumes_view: ['text'],
+              produces: ['artifact'],
+              truth_type: 'relevance',
+              validator: 'source corroboration',
+              writeback_policy: 'proposal-only',
+            },
+          ],
+          index: {},
+        });
+      }
+      if (String(url).endsWith('/inference/expression/deterministic_brief/')) {
+        return jsonResponse({
+          engine_id: 'deterministic_brief',
+          artifact_type: 'brief',
+          payload: { text: 'ready' },
+          receipt_hash: 'hash:brief',
+          writeback_policy: 'read-only',
+        });
+      }
+      if (String(url).endsWith('/inference/solver/context-capsule/')) {
+        return jsonResponse({
+          provider: 'z3-reference',
+          formula_hash: 'hash:solver',
+          input_view_refs: ['artifact:1'],
+          status: 'unsat',
+          model: {},
+          counterexample: {},
+          unsat_core_ref: 'core:1',
+          unknown_reason: '',
+          timeout_ms: null,
+          writeback_proposals: [],
+        });
+      }
+      if (String(url).endsWith('/inference/kernel-runs/')) {
+        return jsonResponse({
+          run_id: 'kernel-1',
+          kernel_id: 'bgi_datalog_deriver',
+          epistemic_job: 'evaluate',
+          inference_family: 'deductive',
+          status: 'succeeded',
+          request_payload: {},
+          result_payload: { derived_count: 1 },
+          budget: {},
+          metadata: {},
+          error_payload: {},
+          receipt_hash: 'hash:kernel',
+          duration_ms: 4,
+          writeback_policy: 'read-only',
+          canonical_graph_mutation: false,
+          discovery_run_id: 'discovery-1',
+          result_receipts: [],
+          append_only: true,
+        });
+      }
+      return jsonResponse({
+        run_id: 'discovery-1',
+        objective: 'find stronger validators',
+        status: 'running',
+        context_refs: ['artifact:1'],
+        candidates: [
+          {
+            candidate_id: 'candidate-1',
+            hypothesis: 'native receipts can compact safely',
+            action: { kind: 'benchmark' },
+            expected_value: 0.8,
+            metadata: {},
+          },
+        ],
+        outcomes: [],
+        writeback_proposals: [],
+        events: [],
+        append_only: true,
+        canonical_graph_mutation: false,
+        validator_receipts: [],
+        kernel_runs: [],
+        candidate_archive_entries: [],
+      });
+    },
+  });
+
+  const registry = await client.inference.registry();
+  const expression = await client.inference.expression.render(
+    'deterministic_brief',
+    { result: { status: 'ready' } },
+  );
+  const solver = await client.inference.solver.contextCapsule({
+    capsule: { user_task: { token_count: 5 } },
+    budget_tokens: 100,
+    input_view_refs: ['artifact:1'],
+  });
+  const preview = await client.inference.discoveryRuns.preview({
+    objective: 'find stronger validators',
+    hypothesis: 'native receipts can compact safely',
+    action: { kind: 'benchmark' },
+    context_refs: ['artifact:1'],
+    expected_value: 0.8,
+  });
+  const created = await client.inference.discoveryRuns.create({
+    objective: 'find stronger validators',
+    hypothesis: 'native receipts can compact safely',
+    action: { kind: 'benchmark' },
+  });
+  const appended = await client.inference.discoveryRuns.appendValidatorReceipt(
+    'discovery-1',
+    {
+      candidate_id: 'candidate-1',
+      validator_id: 'pytest',
+      status: 'passed',
+    },
+  );
+  const finished = await client.inference.discoveryRuns.finish('discovery-1', {
+    succeeded: true,
+  });
+  const kernel = await client.inference.kernelRuns.create({
+    kernel_id: 'bgi_datalog_deriver',
+    discovery_run_id: 'discovery-1',
+    payload: { claims: [{ id: 'c1' }] },
+  });
+
+  assert.deepEqual(requests.map((request) => request.url), [
+    'http://localhost:8000/api/v2/theseus/inference/registry/',
+    'http://localhost:8000/api/v2/theseus/inference/expression/deterministic_brief/',
+    'http://localhost:8000/api/v2/theseus/inference/solver/context-capsule/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/preview/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/discovery-1/validator-receipts/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/discovery-1/finish/',
+    'http://localhost:8000/api/v2/theseus/inference/kernel-runs/',
+  ]);
+  assert.equal(registry.entries[0].kernel_id, 'context_web_packer');
+  assert.equal(expression.payload.text, 'ready');
+  assert.equal(solver.status, 'unsat');
+  assert.equal(preview.append_only, true);
+  assert.equal(preview.canonical_graph_mutation, false);
+  assert.equal(preview.candidates[0].candidate_id, 'candidate-1');
+  assert.equal(created.run_id, 'discovery-1');
+  assert.deepEqual(appended.validator_receipts, []);
+  assert.equal(finished.status, 'running');
+  assert.equal(kernel.kernel_id, 'bgi_datalog_deriver');
+});
+
+test('orchestrate uses server-authoritative route', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/orchestrate/run/')) {
         return jsonResponse({
           run: {
             run_id: 'run:orch',
@@ -341,52 +497,79 @@ test('orchestrate composes harness context artifact and action rail routes', asy
             memory_patches: [],
             validations: [],
           },
-        });
-      }
-      if (String(url).endsWith('/context-command/resolve/')) {
-        return jsonResponse({
-          state: {
-            command_id: 'ctx:1',
-            goal: 'Fix the SDK parity test',
-            working_set: [],
-            exclusions: [],
-            hot_context: [],
-            canonical_context: [],
-            graph_layers: [],
-            tool_scope: [],
+          decision: {
+            run_id: 'run:orch',
+            task: 'Fix the SDK parity test',
+            task_signature: 'sig:1',
+            selected_profile_id: 'developer-core',
+            selected_pack_ids: ['pack:context-web'],
+            selected_skill_ids: [],
+            selected_agent_ids: [],
+            selected_tool_ids: ['context_web.pack'],
+            selected_validator_ids: [],
+            selected_renderer_ids: [],
+            selected_compute_backend_ids: [],
+            rejected_candidates: [],
+            context_plan: {
+              max_tokens: 6000,
+              metadata_tokens: 300,
+              skill_body_tokens: 900,
+              reference_tokens: 900,
+              tool_schema_tokens: 120,
+              context_artifact_tokens: 3780,
+            },
+            risk: {
+              shell_risk: 0.2,
+              network_risk: 0.2,
+              data_exposure_risk: 0.1,
+              over_orchestration_risk: 0.2,
+            },
+            why_selected: { 'developer-core': 'selected' },
+            policies_applied: ['server_orchestrate_v1'],
+            user_overrides: [],
+            federated_priors_used: [],
+          },
+          context_command: {
+            state: {
+              command_id: 'ctx:1',
+              goal: 'Fix the SDK parity test',
+              working_set: [],
+              exclusions: [],
+              hot_context: [],
+              canonical_context: [],
+              graph_layers: [],
+              tool_scope: [],
+              warnings: [],
+              metadata: {},
+            },
+            preview: {
+              command_id: 'ctx:1',
+              working_set_count: 0,
+            },
+          },
+          artifact: contextArtifactFixture('artifact-orch'),
+          artifact_attachment: {
+            attached: true,
+            harness_attached: true,
+            attachment: {
+              artifact_id: 'artifact-orch',
+              target: 'run:orch',
+            },
+          },
+          action_rail: {
+            rail_id: 'rail:1',
+            actions: [{ action_id: 'act:1', label: 'Run focused tests' }],
+            grouped: {},
+            context_summary: {},
             warnings: [],
             metadata: {},
           },
-          preview: {
-            command_id: 'ctx:1',
-            working_set_count: 0,
+          report: {
+            status: 'ready',
+            checklist: [{ id: 'ORCH-SERVER-001' }],
+            harness_writeback: 'recorded',
+            next_actions: [],
           },
-        });
-      }
-      if (String(url).endsWith('/harness/runs/run:orch/context/')) {
-        return jsonResponse({
-          artifact: contextArtifactFixture('artifact-orch'),
-          contract: {},
-        });
-      }
-      if (String(url).endsWith('/attach/')) {
-        return jsonResponse({
-          attached: true,
-          harness_attached: true,
-          attachment: {
-            artifact_id: 'artifact-orch',
-            target: 'run:orch',
-          },
-        });
-      }
-      if (String(url).endsWith('/action-rail/generate/')) {
-        return jsonResponse({
-          rail_id: 'rail:1',
-          actions: [{ action_id: 'act:1', label: 'Run focused tests' }],
-          grouped: {},
-          context_summary: {},
-          warnings: [],
-          metadata: {},
         });
       }
       return new Response('', { status: 404 });
@@ -400,18 +583,252 @@ test('orchestrate composes harness context artifact and action rail routes', asy
   });
 
   assert.equal(result.run.run_id, 'run:orch');
+  assert.equal(result.decision.selected_profile_id, 'developer-core');
   assert.equal(result.context_command.state.command_id, 'ctx:1');
   assert.equal(result.artifact.id, 'artifact-orch');
   assert.equal(result.artifact_attachment.harness_attached, true);
   assert.equal(result.action_rail.rail_id, 'rail:1');
-  assert.equal(result.report.checklist[0].id, 'ORCH-SDK-001');
+  assert.equal(result.report.checklist[0].id, 'ORCH-SERVER-001');
   assert.equal(result.report.harness_writeback, 'recorded');
   assert.deepEqual(requests.map((request) => request.url), [
-    'http://localhost:8000/api/v2/theseus/harness/runs/',
-    'http://localhost:8000/api/v2/theseus/context-command/resolve/',
-    'http://localhost:8000/api/v2/theseus/harness/runs/run:orch/context/',
-    'http://localhost:8000/api/v2/theseus/context/artifacts/artifact-orch/attach/',
-    'http://localhost:8000/api/v2/theseus/action-rail/generate/',
+    'http://localhost:8000/api/v2/theseus/orchestrate/run/',
+  ]);
+});
+
+test('orchestrate preview uses server preview route', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/orchestrate/preview/')) {
+        return jsonResponse({
+          decision: {
+            run_id: '',
+            task: 'Fix the SDK parity test',
+            task_signature: 'sig:preview',
+            selected_profile_id: 'developer-core',
+            selected_pack_ids: ['pack:context-web'],
+            selected_skill_ids: [],
+            selected_agent_ids: [],
+            selected_tool_ids: ['context_web.pack'],
+            selected_validator_ids: [],
+            selected_renderer_ids: [],
+            selected_compute_backend_ids: [],
+            rejected_candidates: [],
+            context_plan: {
+              max_tokens: 6000,
+              metadata_tokens: 300,
+              skill_body_tokens: 900,
+              reference_tokens: 900,
+              tool_schema_tokens: 120,
+              context_artifact_tokens: 3780,
+            },
+            risk: {
+              shell_risk: 0.2,
+              network_risk: 0.2,
+              data_exposure_risk: 0.1,
+              over_orchestration_risk: 0.2,
+            },
+            why_selected: { 'developer-core': 'selected' },
+            policies_applied: ['server_orchestrate_v1'],
+            user_overrides: [],
+            federated_priors_used: [],
+          },
+          toolkit: {
+            profile_id: 'developer-core',
+            selected_tools: [{ tool_id: 'context_web.pack' }],
+          },
+          report: {
+            status: 'preview',
+            checklist: [{ id: 'ORCH-PREVIEW-001' }],
+            harness_writeback: 'not_requested',
+            next_actions: [],
+          },
+        });
+      }
+      return new Response('', { status: 404 });
+    },
+  });
+
+  const result = await client.orchestratePreview({
+    task: 'Fix the SDK parity test',
+    mode: 'fix',
+  });
+
+  assert.equal(result.decision.selected_profile_id, 'developer-core');
+  assert.equal(result.report.status, 'preview');
+  assert.equal(result.toolkit.profile_id, 'developer-core');
+  assert.deepEqual(requests.map((request) => request.url), [
+    'http://localhost:8000/api/v2/theseus/orchestrate/preview/',
+  ]);
+});
+
+test('orchestrate prepare uses server prepare route', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/orchestrate/prepare/')) {
+        return jsonResponse({
+          decision: {
+            run_id: '',
+            task: 'Prepare memory recall policy',
+            task_signature: 'sig:prepare',
+            selected_profile_id: 'developer-core',
+            selected_pack_ids: ['pack:context-web'],
+            selected_skill_ids: [],
+            selected_agent_ids: [],
+            selected_tool_ids: ['context_web.pack'],
+            selected_validator_ids: [],
+            selected_renderer_ids: [],
+            selected_compute_backend_ids: [],
+            rejected_candidates: [],
+            context_plan: {
+              max_tokens: 6000,
+              metadata_tokens: 300,
+              skill_body_tokens: 900,
+              reference_tokens: 900,
+              tool_schema_tokens: 120,
+              context_artifact_tokens: 3780,
+            },
+            risk: {
+              shell_risk: 0.2,
+              network_risk: 0.2,
+              data_exposure_risk: 0.1,
+              over_orchestration_risk: 0.2,
+            },
+            why_selected: { 'developer-core': 'selected' },
+            policies_applied: ['server_orchestrate_v1'],
+            user_overrides: [],
+            federated_priors_used: [],
+          },
+          toolkit: {
+            profile_id: 'developer-core',
+            selected_tools: [{ tool_id: 'context_web.pack' }],
+          },
+          report: {
+            status: 'preview',
+            checklist: [{ id: 'ORCH-PREVIEW-001' }],
+            harness_writeback: 'not_requested',
+            next_actions: ['Review proposed policy before promotion'],
+            memory_recall: {
+              section: 'memory_recall',
+              proposed_policy_count: 1,
+            },
+          },
+          memory: {
+            evidence: [],
+            operational_policy: [],
+            memory_banks: [
+              {
+                bank_id: 'memory_bank:repo',
+                kind: 'repo',
+                scope: 'repo',
+                selector: 'Travis-Gilbert/Index-API',
+                rationale: 'Repository-scoped recall for continuity.',
+              },
+            ],
+            evidence_hash: 'hash:evidence',
+            policy_hash: 'hash:policy',
+            recall_policy: {
+              policy_id: 'recall-policy:developer-core',
+              kind: 'runtime_recall_scope',
+              scope_filters: ['repo:Travis-Gilbert/Index-API'],
+              selected_banks: ['memory_bank:repo'],
+              rationale: 'Recall is constrained by selected banks.',
+              status: 'active',
+            },
+          },
+          memory_contract: {
+            evidence: [],
+            operational_policy: [],
+            memory_banks: [
+              {
+                bank_id: 'memory_bank:repo',
+                kind: 'repo',
+                scope: 'repo',
+                selector: 'Travis-Gilbert/Index-API',
+                rationale: 'Repository-scoped recall for continuity.',
+              },
+            ],
+            evidence_hash: 'hash:evidence',
+            policy_hash: 'hash:policy',
+            recall_policy: {
+              policy_id: 'recall-policy:developer-core',
+              kind: 'runtime_recall_scope',
+              scope_filters: ['repo:Travis-Gilbert/Index-API'],
+              selected_banks: ['memory_bank:repo'],
+              rationale: 'Recall is constrained by selected banks.',
+              status: 'active',
+            },
+          },
+          memory_policy_proposals: [
+            {
+              proposal_id: 'proposal:1',
+              proposal_type: 'operational_policy',
+              target_scope: 'repo',
+              payload: {
+                policy_id: 'policy:1',
+                kind: 'runtime_permissions',
+                scope: 'orchestrate.permissions',
+                status: 'proposed',
+              },
+              proposal_intent: {
+                source_category: 'orchestrate_prepare',
+                target_category: 'operational_policy',
+                proposed_action: 'upsert',
+                promotion_intent: 'review',
+              },
+            },
+          ],
+          memory_recall: {
+            read_first: ['Task signature and selected profile'],
+            risks: ['network access'],
+            do_not: ['Promote policy automatically'],
+            next_actions: ['Review proposed policy before promotion'],
+            hydration_handles: [],
+            recalled_evidence: ['evidence:1'],
+            selected_banks: ['repo:Travis-Gilbert/Index-API'],
+            recall_policy: ['repo:Travis-Gilbert/Index-API'],
+            active_policy: [],
+            proposed_policy: ['policy:1'],
+          },
+          memory_recall_trace: {
+            section: 'memory_recall',
+            read_first: ['Task signature and selected profile'],
+            risks: ['network access'],
+            do_not: ['Promote policy automatically'],
+            next_actions: ['Review proposed policy before promotion'],
+            selected_banks: ['repo:Travis-Gilbert/Index-API'],
+            recall_policy: ['repo:Travis-Gilbert/Index-API'],
+            recalled_evidence_count: 1,
+            active_policy_count: 0,
+            proposed_policy_count: 1,
+            selected_bank_count: 1,
+            hydration_handle_count: 0,
+          },
+        });
+      }
+      return new Response('', { status: 404 });
+    },
+  });
+
+  const result = await client.orchestratePrepare({
+    task: 'Prepare memory recall policy',
+    mode: 'plan',
+  });
+
+  assert.equal(result.memory_recall.proposed_policy[0], 'policy:1');
+  assert.equal(result.memory.memory_banks[0].kind, 'repo');
+  assert.equal(result.memory.recall_policy.selected_banks[0], 'memory_bank:repo');
+  assert.equal(result.memory_recall.selected_banks[0], 'repo:Travis-Gilbert/Index-API');
+  assert.equal(result.memory_policy_proposals[0].proposal_id, 'proposal:1');
+  assert.equal(result.memory_recall_trace.selected_bank_count, 1);
+  assert.equal(result.memory_recall_trace.proposed_policy_count, 1);
+  assert.deepEqual(requests.map((request) => request.url), [
+    'http://localhost:8000/api/v2/theseus/orchestrate/prepare/',
   ]);
 });
 
@@ -481,6 +898,104 @@ test('harness context-web helpers map browser-folio and explain routes', async (
   );
   assert.equal(explanation.included, true);
   assert.equal(explanation.why_included, 'Selected as the active browser folio anchor.');
+});
+
+test('harness context-web spend-plan and THG index update helpers map shipped routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      if (String(url).endsWith('/context-web/spend-plan/')) {
+        return jsonResponse({
+          run_id: 'run:web',
+          mode: 'standard',
+          pack_id: 'pack:spend',
+          spend_plan: {
+            spend_plan_id: 'spend:1',
+            budget_allocation: { code_symbols: 1800 },
+            hydration_policy: { excerpt: ['file:apps/orchestrate/runtime/orchestrate.py'] },
+            expected_savings: { raw_candidate_tokens: 2400, capsule_tokens: 900 },
+            cache_keys: { profile_id: 'developer-core' },
+            degradations: [],
+          },
+          evaluation: {
+            naive_tokens: 2400,
+            context_web_tokens: 900,
+            compression_ratio: 2.667,
+            graph_overhead: 48,
+            trivial_change_penalty: 0,
+            useful_when: ['multi_file'],
+            not_useful_when: ['tiny_one_file_edit'],
+          },
+          validation: {
+            findings: [],
+            scores: { lost_in_middle_risk: 0.12 },
+            passed: true,
+          },
+          top_atoms: [
+            {
+              id: 'file:apps/orchestrate/runtime/orchestrate.py',
+              kind: 'file',
+              title: 'orchestrate.py',
+              summary: 'Server-authoritative orchestrate runtime.',
+              source_ref: 'apps/orchestrate/runtime/orchestrate.py',
+              score: 0.88,
+              estimated_tokens: 120,
+              channels: ['trusted_repo_memory'],
+              citations: [],
+              labels: ['ContextWebCandidate'],
+              hydration_level: 'excerpt',
+            },
+          ],
+        });
+      }
+      return jsonResponse({
+        result: {
+          command: 'THG.CONTEXT_WEB.INDEX.UPDATE',
+          status: 'ok',
+          payload: {
+            repo_id: 'Travis-Gilbert/Index-API',
+            commit_sha: 'abc123',
+            changed_files: ['apps/orchestrate/runtime/orchestrate.py'],
+            file_hashes: { 'apps/orchestrate/runtime/orchestrate.py': 'hash:file' },
+            symbol_hashes: { orchestrate_prepare: 'hash:symbol' },
+            last_incremental_update: '2026-05-08T00:00:00+00:00',
+            graph_state_hash: 'hash:graph',
+            index_state_hash: 'hash:index',
+            update_strategy: 'incremental',
+          },
+          nodes: [],
+          edges: [],
+          events: [],
+          state_hash: 'hash:result',
+        },
+      });
+    },
+  });
+
+  const spendPlan = await client.harness.contextWebSpendPlan('run:web', {
+    query: 'What should we spend on context?',
+  });
+  const index = await client.harness.thg.contextWeb.updateIndex({
+    repo_id: 'Travis-Gilbert/Index-API',
+    commit_sha: 'abc123',
+    changed_files: ['apps/orchestrate/runtime/orchestrate.py'],
+    symbols: ['orchestrate_prepare'],
+  });
+
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/harness/runs/run:web/context-web/spend-plan/',
+  );
+  assert.equal(spendPlan.spend_plan.spend_plan_id, 'spend:1');
+  assert.equal(spendPlan.top_atoms[0].hydration_level, 'excerpt');
+  assert.equal(
+    JSON.parse(requests[1].init.body).command,
+    'THG.CONTEXT_WEB.INDEX.UPDATE',
+  );
+  assert.equal(index.repo_id, 'Travis-Gilbert/Index-API');
+  assert.equal(index.update_strategy, 'incremental');
 });
 
 test('learning namespace maps profile, spend-plan, and structural-signal routes', async () => {
@@ -752,6 +1267,200 @@ test('transport timeouts surface as RequestTimeoutError', async () => {
     (error) =>
       error instanceof RequestTimeoutError
       && /compile failed: timed out/i.test(error.message),
+  );
+});
+
+test('product namespace maps bootstrap and saved-context CRUD routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const parsed = new URL(String(url));
+      const path = parsed.pathname;
+
+      if (path.endsWith('/product/bootstrap/')) {
+        return jsonResponse({
+          account: { id: 1, username: 'travis', email: 'travis@example.com' },
+          mode: 'authenticated',
+          auth_required: true,
+          bootstrap_fallback_allowed: false,
+          tenants: [],
+          default_tenant_slug: null,
+        });
+      }
+
+      if (path.endsWith('/saved-contexts/') && init.method === 'POST') {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Core fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'active',
+            content: 'Memgraph is canonical.',
+            summary: 'Canonical reminder',
+            scope: {},
+            metadata: {},
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:00:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/saved-contexts/ctx-1/') && init.method === 'PUT') {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Updated fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'active',
+            content: 'Updated content',
+            summary: 'Updated summary',
+            scope: { layer: 'private' },
+            metadata: { source: 'manual' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/saved-contexts/') && init.method === 'GET') {
+        return jsonResponse({
+          saved_contexts: [
+            {
+              id: 11,
+              title: 'Updated fact',
+              slug: 'ctx-1',
+              kind: 'note',
+              memory_role: 'evidence',
+              status: 'active',
+              content: 'Updated content',
+              summary: 'Updated summary',
+              scope: { layer: 'private' },
+              metadata: { source: 'manual' },
+              tenant_slug: 'tenant-1',
+              project_slug: 'proj-1',
+              created_at: '2026-05-09T00:00:00Z',
+              updated_at: '2026-05-09T00:05:00Z',
+            },
+          ],
+        });
+      }
+
+      if (path.endsWith('/mute/')) {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Updated fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'muted',
+            content: 'Updated content',
+            summary: 'Updated summary',
+            scope: { layer: 'private' },
+            metadata: { source: 'manual' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/activate/')) {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Updated fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'active',
+            content: 'Updated content',
+            summary: 'Updated summary',
+            scope: { layer: 'private' },
+            metadata: { source: 'manual' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      return jsonResponse({
+        saved_context: {
+          id: 11,
+          title: 'Updated fact',
+          slug: 'ctx-1',
+          kind: 'note',
+          memory_role: 'evidence',
+          status: 'deleted',
+          content: 'Updated content',
+          summary: 'Updated summary',
+          scope: { layer: 'private' },
+          metadata: { source: 'manual' },
+          tenant_slug: 'tenant-1',
+          project_slug: 'proj-1',
+          created_at: '2026-05-09T00:00:00Z',
+          updated_at: '2026-05-09T00:05:00Z',
+        },
+      });
+    },
+  });
+
+  const bootstrap = await client.product.bootstrap();
+  const created = await client.product.savedContexts.create('tenant-1', {
+    title: 'Core fact',
+    content: 'Memgraph is canonical.',
+    project_slug: 'proj-1',
+  });
+  const updated = await client.product.savedContexts.update('tenant-1', 'ctx-1', {
+    title: 'Updated fact',
+    content: 'Updated content',
+    scope: { layer: 'private' },
+    metadata: { source: 'manual' },
+  });
+  const listed = await client.product.savedContexts.list('tenant-1', {
+    projectSlug: 'proj-1',
+    includeMuted: true,
+  });
+  const muted = await client.product.savedContexts.mute('tenant-1', 'ctx-1');
+  const activated = await client.product.savedContexts.activate('tenant-1', 'ctx-1');
+  const removed = await client.product.savedContexts.delete('tenant-1', 'ctx-1');
+
+  assert.equal(bootstrap.mode, 'authenticated');
+  assert.equal(created.slug, 'ctx-1');
+  assert.equal(updated.title, 'Updated fact');
+  assert.equal(listed.length, 1);
+  assert.equal(muted.status, 'muted');
+  assert.equal(activated.status, 'active');
+  assert.equal(removed.status, 'deleted');
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/product/bootstrap/',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/',
+  );
+  assert.equal(requests[1].init.method, 'POST');
+  assert.equal(
+    JSON.parse(requests[2].init.body).title,
+    'Updated fact',
+  );
+  assert.equal(
+    requests[3].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/?project_slug=proj-1&include_muted=true',
   );
 });
 

@@ -33,10 +33,25 @@ import type {
   ContextCommandPayload,
   ContextCommandPreview,
   ContextCommandResolveResponse,
+  DiscoveryFinishRequest,
+  DiscoveryPreviewRequest,
+  DiscoveryRunCreateRequest,
+  DiscoveryRunPreview,
+  DiscoveryValidatorReceiptRequest,
+  DiscoveryWritebackReviewRequest,
+  ExpressionRenderRequest,
+  ExpressionRenderResult,
+  ContextWebIndex,
+  ContextWebIndexUpdateRequest,
   ContextWebExplainResponse,
   ContextWebPack,
+  ContextWebSpendPlanResponse,
   GraphFocusResponse,
   GraphPatchesListResponse,
+  InferenceRegistryReport,
+  KernelReceiptRequest,
+  KernelRun,
+  KernelRunRequest,
   HarnessBeginRequest,
   HarnessCompareRequest,
   HarnessContextRequest,
@@ -61,7 +76,22 @@ import type {
   LearningStructuralSignalResponse,
   OutcomeRequest,
   OrchestrateRequest,
+  OrchestratePreviewResult,
+  OrchestratePrepareResult,
   OrchestrateResult,
+  ProductAPIKeyCreateRequest,
+  ProductAPIKeySummary,
+  ProductBootstrapResponse,
+  ProductProjectCreateRequest,
+  ProductProjectSummary,
+  ProductTenantCreateRequest,
+  ProductTenantSummary,
+  ProductUsageSummary,
+  SavedContextCreateRequest,
+  SavedContextSummary,
+  SavedContextUpdateRequest,
+  SolverContextCapsuleRequest,
+  SolverResult,
   THGCommandRequest,
   THGCypherRequest,
   THGResult,
@@ -131,9 +161,22 @@ export class TheoremContextClient {
       context_spend_plan: 'live',
       structural_signals: 'live',
     },
+    orchestrate: {
+      run: 'live',
+      preview: 'live',
+      prepare: 'live',
+      authority: 'server',
+      decision_runtime: 'live',
+    },
     thg: {
       profiles: 'live',
       plugins: 'live',
+    },
+    inference: {
+      registry: 'live',
+      expression: 'live',
+      solver: 'live',
+      discovery_run_preview: 'live',
     },
   } as const;
 
@@ -176,6 +219,7 @@ export class TheoremContextClient {
     contextWebReviewDelta: this.compileHarnessContextWebReviewDelta.bind(this),
     contextWebResearch: this.compileHarnessContextWebResearch.bind(this),
     contextWebBrowserFolio: this.compileHarnessContextWebBrowserFolio.bind(this),
+    contextWebSpendPlan: this.compileHarnessContextWebSpendPlan.bind(this),
     contextWebExplain: this.explainHarnessContextWeb.bind(this),
     graphragContext: this.compileHarnessGraphRAGContext.bind(this),
     transition: this.transitionHarness.bind(this),
@@ -195,6 +239,9 @@ export class TheoremContextClient {
         resolve: this.thgProfileResolve.bind(this),
         toolkit: this.thgProfileToolkit.bind(this),
         budget: this.thgProfileBudget.bind(this),
+      },
+      contextWeb: {
+        updateIndex: this.thgContextWebUpdateIndex.bind(this),
       },
       plugins: {
         runBegin: this.thgPluginRunBegin.bind(this),
@@ -234,6 +281,60 @@ export class TheoremContextClient {
     },
   };
 
+  readonly product = {
+    bootstrap: this.getProductBootstrap.bind(this),
+    tenants: {
+      list: this.listProductTenants.bind(this),
+      create: this.createProductTenant.bind(this),
+      get: this.getProductTenant.bind(this),
+    },
+    projects: {
+      list: this.listProductProjects.bind(this),
+      create: this.createProductProject.bind(this),
+    },
+    keys: {
+      list: this.listProductKeys.bind(this),
+      create: this.createProductKey.bind(this),
+    },
+    usage: {
+      get: this.getProductUsage.bind(this),
+    },
+    savedContexts: {
+      list: this.listSavedContexts.bind(this),
+      create: this.createSavedContext.bind(this),
+      update: this.updateSavedContext.bind(this),
+      mute: this.muteSavedContext.bind(this),
+      activate: this.activateSavedContext.bind(this),
+      delete: this.deleteSavedContext.bind(this),
+    },
+  };
+
+  readonly inference = {
+    registry: this.inferenceRegistry.bind(this),
+    expression: {
+      render: this.renderInferenceExpression.bind(this),
+    },
+    solver: {
+      contextCapsule: this.solveInferenceContextCapsule.bind(this),
+    },
+    discoveryRuns: {
+      preview: this.previewDiscoveryRun.bind(this),
+      list: this.listDiscoveryRuns.bind(this),
+      create: this.createDiscoveryRun.bind(this),
+      get: this.getDiscoveryRun.bind(this),
+      appendValidatorReceipt: this.appendDiscoveryValidatorReceipt.bind(this),
+      finish: this.finishDiscoveryRun.bind(this),
+      cancel: this.cancelDiscoveryRun.bind(this),
+      reviewWriteback: this.reviewDiscoveryWriteback.bind(this),
+    },
+    kernelRuns: {
+      list: this.listKernelRuns.bind(this),
+      create: this.createKernelRun.bind(this),
+      get: this.getKernelRun.bind(this),
+      appendReceipt: this.appendKernelReceipt.bind(this),
+    },
+  };
+
   readonly runs = this.harness;
 
   readonly thg = {
@@ -245,12 +346,19 @@ export class TheoremContextClient {
       toolkit: this.thgProfileToolkit.bind(this),
       budget: this.thgProfileBudget.bind(this),
     },
+    contextWeb: {
+      updateIndex: this.thgContextWebUpdateIndex.bind(this),
+    },
     plugins: {
       runBegin: this.thgPluginRunBegin.bind(this),
       runStep: this.thgPluginRunStep.bind(this),
       claimConsult: this.thgPluginClaimConsult.bind(this),
       outcomeRecord: this.thgPluginOutcomeRecord.bind(this),
     },
+  };
+
+  readonly contextWeb = {
+    updateIndex: this.thgContextWebUpdateIndex.bind(this),
   };
 
   private headers(): Record<string, string> {
@@ -349,120 +457,310 @@ export class TheoremContextClient {
     if (!task) {
       throw new CompileError('orchestrate failed: task is required');
     }
-    const mode = request.mode ?? 'plan';
-    const metadata = {
-      ...(request.metadata ?? {}),
-      orchestrate: true,
-      mode,
-    };
-    const run = await this.beginHarness({
-      task,
-      actor: request.actor ?? 'codex',
-      scope: compactRecord({
-        ...(request.scope ?? {}),
-        orchestrate: true,
-        mode,
-        repo: request.repo,
-        target: request.target,
-        profile_id: request.profile_id,
-        risk_mode: request.risk_mode,
-      }),
-    });
-
-    const contextCommand =
-      request.resolve_context_command === false
-        ? null
-        : await this.resolveContextCommand({
-            goal: task,
-            query: task,
-            output_target: 'orchestrate',
-            risk_mode: request.risk_mode,
-            metadata: { ...metadata, run_id: run.run_id },
-          });
-
-    const artifact =
-      request.compile_context === false
-        ? null
-        : ((await this.compileHarnessContext(run.run_id, {
-            task,
-            repo: request.repo,
-            task_type: taskTypeForOrchestrateMode(mode),
-            budget_tokens: request.budget_tokens ?? 6000,
-            invariants: request.invariants,
-          })) as ContextArtifact);
-
-    const artifactAttachment =
-      artifact && request.attach_artifact !== false
-        ? await this.attachArtifact(artifact.id, run.run_id, {
-            metadata: {
-              source: 'orchestrate',
-              mode,
-              profile_id: request.profile_id,
-            },
-          })
-        : null;
-
-    const contextCommandPayload: Record<string, unknown> = contextCommand?.state
-      ? { ...contextCommand.state }
-      : {
-          goal: task,
-          query: task,
-          metadata,
-        };
-
-    const actionRail =
-      request.generate_action_rail === false
-        ? null
-        : await this.generateActionRail({
-            context_command_id: contextCommand?.state?.command_id,
-            context_command: contextCommandPayload,
-            max_actions: request.max_actions ?? 8,
-            include_disabled: true,
-            metadata: {
-              ...metadata,
-              run_id: run.run_id,
-              artifact_id: artifact?.id,
-            },
-          });
-
-    return {
-      run,
-      context_command: contextCommand,
-      artifact,
-      artifact_attachment: artifactAttachment,
-      action_rail: actionRail,
-      report: {
-        status: 'ready',
-        checklist: [
-          {
-            id: 'ORCH-SDK-001',
-            task: 'Begin Redis-backed harness run',
-            status: 'done',
-            evidence: run.run_id,
-          },
-          {
-            id: 'ORCH-SDK-002',
-            task: 'Resolve context command',
-            status: contextCommand ? 'done' : 'skipped',
-            evidence: contextCommand?.state?.command_id ?? null,
-          },
-          {
-            id: 'ORCH-SDK-003',
-            task: 'Compile and attach context artifact',
-            status: artifact ? 'done' : 'skipped',
-            evidence: artifact?.id ?? null,
-          },
-          {
-            id: 'ORCH-SDK-004',
-            task: 'Generate action rail',
-            status: actionRail ? 'done' : 'skipped',
-            evidence: actionRail?.rail_id ?? null,
-          },
-        ],
-        harness_writeback: artifactAttachment ? 'recorded' : 'not_requested',
-        next_actions: actionRail?.actions.map((action) => ({ ...action })) ?? [],
+    const response = await this.request(
+      `${this.baseUrl}/orchestrate/run/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          ...request,
+          task,
+        }),
       },
+      'orchestrate',
+    );
+    return (await response.json()) as OrchestrateResult;
+  }
+
+  async orchestratePreview(
+    request: OrchestrateRequest,
+  ): Promise<OrchestratePreviewResult> {
+    const task = request.task.trim();
+    if (!task) {
+      throw new CompileError('orchestrate preview failed: task is required');
+    }
+    const response = await this.request(
+      `${this.baseUrl}/orchestrate/preview/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          ...request,
+          task,
+        }),
+      },
+      'orchestrate preview',
+    );
+    return (await response.json()) as OrchestratePreviewResult;
+  }
+
+  async orchestratePrepare(
+    request: OrchestrateRequest,
+  ): Promise<OrchestratePrepareResult> {
+    const task = request.task.trim();
+    if (!task) {
+      throw new CompileError('orchestrate prepare failed: task is required');
+    }
+    const response = await this.request(
+      `${this.baseUrl}/orchestrate/prepare/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          ...request,
+          task,
+        }),
+      },
+      'orchestrate prepare',
+    );
+    return (await response.json()) as OrchestratePrepareResult;
+  }
+
+  async getProductBootstrap(): Promise<ProductBootstrapResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/product/bootstrap/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product bootstrap',
+    );
+    return (await response.json()) as ProductBootstrapResponse;
+  }
+
+  async listProductTenants(): Promise<ProductTenantSummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product tenants list',
+    );
+    const body = (await response.json()) as { tenants: ProductTenantSummary[] };
+    return body.tenants ?? [];
+  }
+
+  async createProductTenant(
+    payload: ProductTenantCreateRequest,
+  ): Promise<ProductTenantSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product tenant create',
+    );
+    const body = (await response.json()) as { tenant: ProductTenantSummary };
+    return body.tenant;
+  }
+
+  async getProductTenant(tenantSlug: string): Promise<ProductTenantSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product tenant get',
+    );
+    const body = (await response.json()) as { tenant: ProductTenantSummary };
+    return body.tenant;
+  }
+
+  async listProductProjects(tenantSlug: string): Promise<ProductProjectSummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/projects/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product projects list',
+    );
+    const body = (await response.json()) as { projects: ProductProjectSummary[] };
+    return body.projects ?? [];
+  }
+
+  async createProductProject(
+    tenantSlug: string,
+    payload: ProductProjectCreateRequest,
+  ): Promise<ProductProjectSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/projects/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product project create',
+    );
+    const body = (await response.json()) as { project: ProductProjectSummary };
+    return body.project;
+  }
+
+  async listProductKeys(tenantSlug: string): Promise<ProductAPIKeySummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/keys/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product keys list',
+    );
+    const body = (await response.json()) as { keys: ProductAPIKeySummary[] };
+    return body.keys ?? [];
+  }
+
+  async createProductKey(
+    tenantSlug: string,
+    payload: ProductAPIKeyCreateRequest,
+  ): Promise<ProductAPIKeySummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/keys/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product key create',
+    );
+    const body = (await response.json()) as { api_key: ProductAPIKeySummary };
+    return body.api_key;
+  }
+
+  async getProductUsage(
+    tenantSlug: string,
+    days?: number,
+  ): Promise<ProductUsageSummary> {
+    const query = new URLSearchParams();
+    if (typeof days === 'number') {
+      query.set('days', String(days));
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/usage/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product usage get',
+    );
+    const body = (await response.json()) as { usage: ProductUsageSummary };
+    return body.usage;
+  }
+
+  async listSavedContexts(
+    tenantSlug: string,
+    options: {
+      projectSlug?: string;
+      includeMuted?: boolean;
+    } = {},
+  ): Promise<SavedContextSummary[]> {
+    const query = new URLSearchParams();
+    if (options.projectSlug) {
+      query.set('project_slug', options.projectSlug);
+    }
+    if (options.includeMuted) {
+      query.set('include_muted', 'true');
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'saved contexts list',
+    );
+    const body = (await response.json()) as {
+      saved_contexts: SavedContextSummary[];
     };
+    return body.saved_contexts ?? [];
+  }
+
+  async createSavedContext(
+    tenantSlug: string,
+    payload: SavedContextCreateRequest,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'saved context create',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async updateSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+    payload: SavedContextUpdateRequest,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/`,
+      {
+        method: 'PUT',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'saved context update',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async muteSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/mute/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+      },
+      'saved context mute',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async activateSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/activate/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+      },
+      'saved context activate',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async deleteSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/`,
+      {
+        method: 'DELETE',
+        headers: this.headers(),
+      },
+      'saved context delete',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
   }
 
   async remember(input: { observation: string; evidence?: string[] }): Promise<{
@@ -853,6 +1151,229 @@ export class TheoremContextClient {
     return (await response.json()) as GraphPatchesListResponse;
   }
 
+  async inferenceRegistry(): Promise<InferenceRegistryReport> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/registry/`,
+      { method: 'GET', headers: this.headers() },
+      'inference registry',
+    );
+    return (await response.json()) as InferenceRegistryReport;
+  }
+
+  async renderInferenceExpression(
+    engineId: string,
+    request: ExpressionRenderRequest,
+  ): Promise<ExpressionRenderResult> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/expression/${engineId}/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference expression render',
+    );
+    return (await response.json()) as ExpressionRenderResult;
+  }
+
+  async solveInferenceContextCapsule(
+    request: SolverContextCapsuleRequest,
+  ): Promise<SolverResult> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/solver/context-capsule/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference solver context capsule',
+    );
+    return (await response.json()) as SolverResult;
+  }
+
+  async previewDiscoveryRun(
+    request: DiscoveryPreviewRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/preview/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery run preview',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async listDiscoveryRuns(filters: Record<string, unknown> = {}): Promise<DiscoveryRunPreview[]> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference discovery runs list',
+    );
+    return (await response.json()) as DiscoveryRunPreview[];
+  }
+
+  async createDiscoveryRun(
+    request: DiscoveryRunCreateRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery run create',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async getDiscoveryRun(runId: string): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference discovery run get',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async appendDiscoveryValidatorReceipt(
+    runId: string,
+    request: DiscoveryValidatorReceiptRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/validator-receipts/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery validator receipt',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async finishDiscoveryRun(
+    runId: string,
+    request: DiscoveryFinishRequest = {},
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/finish/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery finish',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async cancelDiscoveryRun(runId: string): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/cancel/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: '{}',
+      },
+      'inference discovery cancel',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async reviewDiscoveryWriteback(
+    runId: string,
+    proposalId: string,
+    request: DiscoveryWritebackReviewRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/writeback-proposals/${proposalId}/review/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery writeback review',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async listKernelRuns(filters: Record<string, unknown> = {}): Promise<KernelRun[]> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference kernel runs list',
+    );
+    return (await response.json()) as KernelRun[];
+  }
+
+  async createKernelRun(request: KernelRunRequest): Promise<KernelRun> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference kernel run create',
+    );
+    return (await response.json()) as KernelRun;
+  }
+
+  async getKernelRun(runId: string): Promise<KernelRun> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/${runId}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference kernel run get',
+    );
+    return (await response.json()) as KernelRun;
+  }
+
+  async appendKernelReceipt(
+    runId: string,
+    request: KernelReceiptRequest,
+  ): Promise<KernelRun> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/${runId}/receipts/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference kernel receipt append',
+    );
+    return (await response.json()) as KernelRun;
+  }
+
   async beginHarness(request: HarnessBeginRequest): Promise<HarnessRun> {
     const response = await this.request(
       `${this.baseUrl}/harness/runs/`,
@@ -993,6 +1514,23 @@ export class TheoremContextClient {
       'context-web/browser-folio/',
       'harness context-web browser folio',
     );
+  }
+
+  async compileHarnessContextWebSpendPlan(
+    runId: string,
+    request: HarnessContextWebRequest = {},
+  ): Promise<ContextWebSpendPlanResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${runId}/context-web/spend-plan/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'harness context-web spend plan',
+      'harness',
+    );
+    return (await response.json()) as ContextWebSpendPlanResponse;
   }
 
   async explainHarnessContextWeb(
@@ -1234,6 +1772,16 @@ export class TheoremContextClient {
 
   async thgProfileBudget(payload: Record<string, unknown>): Promise<THGResult> {
     return this.thgCommand('THG.PROFILE.BUDGET', payload);
+  }
+
+  async thgContextWebUpdateIndex(
+    payload: ContextWebIndexUpdateRequest,
+  ): Promise<ContextWebIndex> {
+    const result = await this.thgCommand(
+      'THG.CONTEXT_WEB.INDEX.UPDATE',
+      payload as Record<string, unknown>,
+    );
+    return result.payload as unknown as ContextWebIndex;
   }
 
   async thgPluginRunBegin(payload: Record<string, unknown>): Promise<THGResult> {

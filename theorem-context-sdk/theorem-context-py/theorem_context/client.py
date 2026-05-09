@@ -28,6 +28,14 @@ from .types import (
     CompileRequest,
     ContextCommandRequest,
     ContextArtifact,
+    DiscoveryFinishRequest,
+    DiscoveryPreviewRequest,
+    DiscoveryRunCreateRequest,
+    DiscoveryRunPreview,
+    DiscoveryValidatorReceiptRequest,
+    DiscoveryWritebackReviewRequest,
+    ExpressionRenderRequest,
+    ExpressionRenderResult,
     GraphFocusResponse,
     GraphPatchesListResponse,
     HarnessBeginRequest,
@@ -44,16 +52,38 @@ from .types import (
     HarnessStep,
     HarnessTransitionRequest,
     HarnessTransitionResult,
+    InferenceRegistryReport,
+    KernelReceiptRequest,
+    KernelRun,
+    KernelRunRequest,
+    ContextWebIndex,
+    ContextWebIndexUpdateRequest,
     ContextWebExplainResponse,
     ContextWebPack,
+    ContextWebSpendPlanResponse,
     LearningContextSpendPlanRequest,
     LearningProfileInstallRequest,
     LearningProfileToolkitRequest,
     LearningStructuralSignalRequest,
     OutcomeRequest,
     OrchestrateRequest,
+    OrchestratePreviewResult,
+    OrchestratePrepareResult,
     OrchestrateResult,
     OrchestrateReport,
+    ProductAPIKeyCreateRequest,
+    ProductAPIKeySummary,
+    ProductBootstrapResponse,
+    ProductProjectCreateRequest,
+    ProductProjectSummary,
+    ProductTenantCreateRequest,
+    ProductTenantSummary,
+    ProductUsageSummary,
+    SavedContextCreateRequest,
+    SavedContextSummary,
+    SavedContextUpdateRequest,
+    SolverContextCapsuleRequest,
+    SolverResult,
     THGCommandRequest,
     THGCypherRequest,
     THGResult,
@@ -246,6 +276,202 @@ class _LearningNamespace:
         self.structural_signals = _LearningStructuralSignalsNamespace(client)
 
 
+class _ProductTenantsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self) -> list[ProductTenantSummary]:
+        return await self._client._product_tenants_list()
+
+    async def create(self, **kwargs: Any) -> ProductTenantSummary:
+        request = ProductTenantCreateRequest(**kwargs)
+        return await self._client._product_tenant_create(request)
+
+    async def get(self, tenant_slug: str) -> ProductTenantSummary:
+        return await self._client._product_tenant_get(tenant_slug)
+
+
+class _ProductProjectsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, tenant_slug: str) -> list[ProductProjectSummary]:
+        return await self._client._product_projects_list(tenant_slug)
+
+    async def create(self, tenant_slug: str, **kwargs: Any) -> ProductProjectSummary:
+        request = ProductProjectCreateRequest(**kwargs)
+        return await self._client._product_project_create(tenant_slug, request)
+
+
+class _ProductKeysNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, tenant_slug: str) -> list[ProductAPIKeySummary]:
+        return await self._client._product_keys_list(tenant_slug)
+
+    async def create(self, tenant_slug: str, **kwargs: Any) -> ProductAPIKeySummary:
+        request = ProductAPIKeyCreateRequest(**kwargs)
+        return await self._client._product_key_create(tenant_slug, request)
+
+
+class _ProductUsageNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def get(self, tenant_slug: str, *, days: int | None = None) -> ProductUsageSummary:
+        return await self._client._product_usage_get(tenant_slug, days=days)
+
+
+class _ProductSavedContextsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(
+        self,
+        tenant_slug: str,
+        *,
+        project_slug: str | None = None,
+        include_muted: bool = False,
+    ) -> list[SavedContextSummary]:
+        return await self._client._product_saved_contexts_list(
+            tenant_slug,
+            project_slug=project_slug,
+            include_muted=include_muted,
+        )
+
+    async def create(self, tenant_slug: str, **kwargs: Any) -> SavedContextSummary:
+        request = SavedContextCreateRequest(**kwargs)
+        return await self._client._product_saved_context_create(tenant_slug, request)
+
+    async def update(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+        **kwargs: Any,
+    ) -> SavedContextSummary:
+        request = SavedContextUpdateRequest(**kwargs)
+        return await self._client._product_saved_context_update(
+            tenant_slug,
+            entry_slug,
+            request,
+        )
+
+    async def mute(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
+        return await self._client._product_saved_context_mute(tenant_slug, entry_slug)
+
+    async def activate(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
+        return await self._client._product_saved_context_activate(tenant_slug, entry_slug)
+
+    async def delete(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
+        return await self._client._product_saved_context_delete(tenant_slug, entry_slug)
+
+
+class _ProductNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.tenants = _ProductTenantsNamespace(client)
+        self.projects = _ProductProjectsNamespace(client)
+        self.keys = _ProductKeysNamespace(client)
+        self.usage = _ProductUsageNamespace(client)
+        self.saved_contexts = _ProductSavedContextsNamespace(client)
+
+    async def bootstrap(self) -> ProductBootstrapResponse:
+        return await self._client._product_bootstrap()
+
+
+class _InferenceExpressionNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def render(
+        self,
+        engine_id: str,
+        *,
+        result: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+    ) -> ExpressionRenderResult:
+        request = ExpressionRenderRequest(
+            result=result,
+            metadata=metadata or {},
+        )
+        return await self._client._inference_expression_render(engine_id, request)
+
+
+class _InferenceSolverNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def context_capsule(self, **kwargs: Any) -> SolverResult:
+        request = SolverContextCapsuleRequest(**kwargs)
+        return await self._client._inference_solver_context_capsule(request)
+
+
+class _InferenceDiscoveryRunsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def preview(self, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryPreviewRequest(**kwargs)
+        return await self._client._inference_discovery_preview(request)
+
+    async def list(self, **filters: Any) -> list[DiscoveryRunPreview]:
+        return await self._client._inference_discovery_list(filters)
+
+    async def create(self, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryRunCreateRequest(**kwargs)
+        return await self._client._inference_discovery_create(request)
+
+    async def get(self, run_id: str) -> DiscoveryRunPreview:
+        return await self._client._inference_discovery_get(run_id)
+
+    async def append_validator_receipt(self, run_id: str, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryValidatorReceiptRequest(**kwargs)
+        return await self._client._inference_discovery_append_validator_receipt(run_id, request)
+
+    async def finish(self, run_id: str, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryFinishRequest(**kwargs)
+        return await self._client._inference_discovery_finish(run_id, request)
+
+    async def cancel(self, run_id: str) -> DiscoveryRunPreview:
+        return await self._client._inference_discovery_cancel(run_id)
+
+    async def review_writeback(self, run_id: str, proposal_id: str, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryWritebackReviewRequest(**kwargs)
+        return await self._client._inference_discovery_review_writeback(run_id, proposal_id, request)
+
+
+class _InferenceKernelRunsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, **filters: Any) -> list[KernelRun]:
+        return await self._client._inference_kernel_list(filters)
+
+    async def create(self, **kwargs: Any) -> KernelRun:
+        request = KernelRunRequest(**kwargs)
+        return await self._client._inference_kernel_create(request)
+
+    async def get(self, run_id: str) -> KernelRun:
+        return await self._client._inference_kernel_get(run_id)
+
+    async def append_receipt(self, run_id: str, **kwargs: Any) -> KernelRun:
+        request = KernelReceiptRequest(**kwargs)
+        return await self._client._inference_kernel_append_receipt(run_id, request)
+
+
+class _InferenceNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.expression = _InferenceExpressionNamespace(client)
+        self.solver = _InferenceSolverNamespace(client)
+        self.discovery_runs = _InferenceDiscoveryRunsNamespace(client)
+        self.kernel_runs = _InferenceKernelRunsNamespace(client)
+
+    async def registry(self) -> InferenceRegistryReport:
+        return await self._client._inference_registry()
+
+
 class _THGProfilesNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
@@ -297,10 +523,25 @@ class _THGPluginsNamespace:
 
 
 class _THGNamespace:
+    class _ContextWebNamespace:
+        def __init__(self, client: 'TheoremContextClient') -> None:
+            self._client = client
+
+        async def update_index(self, **payload: Any) -> ContextWebIndex:
+            request = ContextWebIndexUpdateRequest(**payload)
+            result = await self._client._thg_command(
+                THGCommandRequest(
+                    command='THG.CONTEXT_WEB.INDEX.UPDATE',
+                    payload=request.model_dump(exclude_none=True),
+                )
+            )
+            return ContextWebIndex.model_validate(result.payload)
+
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
         self.profiles = _THGProfilesNamespace(client)
         self.plugins = _THGPluginsNamespace(client)
+        self.context_web = self._ContextWebNamespace(client)
 
     async def command(self, command: str, payload: dict[str, Any] | None = None) -> THGResult:
         request = THGCommandRequest(command=command, payload=payload or {})
@@ -398,6 +639,14 @@ class _HarnessNamespace:
             path='context-web/browser-folio/',
             surface='harness context-web browser folio',
         )
+
+    async def context_web_spend_plan(
+        self,
+        run_id: str,
+        **kwargs: Any,
+    ) -> ContextWebSpendPlanResponse:
+        request = HarnessContextWebRequest(**kwargs)
+        return await self._client._harness_context_web_spend_plan(run_id, request)
 
     async def graphrag_context(self, run_id: str, **kwargs: Any) -> ContextWebPack:
         request = HarnessContextWebRequest(**kwargs)
@@ -513,6 +762,8 @@ class TheoremContextClient:
         self.context_command = _ContextCommandNamespace(self)
         self.actions = _ActionRailNamespace(self)
         self.learning = _LearningNamespace(self)
+        self.product = _ProductNamespace(self)
+        self.inference = _InferenceNamespace(self)
         self.harness = _HarnessNamespace(self)
         self.runs = self.harness
         self.thg = _THGNamespace(self)
@@ -542,9 +793,22 @@ class TheoremContextClient:
                 'context_spend_plan': 'live',
                 'structural_signals': 'live',
             },
+            'orchestrate': {
+                'run': 'live',
+                'preview': 'live',
+                'prepare': 'live',
+                'authority': 'server',
+                'decision_runtime': 'live',
+            },
             'thg': {
                 'profiles': 'live',
                 'plugins': 'live',
+            },
+            'inference': {
+                'registry': 'live',
+                'expression': 'live',
+                'solver': 'live',
+                'discovery_run_preview': 'live',
             },
         }
 
@@ -562,148 +826,267 @@ class TheoremContextClient:
         task = request.task.strip()
         if not task:
             raise CompileError('orchestrate failed: task is required')
-
-        metadata = {
-            **request.metadata,
-            'orchestrate': True,
-            'mode': request.mode,
-        }
-        run = await self._harness_begin(
-            HarnessBeginRequest(
-                task=task,
-                actor=request.actor,
-                scope=_compact_dict({
-                    **request.scope,
-                    'orchestrate': True,
-                    'mode': request.mode,
-                    'repo': request.repo,
-                    'target': request.target,
-                    'profile_id': request.profile_id,
-                    'risk_mode': request.risk_mode,
-                }),
-            ),
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/orchestrate/run/',
+            surface='orchestrate',
+            headers=self._headers(),
+            content=OrchestrateRequest(
+                **{
+                    **request.model_dump(),
+                    'task': task,
+                }
+            ).model_dump_json(exclude_none=True),
+            kind='harness',
         )
+        return OrchestrateResult.model_validate(response.json())
 
-        context_command = None
-        if request.resolve_context_command:
-            context_command = await self._context_command_resolve(
-                ContextCommandRequest(
-                    goal=task,
-                    query=task,
-                    output_target='orchestrate',
-                    risk_mode=request.risk_mode,
-                    metadata={**metadata, 'run_id': run.run_id},
-                ),
-            )
+    async def orchestrate_preview(self, **kwargs: Any) -> OrchestratePreviewResult:
+        request = OrchestrateRequest(**kwargs)
+        task = request.task.strip()
+        if not task:
+            raise CompileError('orchestrate preview failed: task is required')
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/orchestrate/preview/',
+            surface='orchestrate preview',
+            headers=self._headers(),
+            content=OrchestrateRequest(
+                **{
+                    **request.model_dump(),
+                    'task': task,
+                }
+            ).model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return OrchestratePreviewResult.model_validate(response.json())
 
-        artifact = None
-        if request.compile_context:
-            artifact_payload = await self._harness_context(
-                run.run_id,
-                HarnessContextRequest(
-                    task=task,
-                    repo=request.repo,
-                    task_type=_task_type_for_orchestrate_mode(request.mode),
-                    budget_tokens=request.budget_tokens,
-                    invariants=request.invariants,
-                ),
-            )
-            artifact = ContextArtifact.model_validate(artifact_payload)
+    async def orchestrate_prepare(self, **kwargs: Any) -> OrchestratePrepareResult:
+        request = OrchestrateRequest(**kwargs)
+        task = request.task.strip()
+        if not task:
+            raise CompileError('orchestrate prepare failed: task is required')
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/orchestrate/prepare/',
+            surface='orchestrate prepare',
+            headers=self._headers(),
+            content=OrchestrateRequest(
+                **{
+                    **request.model_dump(),
+                    'task': task,
+                }
+            ).model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return OrchestratePrepareResult.model_validate(response.json())
 
-        artifact_attachment = None
-        if artifact is not None and request.attach_artifact:
-            artifact_attachment = await self._attach_artifact(
-                artifact.id,
-                run.run_id,
-                {
-                    'metadata': {
-                        'source': 'orchestrate',
-                        'mode': request.mode,
-                        'profile_id': request.profile_id,
-                    },
-                },
-            )
+    async def _product_bootstrap(self) -> ProductBootstrapResponse:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/bootstrap/',
+            surface='product bootstrap',
+            headers=self._headers(),
+        )
+        return ProductBootstrapResponse.model_validate(response.json())
 
-        action_rail = None
-        if request.generate_action_rail:
-            state = (
-                context_command.get('state')
-                if isinstance(context_command, dict)
-                else None
-            )
-            action_rail = await self._action_rail_generate(
-                ActionRailGenerateRequest(
-                    context_command_id=(
-                        state.get('command_id') if isinstance(state, dict) else None
-                    ),
-                    context_command=(
-                        state
-                        if isinstance(state, dict)
-                        else {'goal': task, 'query': task, 'metadata': metadata}
-                    ),
-                    max_actions=request.max_actions,
-                    include_disabled=True,
-                    metadata={
-                        **metadata,
-                        'run_id': run.run_id,
-                        'artifact_id': artifact.id if artifact else None,
-                    },
-                ),
-            )
-
-        checklist = [
-            {
-                'id': 'ORCH-SDK-001',
-                'task': 'Begin Redis-backed harness run',
-                'status': 'done',
-                'evidence': run.run_id,
-            },
-            {
-                'id': 'ORCH-SDK-002',
-                'task': 'Resolve context command',
-                'status': 'done' if context_command else 'skipped',
-                'evidence': (
-                    context_command.get('state', {}).get('command_id')
-                    if isinstance(context_command, dict)
-                    else None
-                ),
-            },
-            {
-                'id': 'ORCH-SDK-003',
-                'task': 'Compile and attach context artifact',
-                'status': 'done' if artifact else 'skipped',
-                'evidence': artifact.id if artifact else None,
-            },
-            {
-                'id': 'ORCH-SDK-004',
-                'task': 'Generate action rail',
-                'status': 'done' if action_rail else 'skipped',
-                'evidence': (
-                    action_rail.get('rail_id')
-                    if isinstance(action_rail, dict)
-                    else None
-                ),
-            },
+    async def _product_tenants_list(self) -> list[ProductTenantSummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/',
+            surface='product tenants list',
+            headers=self._headers(),
+        )
+        return [
+            ProductTenantSummary.model_validate(item)
+            for item in response.json().get('tenants', [])
         ]
 
-        return OrchestrateResult(
-            run=run,
-            context_command=context_command,
-            artifact=artifact,
-            artifact_attachment=artifact_attachment,
-            action_rail=action_rail,
-            report=OrchestrateReport(
-                checklist=checklist,
-                harness_writeback=(
-                    'recorded' if artifact_attachment else 'not_requested'
-                ),
-                next_actions=(
-                    action_rail.get('actions', [])
-                    if isinstance(action_rail, dict)
-                    else []
-                ),
-            ),
+    async def _product_tenant_create(
+        self,
+        request: ProductTenantCreateRequest,
+    ) -> ProductTenantSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/',
+            surface='product tenant create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
         )
+        return ProductTenantSummary.model_validate(response.json()['tenant'])
+
+    async def _product_tenant_get(self, tenant_slug: str) -> ProductTenantSummary:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/',
+            surface='product tenant get',
+            headers=self._headers(),
+        )
+        return ProductTenantSummary.model_validate(response.json()['tenant'])
+
+    async def _product_projects_list(self, tenant_slug: str) -> list[ProductProjectSummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/projects/',
+            surface='product projects list',
+            headers=self._headers(),
+        )
+        return [
+            ProductProjectSummary.model_validate(item)
+            for item in response.json().get('projects', [])
+        ]
+
+    async def _product_project_create(
+        self,
+        tenant_slug: str,
+        request: ProductProjectCreateRequest,
+    ) -> ProductProjectSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/projects/',
+            surface='product project create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductProjectSummary.model_validate(response.json()['project'])
+
+    async def _product_keys_list(self, tenant_slug: str) -> list[ProductAPIKeySummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/keys/',
+            surface='product keys list',
+            headers=self._headers(),
+        )
+        return [
+            ProductAPIKeySummary.model_validate(item)
+            for item in response.json().get('keys', [])
+        ]
+
+    async def _product_key_create(
+        self,
+        tenant_slug: str,
+        request: ProductAPIKeyCreateRequest,
+    ) -> ProductAPIKeySummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/keys/',
+            surface='product key create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductAPIKeySummary.model_validate(response.json()['api_key'])
+
+    async def _product_usage_get(
+        self,
+        tenant_slug: str,
+        *,
+        days: int | None = None,
+    ) -> ProductUsageSummary:
+        params: dict[str, Any] = {}
+        if days is not None:
+            params['days'] = days
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/usage/',
+            surface='product usage get',
+            headers=self._headers(),
+            params=params,
+        )
+        return ProductUsageSummary.model_validate(response.json()['usage'])
+
+    async def _product_saved_contexts_list(
+        self,
+        tenant_slug: str,
+        *,
+        project_slug: str | None = None,
+        include_muted: bool = False,
+    ) -> list[SavedContextSummary]:
+        params: dict[str, Any] = {}
+        if project_slug:
+            params['project_slug'] = project_slug
+        if include_muted:
+            params['include_muted'] = 'true'
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/',
+            surface='saved contexts list',
+            headers=self._headers(),
+            params=params,
+        )
+        return [
+            SavedContextSummary.model_validate(item)
+            for item in response.json().get('saved_contexts', [])
+        ]
+
+    async def _product_saved_context_create(
+        self,
+        tenant_slug: str,
+        request: SavedContextCreateRequest,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/',
+            surface='saved context create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_update(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+        request: SavedContextUpdateRequest,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'PUT',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/',
+            surface='saved context update',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_mute(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/mute/',
+            surface='saved context mute',
+            headers=self._headers(),
+            json={},
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_activate(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/activate/',
+            surface='saved context activate',
+            headers=self._headers(),
+            json={},
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_delete(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'DELETE',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/',
+            surface='saved context delete',
+            headers=self._headers(),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
 
     def _headers(self) -> dict[str, str]:
         out = {'Content-Type': 'application/json'}
@@ -919,6 +1302,183 @@ class TheoremContextClient:
             headers=self._headers(),
         )
         return GraphPatchesListResponse.model_validate(response.json())
+
+    async def _inference_registry(self) -> InferenceRegistryReport:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/registry/',
+            surface='inference registry',
+            headers=self._headers(),
+        )
+        return InferenceRegistryReport.model_validate(response.json())
+
+    async def _inference_expression_render(
+        self,
+        engine_id: str,
+        request: ExpressionRenderRequest,
+    ) -> ExpressionRenderResult:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/expression/{engine_id}/',
+            surface='inference expression render',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ExpressionRenderResult.model_validate(response.json())
+
+    async def _inference_solver_context_capsule(
+        self,
+        request: SolverContextCapsuleRequest,
+    ) -> SolverResult:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/solver/context-capsule/',
+            surface='inference solver context capsule',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SolverResult.model_validate(response.json())
+
+    async def _inference_discovery_preview(
+        self,
+        request: DiscoveryPreviewRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/preview/',
+            surface='inference discovery run preview',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_list(self, filters: dict[str, Any]) -> list[DiscoveryRunPreview]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/discovery-runs/',
+            surface='inference discovery runs list',
+            headers=self._headers(),
+            params=filters,
+        )
+        return [DiscoveryRunPreview.model_validate(item) for item in response.json()]
+
+    async def _inference_discovery_create(
+        self,
+        request: DiscoveryRunCreateRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/',
+            surface='inference discovery run create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_get(self, run_id: str) -> DiscoveryRunPreview:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/',
+            surface='inference discovery run get',
+            headers=self._headers(),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_append_validator_receipt(
+        self,
+        run_id: str,
+        request: DiscoveryValidatorReceiptRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/validator-receipts/',
+            surface='inference discovery validator receipt',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_finish(
+        self,
+        run_id: str,
+        request: DiscoveryFinishRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/finish/',
+            surface='inference discovery finish',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_cancel(self, run_id: str) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/cancel/',
+            surface='inference discovery cancel',
+            headers=self._headers(),
+            content='{}',
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_review_writeback(
+        self,
+        run_id: str,
+        proposal_id: str,
+        request: DiscoveryWritebackReviewRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/writeback-proposals/{proposal_id}/review/',
+            surface='inference discovery writeback review',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_kernel_list(self, filters: dict[str, Any]) -> list[KernelRun]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/kernel-runs/',
+            surface='inference kernel runs list',
+            headers=self._headers(),
+            params=filters,
+        )
+        return [KernelRun.model_validate(item) for item in response.json()]
+
+    async def _inference_kernel_create(self, request: KernelRunRequest) -> KernelRun:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/kernel-runs/',
+            surface='inference kernel run create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return KernelRun.model_validate(response.json())
+
+    async def _inference_kernel_get(self, run_id: str) -> KernelRun:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/kernel-runs/{run_id}/',
+            surface='inference kernel run get',
+            headers=self._headers(),
+        )
+        return KernelRun.model_validate(response.json())
+
+    async def _inference_kernel_append_receipt(
+        self,
+        run_id: str,
+        request: KernelReceiptRequest,
+    ) -> KernelRun:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/kernel-runs/{run_id}/receipts/',
+            surface='inference kernel receipt append',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return KernelRun.model_validate(response.json())
 
     async def _context_command_resolve(
         self,
@@ -1182,6 +1742,21 @@ class TheoremContextClient:
         return ContextWebPack.model_validate(
             body.get('context_web_pack') or body.get('context_pack') or {},
         )
+
+    async def _harness_context_web_spend_plan(
+        self,
+        run_id: str,
+        request: HarnessContextWebRequest,
+    ) -> ContextWebSpendPlanResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/runs/{run_id}/context-web/spend-plan/',
+            surface='harness context-web spend plan',
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ContextWebSpendPlanResponse.model_validate(response.json())
 
     async def _harness_context_web_explain(
         self,
