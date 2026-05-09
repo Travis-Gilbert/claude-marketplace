@@ -1002,6 +1002,170 @@ class ContextWebExplainResponse(BaseModel):
     provenance: dict[str, Any] = Field(default_factory=dict)
 
 
+class ProductAccountSummary(BaseModel):
+    id: int
+    username: str
+    email: str
+
+
+class ProductTenantSummary(BaseModel):
+    id: int
+    name: str
+    slug: str
+    is_active: bool = True
+    configuration: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    projects_count: int = 0
+    api_keys_count: int = 0
+    created_at: str = ''
+    updated_at: str = ''
+
+
+class ProductProjectSummary(BaseModel):
+    id: int
+    name: str
+    slug: str
+    mode: str = 'knowledge'
+    status: str = ''
+    description: str = ''
+    tenant_slug: str | None = None
+    settings_override: dict[str, Any] = Field(default_factory=dict)
+    created_at: str = ''
+    updated_at: str = ''
+
+
+class ProductAPIKeyQuota(BaseModel):
+    requests_per_hour: int = 0
+    requests_this_hour: int = 0
+    remaining_this_hour: int = 0
+
+
+class ProductAPIKeyCapabilities(BaseModel):
+    can_import: bool = False
+    can_webhook: bool = False
+    can_sessions: bool = True
+
+
+class ProductAPIKeySummary(BaseModel):
+    id: int
+    name: str
+    tier: str = ''
+    surface: str = ''
+    is_active: bool = True
+    requests_per_hour: int = 0
+    tenant_slug: str | None = None
+    project_slug: str | None = None
+    masked_key: str = ''
+    last_used_at: str | None = None
+    created_at: str = ''
+    updated_at: str = ''
+    quota: ProductAPIKeyQuota = Field(default_factory=ProductAPIKeyQuota)
+    capabilities: ProductAPIKeyCapabilities = Field(default_factory=ProductAPIKeyCapabilities)
+    key: str | None = None
+
+
+class ProductUsagePoint(BaseModel):
+    day: str
+    count: int = 0
+
+
+class ProductUsageCategory(BaseModel):
+    usage_category: str = ''
+    count: int = 0
+
+
+class ProductUsageKeySummary(BaseModel):
+    name: str = ''
+    count: int = 0
+
+
+class ProductUsageSummary(BaseModel):
+    tenant_slug: str
+    days: int = 0
+    total_requests: int = 0
+    token_estimate_total: int = 0
+    requests_last_hour: int = 0
+    quota_limit: int = 0
+    quota_remaining_estimate: int = 0
+    by_day: list[ProductUsagePoint] = Field(default_factory=list)
+    by_category: list[ProductUsageCategory] = Field(default_factory=list)
+    by_key: list[ProductUsageKeySummary] = Field(default_factory=list)
+
+
+class ProductBootstrapResponse(BaseModel):
+    account: ProductAccountSummary
+    mode: str = 'bootstrap_fallback'
+    auth_required: bool = False
+    bootstrap_fallback_allowed: bool = False
+    tenants: list[ProductTenantSummary] = Field(default_factory=list)
+    default_tenant_slug: str | None = None
+
+
+class ProductTenantCreateRequest(BaseModel):
+    name: str
+    slug: str | None = None
+    configuration: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class ProductProjectCreateRequest(BaseModel):
+    name: str
+    slug: str | None = None
+    description: str = ''
+    mode: str = 'knowledge'
+    settings_override: dict[str, Any] | None = None
+
+
+class ProductAPIKeyCreateRequest(BaseModel):
+    name: str
+    tier: str = 'researcher'
+    project_slug: str | None = None
+    requests_per_hour: int | None = None
+    can_import: bool = False
+    can_webhook: bool = False
+    can_sessions: bool = True
+
+
+class SavedContextSummary(BaseModel):
+    id: int
+    title: str
+    slug: str
+    kind: str = 'note'
+    memory_role: str = 'evidence'
+    status: str = 'active'
+    content: str = ''
+    summary: str = ''
+    scope: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    tenant_slug: str = ''
+    project_slug: str | None = None
+    created_at: str = ''
+    updated_at: str = ''
+
+
+class SavedContextCreateRequest(BaseModel):
+    title: str
+    slug: str | None = None
+    kind: str = 'note'
+    memory_role: str = 'evidence'
+    content: str
+    summary: str = ''
+    project_slug: str | None = None
+    scope: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class SavedContextUpdateRequest(BaseModel):
+    title: str | None = None
+    kind: str | None = None
+    memory_role: str | None = None
+    content: str | None = None
+    summary: str | None = None
+    project_slug: str | None = None
+    scope: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+
 class HarnessPatchRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

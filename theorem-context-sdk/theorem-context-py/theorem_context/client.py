@@ -71,6 +71,17 @@ from .types import (
     OrchestratePrepareResult,
     OrchestrateResult,
     OrchestrateReport,
+    ProductAPIKeyCreateRequest,
+    ProductAPIKeySummary,
+    ProductBootstrapResponse,
+    ProductProjectCreateRequest,
+    ProductProjectSummary,
+    ProductTenantCreateRequest,
+    ProductTenantSummary,
+    ProductUsageSummary,
+    SavedContextCreateRequest,
+    SavedContextSummary,
+    SavedContextUpdateRequest,
     SolverContextCapsuleRequest,
     SolverResult,
     THGCommandRequest,
@@ -263,6 +274,110 @@ class _LearningNamespace:
         self.profiles = _LearningProfilesNamespace(client)
         self.context = _LearningContextNamespace(client)
         self.structural_signals = _LearningStructuralSignalsNamespace(client)
+
+
+class _ProductTenantsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self) -> list[ProductTenantSummary]:
+        return await self._client._product_tenants_list()
+
+    async def create(self, **kwargs: Any) -> ProductTenantSummary:
+        request = ProductTenantCreateRequest(**kwargs)
+        return await self._client._product_tenant_create(request)
+
+    async def get(self, tenant_slug: str) -> ProductTenantSummary:
+        return await self._client._product_tenant_get(tenant_slug)
+
+
+class _ProductProjectsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, tenant_slug: str) -> list[ProductProjectSummary]:
+        return await self._client._product_projects_list(tenant_slug)
+
+    async def create(self, tenant_slug: str, **kwargs: Any) -> ProductProjectSummary:
+        request = ProductProjectCreateRequest(**kwargs)
+        return await self._client._product_project_create(tenant_slug, request)
+
+
+class _ProductKeysNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, tenant_slug: str) -> list[ProductAPIKeySummary]:
+        return await self._client._product_keys_list(tenant_slug)
+
+    async def create(self, tenant_slug: str, **kwargs: Any) -> ProductAPIKeySummary:
+        request = ProductAPIKeyCreateRequest(**kwargs)
+        return await self._client._product_key_create(tenant_slug, request)
+
+
+class _ProductUsageNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def get(self, tenant_slug: str, *, days: int | None = None) -> ProductUsageSummary:
+        return await self._client._product_usage_get(tenant_slug, days=days)
+
+
+class _ProductSavedContextsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(
+        self,
+        tenant_slug: str,
+        *,
+        project_slug: str | None = None,
+        include_muted: bool = False,
+    ) -> list[SavedContextSummary]:
+        return await self._client._product_saved_contexts_list(
+            tenant_slug,
+            project_slug=project_slug,
+            include_muted=include_muted,
+        )
+
+    async def create(self, tenant_slug: str, **kwargs: Any) -> SavedContextSummary:
+        request = SavedContextCreateRequest(**kwargs)
+        return await self._client._product_saved_context_create(tenant_slug, request)
+
+    async def update(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+        **kwargs: Any,
+    ) -> SavedContextSummary:
+        request = SavedContextUpdateRequest(**kwargs)
+        return await self._client._product_saved_context_update(
+            tenant_slug,
+            entry_slug,
+            request,
+        )
+
+    async def mute(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
+        return await self._client._product_saved_context_mute(tenant_slug, entry_slug)
+
+    async def activate(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
+        return await self._client._product_saved_context_activate(tenant_slug, entry_slug)
+
+    async def delete(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
+        return await self._client._product_saved_context_delete(tenant_slug, entry_slug)
+
+
+class _ProductNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.tenants = _ProductTenantsNamespace(client)
+        self.projects = _ProductProjectsNamespace(client)
+        self.keys = _ProductKeysNamespace(client)
+        self.usage = _ProductUsageNamespace(client)
+        self.saved_contexts = _ProductSavedContextsNamespace(client)
+
+    async def bootstrap(self) -> ProductBootstrapResponse:
+        return await self._client._product_bootstrap()
 
 
 class _InferenceExpressionNamespace:
@@ -647,6 +762,7 @@ class TheoremContextClient:
         self.context_command = _ContextCommandNamespace(self)
         self.actions = _ActionRailNamespace(self)
         self.learning = _LearningNamespace(self)
+        self.product = _ProductNamespace(self)
         self.inference = _InferenceNamespace(self)
         self.harness = _HarnessNamespace(self)
         self.runs = self.harness
@@ -764,6 +880,213 @@ class TheoremContextClient:
             kind='harness',
         )
         return OrchestratePrepareResult.model_validate(response.json())
+
+    async def _product_bootstrap(self) -> ProductBootstrapResponse:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/bootstrap/',
+            surface='product bootstrap',
+            headers=self._headers(),
+        )
+        return ProductBootstrapResponse.model_validate(response.json())
+
+    async def _product_tenants_list(self) -> list[ProductTenantSummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/',
+            surface='product tenants list',
+            headers=self._headers(),
+        )
+        return [
+            ProductTenantSummary.model_validate(item)
+            for item in response.json().get('tenants', [])
+        ]
+
+    async def _product_tenant_create(
+        self,
+        request: ProductTenantCreateRequest,
+    ) -> ProductTenantSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/',
+            surface='product tenant create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductTenantSummary.model_validate(response.json()['tenant'])
+
+    async def _product_tenant_get(self, tenant_slug: str) -> ProductTenantSummary:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/',
+            surface='product tenant get',
+            headers=self._headers(),
+        )
+        return ProductTenantSummary.model_validate(response.json()['tenant'])
+
+    async def _product_projects_list(self, tenant_slug: str) -> list[ProductProjectSummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/projects/',
+            surface='product projects list',
+            headers=self._headers(),
+        )
+        return [
+            ProductProjectSummary.model_validate(item)
+            for item in response.json().get('projects', [])
+        ]
+
+    async def _product_project_create(
+        self,
+        tenant_slug: str,
+        request: ProductProjectCreateRequest,
+    ) -> ProductProjectSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/projects/',
+            surface='product project create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductProjectSummary.model_validate(response.json()['project'])
+
+    async def _product_keys_list(self, tenant_slug: str) -> list[ProductAPIKeySummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/keys/',
+            surface='product keys list',
+            headers=self._headers(),
+        )
+        return [
+            ProductAPIKeySummary.model_validate(item)
+            for item in response.json().get('keys', [])
+        ]
+
+    async def _product_key_create(
+        self,
+        tenant_slug: str,
+        request: ProductAPIKeyCreateRequest,
+    ) -> ProductAPIKeySummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/keys/',
+            surface='product key create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductAPIKeySummary.model_validate(response.json()['api_key'])
+
+    async def _product_usage_get(
+        self,
+        tenant_slug: str,
+        *,
+        days: int | None = None,
+    ) -> ProductUsageSummary:
+        params: dict[str, Any] = {}
+        if days is not None:
+            params['days'] = days
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/usage/',
+            surface='product usage get',
+            headers=self._headers(),
+            params=params,
+        )
+        return ProductUsageSummary.model_validate(response.json()['usage'])
+
+    async def _product_saved_contexts_list(
+        self,
+        tenant_slug: str,
+        *,
+        project_slug: str | None = None,
+        include_muted: bool = False,
+    ) -> list[SavedContextSummary]:
+        params: dict[str, Any] = {}
+        if project_slug:
+            params['project_slug'] = project_slug
+        if include_muted:
+            params['include_muted'] = 'true'
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/',
+            surface='saved contexts list',
+            headers=self._headers(),
+            params=params,
+        )
+        return [
+            SavedContextSummary.model_validate(item)
+            for item in response.json().get('saved_contexts', [])
+        ]
+
+    async def _product_saved_context_create(
+        self,
+        tenant_slug: str,
+        request: SavedContextCreateRequest,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/',
+            surface='saved context create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_update(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+        request: SavedContextUpdateRequest,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'PUT',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/',
+            surface='saved context update',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_mute(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/mute/',
+            surface='saved context mute',
+            headers=self._headers(),
+            json={},
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_activate(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/activate/',
+            surface='saved context activate',
+            headers=self._headers(),
+            json={},
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_delete(
+        self,
+        tenant_slug: str,
+        entry_slug: str,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'DELETE',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/{entry_slug}/',
+            surface='saved context delete',
+            headers=self._headers(),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
 
     def _headers(self) -> dict[str, str]:
         out = {'Content-Type': 'application/json'}

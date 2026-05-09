@@ -507,6 +507,124 @@ def test_inference_namespace_maps_bgi_backend_routes() -> None:
     asyncio.run(run())
 
 
+def test_product_namespace_maps_bootstrap_and_saved_context_crud_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    def saved_context(status: str = 'active', title: str = 'Updated fact') -> dict:
+        return {
+            'id': 11,
+            'title': title,
+            'slug': 'ctx-1',
+            'kind': 'note',
+            'memory_role': 'evidence',
+            'status': status,
+            'content': 'Updated content',
+            'summary': 'Updated summary',
+            'scope': {'layer': 'private'},
+            'metadata': {'source': 'manual'},
+            'tenant_slug': 'tenant-1',
+            'project_slug': 'proj-1',
+            'created_at': '2026-05-09T00:00:00Z',
+            'updated_at': '2026-05-09T00:05:00Z',
+        }
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path.endswith('/product/bootstrap/'):
+            return httpx.Response(
+                200,
+                json={
+                    'account': {
+                        'id': 1,
+                        'username': 'travis',
+                        'email': 'travis@example.com',
+                    },
+                    'mode': 'authenticated',
+                    'auth_required': True,
+                    'bootstrap_fallback_allowed': False,
+                    'tenants': [],
+                    'default_tenant_slug': None,
+                },
+            )
+        if path.endswith('/saved-contexts/') and request.method == 'POST':
+            return httpx.Response(
+                200,
+                json={'saved_context': saved_context(title='Core fact')},
+            )
+        if path.endswith('/saved-contexts/ctx-1/') and request.method == 'PUT':
+            return httpx.Response(200, json={'saved_context': saved_context()})
+        if path.endswith('/saved-contexts/') and request.method == 'GET':
+            return httpx.Response(200, json={'saved_contexts': [saved_context()]})
+        if path.endswith('/mute/'):
+            return httpx.Response(200, json={'saved_context': saved_context(status='muted')})
+        if path.endswith('/activate/'):
+            return httpx.Response(200, json={'saved_context': saved_context(status='active')})
+        return httpx.Response(200, json={'saved_context': saved_context(status='deleted')})
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            bootstrap = await client.product.bootstrap()
+            created = await client.product.saved_contexts.create(
+                'tenant-1',
+                title='Core fact',
+                content='Memgraph is canonical.',
+                project_slug='proj-1',
+            )
+            updated = await client.product.saved_contexts.update(
+                'tenant-1',
+                'ctx-1',
+                title='Updated fact',
+                content='Updated content',
+                scope={'layer': 'private'},
+                metadata={'source': 'manual'},
+            )
+            listed = await client.product.saved_contexts.list(
+                'tenant-1',
+                project_slug='proj-1',
+                include_muted=True,
+            )
+            muted = await client.product.saved_contexts.mute('tenant-1', 'ctx-1')
+            activated = await client.product.saved_contexts.activate('tenant-1', 'ctx-1')
+            removed = await client.product.saved_contexts.delete('tenant-1', 'ctx-1')
+        finally:
+            await client.aclose()
+
+        assert bootstrap.mode == 'authenticated'
+        assert created.slug == 'ctx-1'
+        assert updated.title == 'Updated fact'
+        assert len(listed) == 1
+        assert muted.status == 'muted'
+        assert activated.status == 'active'
+        assert removed.status == 'deleted'
+        assert [request.method for request in requests] == [
+            'GET',
+            'POST',
+            'PUT',
+            'GET',
+            'POST',
+            'POST',
+            'DELETE',
+        ]
+        assert str(requests[0].url) == (
+            'http://localhost:8000/api/v2/theseus/product/bootstrap/'
+        )
+        assert str(requests[1].url) == (
+            'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/'
+        )
+        assert json.loads(requests[2].content)['title'] == 'Updated fact'
+        assert str(requests[3].url) == (
+            'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/'
+            'saved-contexts/?project_slug=proj-1&include_muted=true'
+        )
+
+    asyncio.run(run())
+
+
 def test_orchestrate_uses_server_authoritative_route() -> None:
     requests: list[httpx.Request] = []
 
@@ -1356,6 +1474,174 @@ def test_transport_timeouts_surface_as_request_timeout_error() -> None:
                 raise AssertionError('compile() should raise RequestTimeoutError')
         finally:
             await client.aclose()
+
+    asyncio.run(run())
+
+
+def test_product_namespace_maps_bootstrap_and_saved_context_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+
+        if path.endswith('/product/bootstrap/'):
+            return httpx.Response(
+                200,
+                json={
+                    'account': {'id': 1, 'username': 'travis', 'email': 'travis@example.com'},
+                    'mode': 'authenticated',
+                    'auth_required': True,
+                    'bootstrap_fallback_allowed': False,
+                    'tenants': [],
+                    'default_tenant_slug': None,
+                },
+            )
+
+        if path.endswith('/saved-contexts/') and request.method == 'POST':
+            return httpx.Response(
+                200,
+                json={
+                    'saved_context': {
+                        'id': 11,
+                        'title': 'Core fact',
+                        'slug': 'ctx-1',
+                        'kind': 'note',
+                        'memory_role': 'evidence',
+                        'status': 'active',
+                        'content': 'Memgraph is canonical.',
+                        'summary': 'Canonical reminder',
+                        'scope': {},
+                        'metadata': {},
+                        'tenant_slug': 'tenant-1',
+                        'project_slug': 'proj-1',
+                        'created_at': '2026-05-09T00:00:00Z',
+                        'updated_at': '2026-05-09T00:00:00Z',
+                    },
+                },
+            )
+
+        if path.endswith('/saved-contexts/ctx-1/') and request.method == 'PUT':
+            return httpx.Response(
+                200,
+                json={
+                    'saved_context': {
+                        'id': 11,
+                        'title': 'Updated fact',
+                        'slug': 'ctx-1',
+                        'kind': 'note',
+                        'memory_role': 'evidence',
+                        'status': 'active',
+                        'content': 'Updated content',
+                        'summary': 'Updated summary',
+                        'scope': {'layer': 'private'},
+                        'metadata': {'source': 'manual'},
+                        'tenant_slug': 'tenant-1',
+                        'project_slug': 'proj-1',
+                        'created_at': '2026-05-09T00:00:00Z',
+                        'updated_at': '2026-05-09T00:05:00Z',
+                    },
+                },
+            )
+
+        if path.endswith('/saved-contexts/') and request.method == 'GET':
+            return httpx.Response(
+                200,
+                json={
+                    'saved_contexts': [
+                        {
+                            'id': 11,
+                            'title': 'Updated fact',
+                            'slug': 'ctx-1',
+                            'kind': 'note',
+                            'memory_role': 'evidence',
+                            'status': 'active',
+                            'content': 'Updated content',
+                            'summary': 'Updated summary',
+                            'scope': {'layer': 'private'},
+                            'metadata': {'source': 'manual'},
+                            'tenant_slug': 'tenant-1',
+                            'project_slug': 'proj-1',
+                            'created_at': '2026-05-09T00:00:00Z',
+                            'updated_at': '2026-05-09T00:05:00Z',
+                        },
+                    ],
+                },
+            )
+
+        if path.endswith('/mute/'):
+            status = 'muted'
+        elif path.endswith('/activate/'):
+            status = 'active'
+        else:
+            status = 'deleted'
+
+        return httpx.Response(
+            200,
+            json={
+                'saved_context': {
+                    'id': 11,
+                    'title': 'Updated fact',
+                    'slug': 'ctx-1',
+                    'kind': 'note',
+                    'memory_role': 'evidence',
+                    'status': status,
+                    'content': 'Updated content',
+                    'summary': 'Updated summary',
+                    'scope': {'layer': 'private'},
+                    'metadata': {'source': 'manual'},
+                    'tenant_slug': 'tenant-1',
+                    'project_slug': 'proj-1',
+                    'created_at': '2026-05-09T00:00:00Z',
+                    'updated_at': '2026-05-09T00:05:00Z',
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            bootstrap = await client.product.bootstrap()
+            created = await client.product.saved_contexts.create(
+                'tenant-1',
+                title='Core fact',
+                content='Memgraph is canonical.',
+                project_slug='proj-1',
+            )
+            updated = await client.product.saved_contexts.update(
+                'tenant-1',
+                'ctx-1',
+                title='Updated fact',
+                content='Updated content',
+                scope={'layer': 'private'},
+                metadata={'source': 'manual'},
+            )
+            listed = await client.product.saved_contexts.list(
+                'tenant-1',
+                project_slug='proj-1',
+                include_muted=True,
+            )
+            muted = await client.product.saved_contexts.mute('tenant-1', 'ctx-1')
+            activated = await client.product.saved_contexts.activate('tenant-1', 'ctx-1')
+            removed = await client.product.saved_contexts.delete('tenant-1', 'ctx-1')
+        finally:
+            await client.aclose()
+
+        assert bootstrap.mode == 'authenticated'
+        assert created.slug == 'ctx-1'
+        assert updated.title == 'Updated fact'
+        assert len(listed) == 1
+        assert muted.status == 'muted'
+        assert activated.status == 'active'
+        assert removed.status == 'deleted'
+        assert requests[0].url.path == '/api/v2/theseus/product/bootstrap/'
+        assert requests[1].url.path == '/api/v2/theseus/product/tenants/tenant-1/saved-contexts/'
+        assert requests[1].method == 'POST'
+        assert json.loads(requests[2].content)['title'] == 'Updated fact'
+        assert requests[3].url.query == b'project_slug=proj-1&include_muted=true'
 
     asyncio.run(run())
 

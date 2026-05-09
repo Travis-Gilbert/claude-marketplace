@@ -79,6 +79,17 @@ import type {
   OrchestratePreviewResult,
   OrchestratePrepareResult,
   OrchestrateResult,
+  ProductAPIKeyCreateRequest,
+  ProductAPIKeySummary,
+  ProductBootstrapResponse,
+  ProductProjectCreateRequest,
+  ProductProjectSummary,
+  ProductTenantCreateRequest,
+  ProductTenantSummary,
+  ProductUsageSummary,
+  SavedContextCreateRequest,
+  SavedContextSummary,
+  SavedContextUpdateRequest,
   SolverContextCapsuleRequest,
   SolverResult,
   THGCommandRequest,
@@ -267,6 +278,34 @@ export class TheoremContextClient {
     },
     structuralSignals: {
       record: this.recordLearningStructuralSignal.bind(this),
+    },
+  };
+
+  readonly product = {
+    bootstrap: this.getProductBootstrap.bind(this),
+    tenants: {
+      list: this.listProductTenants.bind(this),
+      create: this.createProductTenant.bind(this),
+      get: this.getProductTenant.bind(this),
+    },
+    projects: {
+      list: this.listProductProjects.bind(this),
+      create: this.createProductProject.bind(this),
+    },
+    keys: {
+      list: this.listProductKeys.bind(this),
+      create: this.createProductKey.bind(this),
+    },
+    usage: {
+      get: this.getProductUsage.bind(this),
+    },
+    savedContexts: {
+      list: this.listSavedContexts.bind(this),
+      create: this.createSavedContext.bind(this),
+      update: this.updateSavedContext.bind(this),
+      mute: this.muteSavedContext.bind(this),
+      activate: this.activateSavedContext.bind(this),
+      delete: this.deleteSavedContext.bind(this),
     },
   };
 
@@ -475,6 +514,253 @@ export class TheoremContextClient {
       'orchestrate prepare',
     );
     return (await response.json()) as OrchestratePrepareResult;
+  }
+
+  async getProductBootstrap(): Promise<ProductBootstrapResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/product/bootstrap/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product bootstrap',
+    );
+    return (await response.json()) as ProductBootstrapResponse;
+  }
+
+  async listProductTenants(): Promise<ProductTenantSummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product tenants list',
+    );
+    const body = (await response.json()) as { tenants: ProductTenantSummary[] };
+    return body.tenants ?? [];
+  }
+
+  async createProductTenant(
+    payload: ProductTenantCreateRequest,
+  ): Promise<ProductTenantSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product tenant create',
+    );
+    const body = (await response.json()) as { tenant: ProductTenantSummary };
+    return body.tenant;
+  }
+
+  async getProductTenant(tenantSlug: string): Promise<ProductTenantSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product tenant get',
+    );
+    const body = (await response.json()) as { tenant: ProductTenantSummary };
+    return body.tenant;
+  }
+
+  async listProductProjects(tenantSlug: string): Promise<ProductProjectSummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/projects/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product projects list',
+    );
+    const body = (await response.json()) as { projects: ProductProjectSummary[] };
+    return body.projects ?? [];
+  }
+
+  async createProductProject(
+    tenantSlug: string,
+    payload: ProductProjectCreateRequest,
+  ): Promise<ProductProjectSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/projects/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product project create',
+    );
+    const body = (await response.json()) as { project: ProductProjectSummary };
+    return body.project;
+  }
+
+  async listProductKeys(tenantSlug: string): Promise<ProductAPIKeySummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/keys/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product keys list',
+    );
+    const body = (await response.json()) as { keys: ProductAPIKeySummary[] };
+    return body.keys ?? [];
+  }
+
+  async createProductKey(
+    tenantSlug: string,
+    payload: ProductAPIKeyCreateRequest,
+  ): Promise<ProductAPIKeySummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/keys/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product key create',
+    );
+    const body = (await response.json()) as { api_key: ProductAPIKeySummary };
+    return body.api_key;
+  }
+
+  async getProductUsage(
+    tenantSlug: string,
+    days?: number,
+  ): Promise<ProductUsageSummary> {
+    const query = new URLSearchParams();
+    if (typeof days === 'number') {
+      query.set('days', String(days));
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/usage/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product usage get',
+    );
+    const body = (await response.json()) as { usage: ProductUsageSummary };
+    return body.usage;
+  }
+
+  async listSavedContexts(
+    tenantSlug: string,
+    options: {
+      projectSlug?: string;
+      includeMuted?: boolean;
+    } = {},
+  ): Promise<SavedContextSummary[]> {
+    const query = new URLSearchParams();
+    if (options.projectSlug) {
+      query.set('project_slug', options.projectSlug);
+    }
+    if (options.includeMuted) {
+      query.set('include_muted', 'true');
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'saved contexts list',
+    );
+    const body = (await response.json()) as {
+      saved_contexts: SavedContextSummary[];
+    };
+    return body.saved_contexts ?? [];
+  }
+
+  async createSavedContext(
+    tenantSlug: string,
+    payload: SavedContextCreateRequest,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'saved context create',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async updateSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+    payload: SavedContextUpdateRequest,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/`,
+      {
+        method: 'PUT',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'saved context update',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async muteSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/mute/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+      },
+      'saved context mute',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async activateSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/activate/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+      },
+      'saved context activate',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async deleteSavedContext(
+    tenantSlug: string,
+    entrySlug: string,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/${entrySlug}/`,
+      {
+        method: 'DELETE',
+        headers: this.headers(),
+      },
+      'saved context delete',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
   }
 
   async remember(input: { observation: string; evidence?: string[] }): Promise<{

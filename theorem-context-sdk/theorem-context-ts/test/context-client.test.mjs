@@ -1270,6 +1270,200 @@ test('transport timeouts surface as RequestTimeoutError', async () => {
   );
 });
 
+test('product namespace maps bootstrap and saved-context CRUD routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const parsed = new URL(String(url));
+      const path = parsed.pathname;
+
+      if (path.endsWith('/product/bootstrap/')) {
+        return jsonResponse({
+          account: { id: 1, username: 'travis', email: 'travis@example.com' },
+          mode: 'authenticated',
+          auth_required: true,
+          bootstrap_fallback_allowed: false,
+          tenants: [],
+          default_tenant_slug: null,
+        });
+      }
+
+      if (path.endsWith('/saved-contexts/') && init.method === 'POST') {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Core fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'active',
+            content: 'Memgraph is canonical.',
+            summary: 'Canonical reminder',
+            scope: {},
+            metadata: {},
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:00:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/saved-contexts/ctx-1/') && init.method === 'PUT') {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Updated fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'active',
+            content: 'Updated content',
+            summary: 'Updated summary',
+            scope: { layer: 'private' },
+            metadata: { source: 'manual' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/saved-contexts/') && init.method === 'GET') {
+        return jsonResponse({
+          saved_contexts: [
+            {
+              id: 11,
+              title: 'Updated fact',
+              slug: 'ctx-1',
+              kind: 'note',
+              memory_role: 'evidence',
+              status: 'active',
+              content: 'Updated content',
+              summary: 'Updated summary',
+              scope: { layer: 'private' },
+              metadata: { source: 'manual' },
+              tenant_slug: 'tenant-1',
+              project_slug: 'proj-1',
+              created_at: '2026-05-09T00:00:00Z',
+              updated_at: '2026-05-09T00:05:00Z',
+            },
+          ],
+        });
+      }
+
+      if (path.endsWith('/mute/')) {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Updated fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'muted',
+            content: 'Updated content',
+            summary: 'Updated summary',
+            scope: { layer: 'private' },
+            metadata: { source: 'manual' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/activate/')) {
+        return jsonResponse({
+          saved_context: {
+            id: 11,
+            title: 'Updated fact',
+            slug: 'ctx-1',
+            kind: 'note',
+            memory_role: 'evidence',
+            status: 'active',
+            content: 'Updated content',
+            summary: 'Updated summary',
+            scope: { layer: 'private' },
+            metadata: { source: 'manual' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      return jsonResponse({
+        saved_context: {
+          id: 11,
+          title: 'Updated fact',
+          slug: 'ctx-1',
+          kind: 'note',
+          memory_role: 'evidence',
+          status: 'deleted',
+          content: 'Updated content',
+          summary: 'Updated summary',
+          scope: { layer: 'private' },
+          metadata: { source: 'manual' },
+          tenant_slug: 'tenant-1',
+          project_slug: 'proj-1',
+          created_at: '2026-05-09T00:00:00Z',
+          updated_at: '2026-05-09T00:05:00Z',
+        },
+      });
+    },
+  });
+
+  const bootstrap = await client.product.bootstrap();
+  const created = await client.product.savedContexts.create('tenant-1', {
+    title: 'Core fact',
+    content: 'Memgraph is canonical.',
+    project_slug: 'proj-1',
+  });
+  const updated = await client.product.savedContexts.update('tenant-1', 'ctx-1', {
+    title: 'Updated fact',
+    content: 'Updated content',
+    scope: { layer: 'private' },
+    metadata: { source: 'manual' },
+  });
+  const listed = await client.product.savedContexts.list('tenant-1', {
+    projectSlug: 'proj-1',
+    includeMuted: true,
+  });
+  const muted = await client.product.savedContexts.mute('tenant-1', 'ctx-1');
+  const activated = await client.product.savedContexts.activate('tenant-1', 'ctx-1');
+  const removed = await client.product.savedContexts.delete('tenant-1', 'ctx-1');
+
+  assert.equal(bootstrap.mode, 'authenticated');
+  assert.equal(created.slug, 'ctx-1');
+  assert.equal(updated.title, 'Updated fact');
+  assert.equal(listed.length, 1);
+  assert.equal(muted.status, 'muted');
+  assert.equal(activated.status, 'active');
+  assert.equal(removed.status, 'deleted');
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/product/bootstrap/',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/',
+  );
+  assert.equal(requests[1].init.method, 'POST');
+  assert.equal(
+    JSON.parse(requests[2].init.body).title,
+    'Updated fact',
+  );
+  assert.equal(
+    requests[3].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/?project_slug=proj-1&include_muted=true',
+  );
+});
+
 function jsonResponse(body) {
   return new Response(JSON.stringify(body), {
     status: 200,

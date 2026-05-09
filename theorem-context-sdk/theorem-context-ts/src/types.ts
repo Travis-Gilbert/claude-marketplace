@@ -1137,6 +1137,170 @@ export interface ContextWebExplainResponse {
   provenance: Record<string, unknown>;
 }
 
+export interface ProductAccountSummary {
+  id: number;
+  username: string;
+  email: string;
+}
+
+export interface ProductTenantSummary {
+  id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  configuration: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  projects_count: number;
+  api_keys_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductProjectSummary {
+  id: number;
+  name: string;
+  slug: string;
+  mode: string;
+  status: string;
+  description: string;
+  tenant_slug: string | null;
+  settings_override: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductAPIKeyQuota {
+  requests_per_hour: number;
+  requests_this_hour: number;
+  remaining_this_hour: number;
+}
+
+export interface ProductAPIKeyCapabilities {
+  can_import: boolean;
+  can_webhook: boolean;
+  can_sessions: boolean;
+}
+
+export interface ProductAPIKeySummary {
+  id: number;
+  name: string;
+  tier: string;
+  surface: string;
+  is_active: boolean;
+  requests_per_hour: number;
+  tenant_slug: string | null;
+  project_slug: string | null;
+  masked_key: string;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+  quota: ProductAPIKeyQuota;
+  capabilities: ProductAPIKeyCapabilities;
+  key?: string;
+}
+
+export interface ProductUsagePoint {
+  day: string;
+  count: number;
+}
+
+export interface ProductUsageCategory {
+  usage_category: string;
+  count: number;
+}
+
+export interface ProductUsageKeySummary {
+  name: string;
+  count: number;
+}
+
+export interface ProductUsageSummary {
+  tenant_slug: string;
+  days: number;
+  total_requests: number;
+  token_estimate_total: number;
+  requests_last_hour: number;
+  quota_limit: number;
+  quota_remaining_estimate: number;
+  by_day: ProductUsagePoint[];
+  by_category: ProductUsageCategory[];
+  by_key: ProductUsageKeySummary[];
+}
+
+export interface ProductBootstrapResponse {
+  account: ProductAccountSummary;
+  mode: string;
+  auth_required: boolean;
+  bootstrap_fallback_allowed: boolean;
+  tenants: ProductTenantSummary[];
+  default_tenant_slug: string | null;
+}
+
+export interface ProductTenantCreateRequest {
+  name: string;
+  slug?: string;
+  configuration?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProductProjectCreateRequest {
+  name: string;
+  slug?: string;
+  description?: string;
+  mode?: string;
+  settings_override?: Record<string, unknown>;
+}
+
+export interface ProductAPIKeyCreateRequest {
+  name: string;
+  tier?: string;
+  project_slug?: string;
+  requests_per_hour?: number;
+  can_import?: boolean;
+  can_webhook?: boolean;
+  can_sessions?: boolean;
+}
+
+export interface SavedContextSummary {
+  id: number;
+  title: string;
+  slug: string;
+  kind: string;
+  memory_role: string;
+  status: string;
+  content: string;
+  summary: string;
+  scope: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  tenant_slug: string;
+  project_slug: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavedContextCreateRequest {
+  title: string;
+  slug?: string;
+  kind?: string;
+  memory_role?: string;
+  content: string;
+  summary?: string;
+  project_slug?: string;
+  scope?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SavedContextUpdateRequest {
+  title?: string;
+  kind?: string;
+  memory_role?: string;
+  content?: string;
+  summary?: string;
+  project_slug?: string | null;
+  scope?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
 export interface HarnessPatchRequest {
   patch: Record<string, unknown>;
   validate?: boolean;
