@@ -28,8 +28,12 @@ from .types import (
     CompileRequest,
     ContextCommandRequest,
     ContextArtifact,
+    DiscoveryFinishRequest,
     DiscoveryPreviewRequest,
+    DiscoveryRunCreateRequest,
     DiscoveryRunPreview,
+    DiscoveryValidatorReceiptRequest,
+    DiscoveryWritebackReviewRequest,
     ExpressionRenderRequest,
     ExpressionRenderResult,
     GraphFocusResponse,
@@ -49,6 +53,9 @@ from .types import (
     HarnessTransitionRequest,
     HarnessTransitionResult,
     InferenceRegistryReport,
+    KernelReceiptRequest,
+    KernelRun,
+    KernelRunRequest,
     ContextWebIndex,
     ContextWebIndexUpdateRequest,
     ContextWebExplainResponse,
@@ -293,6 +300,50 @@ class _InferenceDiscoveryRunsNamespace:
         request = DiscoveryPreviewRequest(**kwargs)
         return await self._client._inference_discovery_preview(request)
 
+    async def list(self, **filters: Any) -> list[DiscoveryRunPreview]:
+        return await self._client._inference_discovery_list(filters)
+
+    async def create(self, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryRunCreateRequest(**kwargs)
+        return await self._client._inference_discovery_create(request)
+
+    async def get(self, run_id: str) -> DiscoveryRunPreview:
+        return await self._client._inference_discovery_get(run_id)
+
+    async def append_validator_receipt(self, run_id: str, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryValidatorReceiptRequest(**kwargs)
+        return await self._client._inference_discovery_append_validator_receipt(run_id, request)
+
+    async def finish(self, run_id: str, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryFinishRequest(**kwargs)
+        return await self._client._inference_discovery_finish(run_id, request)
+
+    async def cancel(self, run_id: str) -> DiscoveryRunPreview:
+        return await self._client._inference_discovery_cancel(run_id)
+
+    async def review_writeback(self, run_id: str, proposal_id: str, **kwargs: Any) -> DiscoveryRunPreview:
+        request = DiscoveryWritebackReviewRequest(**kwargs)
+        return await self._client._inference_discovery_review_writeback(run_id, proposal_id, request)
+
+
+class _InferenceKernelRunsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, **filters: Any) -> list[KernelRun]:
+        return await self._client._inference_kernel_list(filters)
+
+    async def create(self, **kwargs: Any) -> KernelRun:
+        request = KernelRunRequest(**kwargs)
+        return await self._client._inference_kernel_create(request)
+
+    async def get(self, run_id: str) -> KernelRun:
+        return await self._client._inference_kernel_get(run_id)
+
+    async def append_receipt(self, run_id: str, **kwargs: Any) -> KernelRun:
+        request = KernelReceiptRequest(**kwargs)
+        return await self._client._inference_kernel_append_receipt(run_id, request)
+
 
 class _InferenceNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
@@ -300,6 +351,7 @@ class _InferenceNamespace:
         self.expression = _InferenceExpressionNamespace(client)
         self.solver = _InferenceSolverNamespace(client)
         self.discovery_runs = _InferenceDiscoveryRunsNamespace(client)
+        self.kernel_runs = _InferenceKernelRunsNamespace(client)
 
     async def registry(self) -> InferenceRegistryReport:
         return await self._client._inference_registry()
@@ -976,6 +1028,134 @@ class TheoremContextClient:
             content=request.model_dump_json(exclude_none=True),
         )
         return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_list(self, filters: dict[str, Any]) -> list[DiscoveryRunPreview]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/discovery-runs/',
+            surface='inference discovery runs list',
+            headers=self._headers(),
+            params=filters,
+        )
+        return [DiscoveryRunPreview.model_validate(item) for item in response.json()]
+
+    async def _inference_discovery_create(
+        self,
+        request: DiscoveryRunCreateRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/',
+            surface='inference discovery run create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_get(self, run_id: str) -> DiscoveryRunPreview:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/',
+            surface='inference discovery run get',
+            headers=self._headers(),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_append_validator_receipt(
+        self,
+        run_id: str,
+        request: DiscoveryValidatorReceiptRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/validator-receipts/',
+            surface='inference discovery validator receipt',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_finish(
+        self,
+        run_id: str,
+        request: DiscoveryFinishRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/finish/',
+            surface='inference discovery finish',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_cancel(self, run_id: str) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/cancel/',
+            surface='inference discovery cancel',
+            headers=self._headers(),
+            content='{}',
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_discovery_review_writeback(
+        self,
+        run_id: str,
+        proposal_id: str,
+        request: DiscoveryWritebackReviewRequest,
+    ) -> DiscoveryRunPreview:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/discovery-runs/{run_id}/writeback-proposals/{proposal_id}/review/',
+            surface='inference discovery writeback review',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return DiscoveryRunPreview.model_validate(response.json())
+
+    async def _inference_kernel_list(self, filters: dict[str, Any]) -> list[KernelRun]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/kernel-runs/',
+            surface='inference kernel runs list',
+            headers=self._headers(),
+            params=filters,
+        )
+        return [KernelRun.model_validate(item) for item in response.json()]
+
+    async def _inference_kernel_create(self, request: KernelRunRequest) -> KernelRun:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/kernel-runs/',
+            surface='inference kernel run create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return KernelRun.model_validate(response.json())
+
+    async def _inference_kernel_get(self, run_id: str) -> KernelRun:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/inference/kernel-runs/{run_id}/',
+            surface='inference kernel run get',
+            headers=self._headers(),
+        )
+        return KernelRun.model_validate(response.json())
+
+    async def _inference_kernel_append_receipt(
+        self,
+        run_id: str,
+        request: KernelReceiptRequest,
+    ) -> KernelRun:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/inference/kernel-runs/{run_id}/receipts/',
+            surface='inference kernel receipt append',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return KernelRun.model_validate(response.json())
 
     async def _context_command_resolve(
         self,

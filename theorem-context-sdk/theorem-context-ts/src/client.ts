@@ -33,8 +33,12 @@ import type {
   ContextCommandPayload,
   ContextCommandPreview,
   ContextCommandResolveResponse,
+  DiscoveryFinishRequest,
   DiscoveryPreviewRequest,
+  DiscoveryRunCreateRequest,
   DiscoveryRunPreview,
+  DiscoveryValidatorReceiptRequest,
+  DiscoveryWritebackReviewRequest,
   ExpressionRenderRequest,
   ExpressionRenderResult,
   ContextWebIndex,
@@ -45,6 +49,9 @@ import type {
   GraphFocusResponse,
   GraphPatchesListResponse,
   InferenceRegistryReport,
+  KernelReceiptRequest,
+  KernelRun,
+  KernelRunRequest,
   HarnessBeginRequest,
   HarnessCompareRequest,
   HarnessContextRequest,
@@ -273,6 +280,19 @@ export class TheoremContextClient {
     },
     discoveryRuns: {
       preview: this.previewDiscoveryRun.bind(this),
+      list: this.listDiscoveryRuns.bind(this),
+      create: this.createDiscoveryRun.bind(this),
+      get: this.getDiscoveryRun.bind(this),
+      appendValidatorReceipt: this.appendDiscoveryValidatorReceipt.bind(this),
+      finish: this.finishDiscoveryRun.bind(this),
+      cancel: this.cancelDiscoveryRun.bind(this),
+      reviewWriteback: this.reviewDiscoveryWriteback.bind(this),
+    },
+    kernelRuns: {
+      list: this.listKernelRuns.bind(this),
+      create: this.createKernelRun.bind(this),
+      get: this.getKernelRun.bind(this),
+      appendReceipt: this.appendKernelReceipt.bind(this),
     },
   };
 
@@ -898,6 +918,174 @@ export class TheoremContextClient {
       'inference discovery run preview',
     );
     return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async listDiscoveryRuns(filters: Record<string, unknown> = {}): Promise<DiscoveryRunPreview[]> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference discovery runs list',
+    );
+    return (await response.json()) as DiscoveryRunPreview[];
+  }
+
+  async createDiscoveryRun(
+    request: DiscoveryRunCreateRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery run create',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async getDiscoveryRun(runId: string): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference discovery run get',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async appendDiscoveryValidatorReceipt(
+    runId: string,
+    request: DiscoveryValidatorReceiptRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/validator-receipts/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery validator receipt',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async finishDiscoveryRun(
+    runId: string,
+    request: DiscoveryFinishRequest = {},
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/finish/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery finish',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async cancelDiscoveryRun(runId: string): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/cancel/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: '{}',
+      },
+      'inference discovery cancel',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async reviewDiscoveryWriteback(
+    runId: string,
+    proposalId: string,
+    request: DiscoveryWritebackReviewRequest,
+  ): Promise<DiscoveryRunPreview> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/discovery-runs/${runId}/writeback-proposals/${proposalId}/review/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference discovery writeback review',
+    );
+    return (await response.json()) as DiscoveryRunPreview;
+  }
+
+  async listKernelRuns(filters: Record<string, unknown> = {}): Promise<KernelRun[]> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference kernel runs list',
+    );
+    return (await response.json()) as KernelRun[];
+  }
+
+  async createKernelRun(request: KernelRunRequest): Promise<KernelRun> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference kernel run create',
+    );
+    return (await response.json()) as KernelRun;
+  }
+
+  async getKernelRun(runId: string): Promise<KernelRun> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/${runId}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'inference kernel run get',
+    );
+    return (await response.json()) as KernelRun;
+  }
+
+  async appendKernelReceipt(
+    runId: string,
+    request: KernelReceiptRequest,
+  ): Promise<KernelRun> {
+    const response = await this.request(
+      `${this.baseUrl}/inference/kernel-runs/${runId}/receipts/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'inference kernel receipt append',
+    );
+    return (await response.json()) as KernelRun;
   }
 
   async beginHarness(request: HarnessBeginRequest): Promise<HarnessRun> {

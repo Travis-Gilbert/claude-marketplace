@@ -570,6 +570,96 @@ export interface DiscoveryRunPreview {
   events: DiscoveryEvent[];
   append_only: boolean;
   canonical_graph_mutation: boolean;
+  validator_receipts?: ValidatorReceipt[];
+  kernel_runs?: Record<string, unknown>[];
+  candidate_archive_entries?: Record<string, unknown>[];
+}
+
+export interface DiscoveryRunCreateRequest {
+  objective: string;
+  run_id?: string;
+  context_refs?: string[];
+  hypothesis?: string;
+  action?: Record<string, unknown>;
+  expected_value?: number;
+  metadata?: Record<string, unknown>;
+  source_artifact_id?: string;
+}
+
+export interface DiscoveryValidatorReceiptRequest {
+  candidate_id?: string;
+  outcome_id?: string;
+  validator_id: string;
+  status?: string;
+  command?: string;
+  output_summary?: string;
+  counterexample?: Record<string, unknown>;
+  duration_ms?: number;
+  payload?: Record<string, unknown>;
+  receipt_hash?: string;
+}
+
+export interface DiscoveryFinishRequest {
+  succeeded?: boolean;
+  summary?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DiscoveryWritebackReviewRequest {
+  review_status: string;
+  reviewer?: string;
+  note?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KernelResultReceipt {
+  receipt_type: string;
+  status: string;
+  validator_id: string;
+  payload: Record<string, unknown>;
+  payload_hash: string;
+  receipt_hash: string;
+  writeback_proposals: Record<string, unknown>[];
+  private_content_excluded: boolean;
+}
+
+export interface KernelRun {
+  run_id: string;
+  kernel_id: string;
+  epistemic_job: string;
+  inference_family: string;
+  status: string;
+  request_payload: Record<string, unknown>;
+  result_payload: Record<string, unknown>;
+  budget: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  error_payload: Record<string, unknown>;
+  receipt_hash: string;
+  duration_ms: number;
+  writeback_policy: string;
+  canonical_graph_mutation: boolean;
+  discovery_run_id: string;
+  result_receipts: KernelResultReceipt[];
+  append_only: boolean;
+}
+
+export interface KernelRunRequest {
+  kernel_id?: string;
+  epistemic_job?: string;
+  inference_family?: string;
+  consumes_view?: string;
+  discovery_run_id?: string;
+  payload?: Record<string, unknown>;
+  budget?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KernelReceiptRequest {
+  receipt_type?: string;
+  status?: string;
+  validator_id?: string;
+  payload?: Record<string, unknown>;
+  writeback_proposals?: Record<string, unknown>[];
 }
 
 export interface ContextCommandPayload {

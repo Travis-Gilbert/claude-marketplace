@@ -369,6 +369,27 @@ test('inference namespace maps BGI backend routes', async () => {
           writeback_proposals: [],
         });
       }
+      if (String(url).endsWith('/inference/kernel-runs/')) {
+        return jsonResponse({
+          run_id: 'kernel-1',
+          kernel_id: 'bgi_datalog_deriver',
+          epistemic_job: 'evaluate',
+          inference_family: 'deductive',
+          status: 'succeeded',
+          request_payload: {},
+          result_payload: { derived_count: 1 },
+          budget: {},
+          metadata: {},
+          error_payload: {},
+          receipt_hash: 'hash:kernel',
+          duration_ms: 4,
+          writeback_policy: 'read-only',
+          canonical_graph_mutation: false,
+          discovery_run_id: 'discovery-1',
+          result_receipts: [],
+          append_only: true,
+        });
+      }
       return jsonResponse({
         run_id: 'discovery-1',
         objective: 'find stronger validators',
@@ -388,6 +409,9 @@ test('inference namespace maps BGI backend routes', async () => {
         events: [],
         append_only: true,
         canonical_graph_mutation: false,
+        validator_receipts: [],
+        kernel_runs: [],
+        candidate_archive_entries: [],
       });
     },
   });
@@ -409,12 +433,37 @@ test('inference namespace maps BGI backend routes', async () => {
     context_refs: ['artifact:1'],
     expected_value: 0.8,
   });
+  const created = await client.inference.discoveryRuns.create({
+    objective: 'find stronger validators',
+    hypothesis: 'native receipts can compact safely',
+    action: { kind: 'benchmark' },
+  });
+  const appended = await client.inference.discoveryRuns.appendValidatorReceipt(
+    'discovery-1',
+    {
+      candidate_id: 'candidate-1',
+      validator_id: 'pytest',
+      status: 'passed',
+    },
+  );
+  const finished = await client.inference.discoveryRuns.finish('discovery-1', {
+    succeeded: true,
+  });
+  const kernel = await client.inference.kernelRuns.create({
+    kernel_id: 'bgi_datalog_deriver',
+    discovery_run_id: 'discovery-1',
+    payload: { claims: [{ id: 'c1' }] },
+  });
 
   assert.deepEqual(requests.map((request) => request.url), [
     'http://localhost:8000/api/v2/theseus/inference/registry/',
     'http://localhost:8000/api/v2/theseus/inference/expression/deterministic_brief/',
     'http://localhost:8000/api/v2/theseus/inference/solver/context-capsule/',
     'http://localhost:8000/api/v2/theseus/inference/discovery-runs/preview/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/discovery-1/validator-receipts/',
+    'http://localhost:8000/api/v2/theseus/inference/discovery-runs/discovery-1/finish/',
+    'http://localhost:8000/api/v2/theseus/inference/kernel-runs/',
   ]);
   assert.equal(registry.entries[0].kernel_id, 'context_web_packer');
   assert.equal(expression.payload.text, 'ready');
@@ -422,6 +471,10 @@ test('inference namespace maps BGI backend routes', async () => {
   assert.equal(preview.append_only, true);
   assert.equal(preview.canonical_graph_mutation, false);
   assert.equal(preview.candidates[0].candidate_id, 'candidate-1');
+  assert.equal(created.run_id, 'discovery-1');
+  assert.deepEqual(appended.validator_receipts, []);
+  assert.equal(finished.status, 'running');
+  assert.equal(kernel.kernel_id, 'bgi_datalog_deriver');
 });
 
 test('orchestrate uses server-authoritative route', async () => {

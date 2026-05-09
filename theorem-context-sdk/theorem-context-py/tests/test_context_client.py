@@ -387,6 +387,29 @@ def test_inference_namespace_maps_bgi_backend_routes() -> None:
                     'writeback_proposals': [],
                 },
             )
+        if request.url.path.endswith('/inference/kernel-runs/'):
+            return httpx.Response(
+                200,
+                json={
+                    'run_id': 'kernel-1',
+                    'kernel_id': 'bgi_datalog_deriver',
+                    'epistemic_job': 'evaluate',
+                    'inference_family': 'deductive',
+                    'status': 'succeeded',
+                    'request_payload': {},
+                    'result_payload': {'derived_count': 1},
+                    'budget': {},
+                    'metadata': {},
+                    'error_payload': {},
+                    'receipt_hash': 'hash:kernel',
+                    'duration_ms': 4,
+                    'writeback_policy': 'read-only',
+                    'canonical_graph_mutation': False,
+                    'discovery_run_id': 'discovery-1',
+                    'result_receipts': [],
+                    'append_only': True,
+                },
+            )
         return httpx.Response(
             200,
             json={
@@ -408,6 +431,9 @@ def test_inference_namespace_maps_bgi_backend_routes() -> None:
                 'events': [],
                 'append_only': True,
                 'canonical_graph_mutation': False,
+                'validator_receipts': [],
+                'kernel_runs': [],
+                'candidate_archive_entries': [],
             },
         )
 
@@ -434,6 +460,26 @@ def test_inference_namespace_maps_bgi_backend_routes() -> None:
                 context_refs=['artifact:1'],
                 expected_value=0.8,
             )
+            created = await client.inference.discovery_runs.create(
+                objective='find stronger validators',
+                hypothesis='native receipts can compact safely',
+                action={'kind': 'benchmark'},
+            )
+            appended = await client.inference.discovery_runs.append_validator_receipt(
+                'discovery-1',
+                candidate_id='candidate-1',
+                validator_id='pytest',
+                status='passed',
+            )
+            finished = await client.inference.discovery_runs.finish(
+                'discovery-1',
+                succeeded=True,
+            )
+            kernel = await client.inference.kernel_runs.create(
+                kernel_id='bgi_datalog_deriver',
+                discovery_run_id='discovery-1',
+                payload={'claims': [{'id': 'c1'}]},
+            )
         finally:
             await client.aclose()
 
@@ -442,6 +488,10 @@ def test_inference_namespace_maps_bgi_backend_routes() -> None:
             '/api/v2/theseus/inference/expression/deterministic_brief/',
             '/api/v2/theseus/inference/solver/context-capsule/',
             '/api/v2/theseus/inference/discovery-runs/preview/',
+            '/api/v2/theseus/inference/discovery-runs/',
+            '/api/v2/theseus/inference/discovery-runs/discovery-1/validator-receipts/',
+            '/api/v2/theseus/inference/discovery-runs/discovery-1/finish/',
+            '/api/v2/theseus/inference/kernel-runs/',
         ]
         assert registry.entries[0].kernel_id == 'context_web_packer'
         assert expression.payload['text'] == 'ready'
@@ -449,6 +499,10 @@ def test_inference_namespace_maps_bgi_backend_routes() -> None:
         assert preview.append_only is True
         assert preview.canonical_graph_mutation is False
         assert preview.candidates[0].candidate_id == 'candidate-1'
+        assert created.run_id == 'discovery-1'
+        assert appended.validator_receipts == []
+        assert finished.status == 'running'
+        assert kernel.kernel_id == 'bgi_datalog_deriver'
 
     asyncio.run(run())
 

@@ -410,6 +410,96 @@ class DiscoveryRunPreview(BaseModel):
     events: list[DiscoveryEvent] = Field(default_factory=list)
     append_only: bool = True
     canonical_graph_mutation: bool = False
+    validator_receipts: list[ValidatorReceipt] = Field(default_factory=list)
+    kernel_runs: list[dict[str, Any]] = Field(default_factory=list)
+    candidate_archive_entries: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class DiscoveryRunCreateRequest(BaseModel):
+    objective: str
+    run_id: str | None = None
+    context_refs: list[str] = Field(default_factory=list)
+    hypothesis: str | None = None
+    action: dict[str, Any] = Field(default_factory=dict)
+    expected_value: float = 0.0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    source_artifact_id: str | None = None
+
+
+class DiscoveryValidatorReceiptRequest(BaseModel):
+    candidate_id: str = ''
+    outcome_id: str = ''
+    validator_id: str
+    status: str = 'unknown'
+    command: str = ''
+    output_summary: str = ''
+    counterexample: dict[str, Any] = Field(default_factory=dict)
+    duration_ms: int = 0
+    payload: dict[str, Any] = Field(default_factory=dict)
+    receipt_hash: str = ''
+
+
+class DiscoveryFinishRequest(BaseModel):
+    succeeded: bool = True
+    summary: str = ''
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DiscoveryWritebackReviewRequest(BaseModel):
+    review_status: str
+    reviewer: str = ''
+    note: str = ''
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class KernelResultReceipt(BaseModel):
+    receipt_type: str = 'kernel_result'
+    status: str = 'unknown'
+    validator_id: str = ''
+    payload: dict[str, Any] = Field(default_factory=dict)
+    payload_hash: str = ''
+    receipt_hash: str = ''
+    writeback_proposals: list[dict[str, Any]] = Field(default_factory=list)
+    private_content_excluded: bool = True
+
+
+class KernelRun(BaseModel):
+    run_id: str
+    kernel_id: str
+    epistemic_job: str = ''
+    inference_family: str = ''
+    status: str = 'running'
+    request_payload: dict[str, Any] = Field(default_factory=dict)
+    result_payload: dict[str, Any] = Field(default_factory=dict)
+    budget: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    error_payload: dict[str, Any] = Field(default_factory=dict)
+    receipt_hash: str = ''
+    duration_ms: int = 0
+    writeback_policy: str = 'proposal-only'
+    canonical_graph_mutation: bool = False
+    discovery_run_id: str = ''
+    result_receipts: list[KernelResultReceipt] = Field(default_factory=list)
+    append_only: bool = True
+
+
+class KernelRunRequest(BaseModel):
+    kernel_id: str | None = None
+    epistemic_job: str | None = None
+    inference_family: str | None = None
+    consumes_view: str | None = None
+    discovery_run_id: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+    budget: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class KernelReceiptRequest(BaseModel):
+    receipt_type: str = 'kernel_result'
+    status: str = 'unknown'
+    validator_id: str = ''
+    payload: dict[str, Any] = Field(default_factory=dict)
+    writeback_proposals: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ContextCommandRequest(BaseModel):
