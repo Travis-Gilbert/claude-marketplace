@@ -82,12 +82,22 @@ import type {
   ProductAPIKeyCreateRequest,
   ProductAPIKeySummary,
   ProductBootstrapResponse,
+  MemoryPatchReviewQueueResponse,
+  MemoryPatchReviewUpdateRequest,
+  MemoryPatchReviewUpdateResponse,
   ProductProjectCreateRequest,
   ProductProjectSummary,
+  ProductTenantMemberCreateRequest,
+  ProductTenantMemberSummary,
+  ProductTenantMemberUpdateRequest,
   ProductTenantCreateRequest,
   ProductTenantSummary,
+  ProductTenantUpdateRequest,
   ProductUsageSummary,
   SavedContextCreateRequest,
+  SavedContextRecallPreviewRequest,
+  SavedContextRecallPreviewResponse,
+  SavedContextPromoteMemoryPatchRequest,
   SavedContextSummary,
   SavedContextUpdateRequest,
   SolverContextCapsuleRequest,
@@ -287,10 +297,16 @@ export class TheoremContextClient {
       list: this.listProductTenants.bind(this),
       create: this.createProductTenant.bind(this),
       get: this.getProductTenant.bind(this),
+      update: this.updateProductTenant.bind(this),
     },
     projects: {
       list: this.listProductProjects.bind(this),
       create: this.createProductProject.bind(this),
+    },
+    members: {
+      list: this.listProductTenantMembers.bind(this),
+      create: this.createProductTenantMember.bind(this),
+      update: this.updateProductTenantMember.bind(this),
     },
     keys: {
       list: this.listProductKeys.bind(this),
@@ -303,9 +319,17 @@ export class TheoremContextClient {
       list: this.listSavedContexts.bind(this),
       create: this.createSavedContext.bind(this),
       update: this.updateSavedContext.bind(this),
+      previewRecall: this.previewRecall.bind(this),
+      promoteMemoryPatch: this.promoteMemoryPatch.bind(this),
       mute: this.muteSavedContext.bind(this),
       activate: this.activateSavedContext.bind(this),
       delete: this.deleteSavedContext.bind(this),
+    },
+    memoryPatches: {
+      review: {
+        list: this.listMemoryPatchReviewQueue.bind(this),
+        update: this.updateMemoryPatchReview.bind(this),
+      },
     },
   };
 
@@ -570,6 +594,23 @@ export class TheoremContextClient {
     return body.tenant;
   }
 
+  async updateProductTenant(
+    tenantSlug: string,
+    payload: ProductTenantUpdateRequest,
+  ): Promise<ProductTenantSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/`,
+      {
+        method: 'PUT',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product tenant update',
+    );
+    const body = (await response.json()) as { tenant: ProductTenantSummary };
+    return body.tenant;
+  }
+
   async listProductProjects(tenantSlug: string): Promise<ProductProjectSummary[]> {
     const response = await this.request(
       `${this.baseUrl}/product/tenants/${tenantSlug}/projects/`,
@@ -651,6 +692,56 @@ export class TheoremContextClient {
     return body.usage;
   }
 
+  async listProductTenantMembers(
+    tenantSlug: string,
+  ): Promise<ProductTenantMemberSummary[]> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/members/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product tenant members list',
+    );
+    const body = (await response.json()) as { members: ProductTenantMemberSummary[] };
+    return body.members ?? [];
+  }
+
+  async createProductTenantMember(
+    tenantSlug: string,
+    payload: ProductTenantMemberCreateRequest,
+  ): Promise<ProductTenantMemberSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/members/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product tenant member create',
+    );
+    const body = (await response.json()) as { member: ProductTenantMemberSummary };
+    return body.member;
+  }
+
+  async updateProductTenantMember(
+    tenantSlug: string,
+    membershipId: number,
+    payload: ProductTenantMemberUpdateRequest,
+  ): Promise<ProductTenantMemberSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/members/${membershipId}/`,
+      {
+        method: 'PUT',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product tenant member update',
+    );
+    const body = (await response.json()) as { member: ProductTenantMemberSummary };
+    return body.member;
+  }
+
   async listSavedContexts(
     tenantSlug: string,
     options: {
@@ -715,6 +806,39 @@ export class TheoremContextClient {
     return body.saved_context;
   }
 
+  async promoteMemoryPatch(
+    tenantSlug: string,
+    payload: SavedContextPromoteMemoryPatchRequest,
+  ): Promise<SavedContextSummary> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/promote-memory-patch/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'saved context promote memory patch',
+    );
+    const body = (await response.json()) as { saved_context: SavedContextSummary };
+    return body.saved_context;
+  }
+
+  async previewRecall(
+    tenantSlug: string,
+    payload: SavedContextRecallPreviewRequest,
+  ): Promise<SavedContextRecallPreviewResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/saved-contexts/preview-recall/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'saved context preview recall',
+    );
+    return (await response.json()) as SavedContextRecallPreviewResponse;
+  }
+
   async muteSavedContext(
     tenantSlug: string,
     entrySlug: string,
@@ -761,6 +885,54 @@ export class TheoremContextClient {
     );
     const body = (await response.json()) as { saved_context: SavedContextSummary };
     return body.saved_context;
+  }
+
+  async listMemoryPatchReviewQueue(
+    tenantSlug: string,
+    options: {
+      projectSlug?: string;
+      reviewStatus?: string;
+      limit?: number;
+    } = {},
+  ): Promise<MemoryPatchReviewQueueResponse> {
+    const query = new URLSearchParams();
+    if (options.projectSlug) {
+      query.set('project_slug', options.projectSlug);
+    }
+    if (options.reviewStatus) {
+      query.set('review_status', options.reviewStatus);
+    }
+    if (typeof options.limit === 'number') {
+      query.set('limit', String(options.limit));
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/memory-patches/review/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'product memory patch review list',
+    );
+    return (await response.json()) as MemoryPatchReviewQueueResponse;
+  }
+
+  async updateMemoryPatchReview(
+    tenantSlug: string,
+    runId: string,
+    patchId: string,
+    payload: MemoryPatchReviewUpdateRequest,
+  ): Promise<MemoryPatchReviewUpdateResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/product/tenants/${tenantSlug}/memory-patches/review/${runId}/${patchId}/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'product memory patch review update',
+    );
+    return (await response.json()) as MemoryPatchReviewUpdateResponse;
   }
 
   async remember(input: { observation: string; evidence?: string[] }): Promise<{

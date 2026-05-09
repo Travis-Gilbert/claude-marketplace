@@ -1311,6 +1311,51 @@ test('product namespace maps bootstrap and saved-context CRUD routes', async () 
         });
       }
 
+      if (path.endsWith('/promote-memory-patch/') && init.method === 'POST') {
+        return jsonResponse({
+          saved_context: {
+            id: 12,
+            title: 'Promoted policy',
+            slug: 'ctx-promoted',
+            kind: 'operational_policy',
+            memory_role: 'operational_policy',
+            status: 'active',
+            content: 'Promoted from approved patch',
+            summary: 'Promoted summary',
+            scope: { run_id: 'run-1', patch_id: 'patch-1' },
+            metadata: { source_patch_id: 'patch-1' },
+            tenant_slug: 'tenant-1',
+            project_slug: 'proj-1',
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:05:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/preview-recall/') && init.method === 'POST') {
+        return jsonResponse({
+          saved_contexts: [
+            {
+              id: 11,
+              title: 'Updated fact',
+              slug: 'ctx-1',
+              kind: 'note',
+              memory_role: 'evidence',
+              status: 'active',
+              content: 'Updated content',
+              summary: 'Updated summary',
+              scope: { layer: 'private' },
+              metadata: { source: 'manual' },
+              tenant_slug: 'tenant-1',
+              project_slug: 'proj-1',
+              created_at: '2026-05-09T00:00:00Z',
+              updated_at: '2026-05-09T00:05:00Z',
+            },
+          ],
+          counts: { evidence: 1, operational_policy: 0 },
+        });
+      }
+
       if (path.endsWith('/saved-contexts/ctx-1/') && init.method === 'PUT') {
         return jsonResponse({
           saved_context: {
@@ -1430,6 +1475,17 @@ test('product namespace maps bootstrap and saved-context CRUD routes', async () 
     scope: { layer: 'private' },
     metadata: { source: 'manual' },
   });
+  const promoted = await client.product.savedContexts.promoteMemoryPatch('tenant-1', {
+    run_id: 'run-1',
+    patch_id: 'patch-1',
+    title: 'Promoted policy',
+    project_slug: 'proj-1',
+  });
+  const preview = await client.product.savedContexts.previewRecall('tenant-1', {
+    project_slug: 'proj-1',
+    mode: 'plan',
+    profile_id: 'developer-core',
+  });
   const listed = await client.product.savedContexts.list('tenant-1', {
     projectSlug: 'proj-1',
     includeMuted: true,
@@ -1441,6 +1497,9 @@ test('product namespace maps bootstrap and saved-context CRUD routes', async () 
   assert.equal(bootstrap.mode, 'authenticated');
   assert.equal(created.slug, 'ctx-1');
   assert.equal(updated.title, 'Updated fact');
+  assert.equal(promoted.slug, 'ctx-promoted');
+  assert.equal(preview.counts.evidence, 1);
+  assert.equal(preview.saved_contexts[0].slug, 'ctx-1');
   assert.equal(listed.length, 1);
   assert.equal(muted.status, 'muted');
   assert.equal(activated.status, 'active');
@@ -1460,7 +1519,208 @@ test('product namespace maps bootstrap and saved-context CRUD routes', async () 
   );
   assert.equal(
     requests[3].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/promote-memory-patch/',
+  );
+  assert.equal(
+    requests[4].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/preview-recall/',
+  );
+  assert.equal(
+    requests[5].url,
     'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/saved-contexts/?project_slug=proj-1&include_muted=true',
+  );
+});
+
+test('product namespace maps membership and review-queue routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const parsed = new URL(String(url));
+      const path = parsed.pathname;
+
+      if (path.endsWith('/product/tenants/tenant-1/') && init.method === 'PUT') {
+        return jsonResponse({
+          tenant: {
+            id: 1,
+            name: 'Tenant 1',
+            slug: 'tenant-1',
+            is_active: true,
+            role: 'owner',
+            billing_plan: 'researcher',
+            billing_email: 'owner@example.com',
+            monthly_request_quota: 10000,
+            monthly_token_quota: 1000000,
+            configuration: {},
+            metadata: {},
+            projects_count: 1,
+            api_keys_count: 1,
+            members_count: 2,
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:10:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/members/') && init.method === 'GET') {
+        return jsonResponse({
+          members: [
+            {
+              id: 41,
+              tenant_slug: 'tenant-1',
+              user_id: 7,
+              username: 'viewer',
+              email: 'viewer@example.com',
+              role: 'viewer',
+              is_active: true,
+              created_at: '2026-05-09T00:00:00Z',
+              updated_at: '2026-05-09T00:00:00Z',
+            },
+          ],
+        });
+      }
+
+      if (path.endsWith('/members/') && init.method === 'POST') {
+        return jsonResponse({
+          member: {
+            id: 42,
+            tenant_slug: 'tenant-1',
+            user_id: 8,
+            username: 'editor',
+            email: 'editor@example.com',
+            role: 'member',
+            is_active: true,
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:00:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/members/42/') && init.method === 'PUT') {
+        return jsonResponse({
+          member: {
+            id: 42,
+            tenant_slug: 'tenant-1',
+            user_id: 8,
+            username: 'editor',
+            email: 'editor@example.com',
+            role: 'admin',
+            is_active: true,
+            created_at: '2026-05-09T00:00:00Z',
+            updated_at: '2026-05-09T00:10:00Z',
+          },
+        });
+      }
+
+      if (path.endsWith('/memory-patches/review/') && init.method === 'GET') {
+        return jsonResponse({
+          memory_patches: [
+            {
+              run_id: 'run-1',
+              task: 'review queue',
+              actor: 'codex',
+              scope: { tenant_slug: 'tenant-1' },
+              run_created_at: '2026-05-09T00:00:00Z',
+              run_updated_at: '2026-05-09T00:05:00Z',
+              patch: { patch_id: 'patch-1', review_status: 'queued' },
+              validation: null,
+              promotion: { eligible: false, saved_context_slug: null },
+            },
+          ],
+          counts: { queued: 1 },
+        });
+      }
+
+      return jsonResponse({
+        memory_patch: {
+          run_id: 'run-1',
+          task: 'review queue',
+          actor: 'codex',
+          scope: { tenant_slug: 'tenant-1' },
+          run_created_at: '2026-05-09T00:00:00Z',
+          run_updated_at: '2026-05-09T00:06:00Z',
+          patch: { patch_id: 'patch-1', review_status: 'approved' },
+          validation: { review_status: 'approved' },
+          promotion: { eligible: true, saved_context_slug: 'ctx-1' },
+        },
+        validation: { review_status: 'approved' },
+        saved_context: {
+          id: 11,
+          title: 'Reviewed patch policy',
+          slug: 'ctx-1',
+          kind: 'operational_policy',
+          memory_role: 'operational_policy',
+          status: 'active',
+          content: 'Promoted from approved patch',
+          summary: 'Promoted summary',
+          scope: { run_id: 'run-1', patch_id: 'patch-1' },
+          metadata: { source_patch_id: 'patch-1' },
+          tenant_slug: 'tenant-1',
+          project_slug: 'proj-1',
+          created_at: '2026-05-09T00:00:00Z',
+          updated_at: '2026-05-09T00:05:00Z',
+        },
+      });
+    },
+  });
+
+  const tenant = await client.product.tenants.update('tenant-1', {
+    billing_email: 'owner@example.com',
+  });
+  const members = await client.product.members.list('tenant-1');
+  const createdMember = await client.product.members.create('tenant-1', {
+    username: 'editor',
+    role: 'member',
+  });
+  const updatedMember = await client.product.members.update('tenant-1', 42, {
+    role: 'admin',
+  });
+  const queue = await client.product.memoryPatches.review.list('tenant-1', {
+    projectSlug: 'proj-1',
+    reviewStatus: 'queued',
+    limit: 5,
+  });
+  const reviewed = await client.product.memoryPatches.review.update(
+    'tenant-1',
+    'run-1',
+    'patch-1',
+    {
+      review_status: 'approved',
+      promote_to_saved_context: true,
+      title: 'Reviewed patch policy',
+    },
+  );
+
+  assert.equal(tenant.billing_email, 'owner@example.com');
+  assert.equal(members[0].role, 'viewer');
+  assert.equal(createdMember.username, 'editor');
+  assert.equal(updatedMember.role, 'admin');
+  assert.equal(queue.counts.queued, 1);
+  assert.equal(reviewed.saved_context.slug, 'ctx-1');
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/members/',
+  );
+  assert.equal(
+    requests[2].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/members/',
+  );
+  assert.equal(
+    requests[3].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/members/42/',
+  );
+  assert.equal(
+    requests[4].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/memory-patches/review/?project_slug=proj-1&review_status=queued&limit=5',
+  );
+  assert.equal(
+    requests[5].url,
+    'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/memory-patches/review/run-1/patch-1/',
   );
 });
 

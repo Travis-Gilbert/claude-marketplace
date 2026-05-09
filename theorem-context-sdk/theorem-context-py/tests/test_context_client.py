@@ -1521,6 +1521,55 @@ def test_product_namespace_maps_bootstrap_and_saved_context_routes() -> None:
                 },
             )
 
+        if path.endswith('/promote-memory-patch/') and request.method == 'POST':
+            return httpx.Response(
+                200,
+                json={
+                    'saved_context': {
+                        'id': 12,
+                        'title': 'Promoted policy',
+                        'slug': 'ctx-promoted',
+                        'kind': 'operational_policy',
+                        'memory_role': 'operational_policy',
+                        'status': 'active',
+                        'content': 'Promoted from approved patch',
+                        'summary': 'Promoted summary',
+                        'scope': {'run_id': 'run-1', 'patch_id': 'patch-1'},
+                        'metadata': {'source_patch_id': 'patch-1'},
+                        'tenant_slug': 'tenant-1',
+                        'project_slug': 'proj-1',
+                        'created_at': '2026-05-09T00:00:00Z',
+                        'updated_at': '2026-05-09T00:05:00Z',
+                    },
+                },
+            )
+
+        if path.endswith('/preview-recall/') and request.method == 'POST':
+            return httpx.Response(
+                200,
+                json={
+                    'saved_contexts': [
+                        {
+                            'id': 11,
+                            'title': 'Updated fact',
+                            'slug': 'ctx-1',
+                            'kind': 'note',
+                            'memory_role': 'evidence',
+                            'status': 'active',
+                            'content': 'Updated content',
+                            'summary': 'Updated summary',
+                            'scope': {'layer': 'private'},
+                            'metadata': {'source': 'manual'},
+                            'tenant_slug': 'tenant-1',
+                            'project_slug': 'proj-1',
+                            'created_at': '2026-05-09T00:00:00Z',
+                            'updated_at': '2026-05-09T00:05:00Z',
+                        },
+                    ],
+                    'counts': {'evidence': 1, 'operational_policy': 0},
+                },
+            )
+
         if path.endswith('/saved-contexts/ctx-1/') and request.method == 'PUT':
             return httpx.Response(
                 200,
@@ -1619,6 +1668,19 @@ def test_product_namespace_maps_bootstrap_and_saved_context_routes() -> None:
                 scope={'layer': 'private'},
                 metadata={'source': 'manual'},
             )
+            promoted = await client.product.saved_contexts.promote_memory_patch(
+                'tenant-1',
+                run_id='run-1',
+                patch_id='patch-1',
+                title='Promoted policy',
+                project_slug='proj-1',
+            )
+            preview = await client.product.saved_contexts.preview_recall(
+                'tenant-1',
+                project_slug='proj-1',
+                mode='plan',
+                profile_id='developer-core',
+            )
             listed = await client.product.saved_contexts.list(
                 'tenant-1',
                 project_slug='proj-1',
@@ -1633,6 +1695,9 @@ def test_product_namespace_maps_bootstrap_and_saved_context_routes() -> None:
         assert bootstrap.mode == 'authenticated'
         assert created.slug == 'ctx-1'
         assert updated.title == 'Updated fact'
+        assert promoted.slug == 'ctx-promoted'
+        assert preview.counts['evidence'] == 1
+        assert preview.saved_contexts[0].slug == 'ctx-1'
         assert len(listed) == 1
         assert muted.status == 'muted'
         assert activated.status == 'active'
@@ -1641,7 +1706,208 @@ def test_product_namespace_maps_bootstrap_and_saved_context_routes() -> None:
         assert requests[1].url.path == '/api/v2/theseus/product/tenants/tenant-1/saved-contexts/'
         assert requests[1].method == 'POST'
         assert json.loads(requests[2].content)['title'] == 'Updated fact'
-        assert requests[3].url.query == b'project_slug=proj-1&include_muted=true'
+        assert requests[3].url.path.endswith('/promote-memory-patch/')
+        assert requests[4].url.path.endswith('/preview-recall/')
+        assert requests[5].url.query == b'project_slug=proj-1&include_muted=true'
+
+    asyncio.run(run())
+
+
+def test_product_namespace_maps_membership_and_review_queue_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+
+        if path.endswith('/product/tenants/tenant-1/') and request.method == 'PUT':
+            return httpx.Response(
+                200,
+                json={
+                    'tenant': {
+                        'id': 1,
+                        'name': 'Tenant 1',
+                        'slug': 'tenant-1',
+                        'is_active': True,
+                        'role': 'owner',
+                        'billing_plan': 'researcher',
+                        'billing_email': 'owner@example.com',
+                        'monthly_request_quota': 10000,
+                        'monthly_token_quota': 1000000,
+                        'configuration': {},
+                        'metadata': {},
+                        'projects_count': 1,
+                        'api_keys_count': 1,
+                        'members_count': 2,
+                        'created_at': '2026-05-09T00:00:00Z',
+                        'updated_at': '2026-05-09T00:10:00Z',
+                    },
+                },
+            )
+
+        if path.endswith('/members/') and request.method == 'GET':
+            return httpx.Response(
+                200,
+                json={
+                    'members': [
+                        {
+                            'id': 41,
+                            'tenant_slug': 'tenant-1',
+                            'user_id': 7,
+                            'username': 'viewer',
+                            'email': 'viewer@example.com',
+                            'role': 'viewer',
+                            'is_active': True,
+                            'created_at': '2026-05-09T00:00:00Z',
+                            'updated_at': '2026-05-09T00:00:00Z',
+                        },
+                    ],
+                },
+            )
+
+        if path.endswith('/members/') and request.method == 'POST':
+            return httpx.Response(
+                200,
+                json={
+                    'member': {
+                        'id': 42,
+                        'tenant_slug': 'tenant-1',
+                        'user_id': 8,
+                        'username': 'editor',
+                        'email': 'editor@example.com',
+                        'role': 'member',
+                        'is_active': True,
+                        'created_at': '2026-05-09T00:00:00Z',
+                        'updated_at': '2026-05-09T00:00:00Z',
+                    },
+                },
+            )
+
+        if '/members/' in path and request.method == 'PUT':
+            return httpx.Response(
+                200,
+                json={
+                    'member': {
+                        'id': 42,
+                        'tenant_slug': 'tenant-1',
+                        'user_id': 8,
+                        'username': 'editor',
+                        'email': 'editor@example.com',
+                        'role': 'admin',
+                        'is_active': True,
+                        'created_at': '2026-05-09T00:00:00Z',
+                        'updated_at': '2026-05-09T00:10:00Z',
+                    },
+                },
+            )
+
+        if path.endswith('/memory-patches/review/') and request.method == 'GET':
+            return httpx.Response(
+                200,
+                json={
+                    'memory_patches': [
+                        {
+                            'run_id': 'run-1',
+                            'task': 'review queue',
+                            'actor': 'codex',
+                            'scope': {'tenant_slug': 'tenant-1'},
+                            'run_created_at': '2026-05-09T00:00:00Z',
+                            'run_updated_at': '2026-05-09T00:05:00Z',
+                            'patch': {'patch_id': 'patch-1', 'review_status': 'queued'},
+                            'validation': None,
+                            'promotion': {'eligible': False, 'saved_context_slug': None},
+                        },
+                    ],
+                    'counts': {'queued': 1},
+                },
+            )
+
+        return httpx.Response(
+            200,
+            json={
+                'memory_patch': {
+                    'run_id': 'run-1',
+                    'task': 'review queue',
+                    'actor': 'codex',
+                    'scope': {'tenant_slug': 'tenant-1'},
+                    'run_created_at': '2026-05-09T00:00:00Z',
+                    'run_updated_at': '2026-05-09T00:06:00Z',
+                    'patch': {'patch_id': 'patch-1', 'review_status': 'approved'},
+                    'validation': {'review_status': 'approved'},
+                    'promotion': {'eligible': True, 'saved_context_slug': 'ctx-1'},
+                },
+                'validation': {'review_status': 'approved'},
+                'saved_context': {
+                    'id': 11,
+                    'title': 'Reviewed patch policy',
+                    'slug': 'ctx-1',
+                    'kind': 'operational_policy',
+                    'memory_role': 'operational_policy',
+                    'status': 'active',
+                    'content': 'Promoted from approved patch',
+                    'summary': 'Promoted summary',
+                    'scope': {'run_id': 'run-1', 'patch_id': 'patch-1'},
+                    'metadata': {'source_patch_id': 'patch-1'},
+                    'tenant_slug': 'tenant-1',
+                    'project_slug': 'proj-1',
+                    'created_at': '2026-05-09T00:00:00Z',
+                    'updated_at': '2026-05-09T00:05:00Z',
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            tenant = await client.product.tenants.update(
+                'tenant-1',
+                billing_email='owner@example.com',
+            )
+            members = await client.product.members.list('tenant-1')
+            created_member = await client.product.members.create(
+                'tenant-1',
+                username='editor',
+                role='member',
+            )
+            updated_member = await client.product.members.update(
+                'tenant-1',
+                42,
+                role='admin',
+            )
+            queue = await client.product.memory_patches.review.list(
+                'tenant-1',
+                project_slug='proj-1',
+                review_status='queued',
+                limit=5,
+            )
+            reviewed = await client.product.memory_patches.review.update(
+                'tenant-1',
+                'run-1',
+                'patch-1',
+                review_status='approved',
+                promote_to_saved_context=True,
+                title='Reviewed patch policy',
+            )
+        finally:
+            await client.aclose()
+
+        assert tenant.billing_email == 'owner@example.com'
+        assert members[0].role == 'viewer'
+        assert created_member.username == 'editor'
+        assert updated_member.role == 'admin'
+        assert queue.counts['queued'] == 1
+        assert reviewed.saved_context is not None
+        assert reviewed.saved_context.slug == 'ctx-1'
+        assert requests[0].url.path == '/api/v2/theseus/product/tenants/tenant-1/'
+        assert requests[1].url.path.endswith('/members/')
+        assert requests[2].url.path.endswith('/members/')
+        assert requests[3].url.path.endswith('/members/42/')
+        assert requests[4].url.path.endswith('/memory-patches/review/')
+        assert requests[4].url.query == b'project_slug=proj-1&review_status=queued&limit=5'
+        assert requests[5].url.path.endswith('/memory-patches/review/run-1/patch-1/')
 
     asyncio.run(run())
 

@@ -76,10 +76,20 @@ from .types import (
     ProductBootstrapResponse,
     ProductProjectCreateRequest,
     ProductProjectSummary,
+    ProductTenantMemberCreateRequest,
+    ProductTenantMemberSummary,
+    ProductTenantMemberUpdateRequest,
     ProductTenantCreateRequest,
     ProductTenantSummary,
+    ProductTenantUpdateRequest,
     ProductUsageSummary,
+    MemoryPatchReviewQueueResponse,
+    MemoryPatchReviewUpdateRequest,
+    MemoryPatchReviewUpdateResponse,
     SavedContextCreateRequest,
+    SavedContextRecallPreviewRequest,
+    SavedContextRecallPreviewResponse,
+    SavedContextPromoteMemoryPatchRequest,
     SavedContextSummary,
     SavedContextUpdateRequest,
     SolverContextCapsuleRequest,
@@ -290,6 +300,10 @@ class _ProductTenantsNamespace:
     async def get(self, tenant_slug: str) -> ProductTenantSummary:
         return await self._client._product_tenant_get(tenant_slug)
 
+    async def update(self, tenant_slug: str, **kwargs: Any) -> ProductTenantSummary:
+        request = ProductTenantUpdateRequest(**kwargs)
+        return await self._client._product_tenant_update(tenant_slug, request)
+
 
 class _ProductProjectsNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
@@ -321,6 +335,35 @@ class _ProductUsageNamespace:
 
     async def get(self, tenant_slug: str, *, days: int | None = None) -> ProductUsageSummary:
         return await self._client._product_usage_get(tenant_slug, days=days)
+
+
+class _ProductMembersNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, tenant_slug: str) -> list[ProductTenantMemberSummary]:
+        return await self._client._product_tenant_members_list(tenant_slug)
+
+    async def create(
+        self,
+        tenant_slug: str,
+        **kwargs: Any,
+    ) -> ProductTenantMemberSummary:
+        request = ProductTenantMemberCreateRequest(**kwargs)
+        return await self._client._product_tenant_member_create(tenant_slug, request)
+
+    async def update(
+        self,
+        tenant_slug: str,
+        membership_id: int,
+        **kwargs: Any,
+    ) -> ProductTenantMemberSummary:
+        request = ProductTenantMemberUpdateRequest(**kwargs)
+        return await self._client._product_tenant_member_update(
+            tenant_slug,
+            membership_id,
+            request,
+        )
 
 
 class _ProductSavedContextsNamespace:
@@ -357,6 +400,28 @@ class _ProductSavedContextsNamespace:
             request,
         )
 
+    async def promote_memory_patch(
+        self,
+        tenant_slug: str,
+        **kwargs: Any,
+    ) -> SavedContextSummary:
+        request = SavedContextPromoteMemoryPatchRequest(**kwargs)
+        return await self._client._product_saved_context_promote_memory_patch(
+            tenant_slug,
+            request,
+        )
+
+    async def preview_recall(
+        self,
+        tenant_slug: str,
+        **kwargs: Any,
+    ) -> SavedContextRecallPreviewResponse:
+        request = SavedContextRecallPreviewRequest(**kwargs)
+        return await self._client._product_saved_context_preview_recall(
+            tenant_slug,
+            request,
+        )
+
     async def mute(self, tenant_slug: str, entry_slug: str) -> SavedContextSummary:
         return await self._client._product_saved_context_mute(tenant_slug, entry_slug)
 
@@ -367,6 +432,47 @@ class _ProductSavedContextsNamespace:
         return await self._client._product_saved_context_delete(tenant_slug, entry_slug)
 
 
+class _ProductMemoryPatchReviewNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(
+        self,
+        tenant_slug: str,
+        *,
+        project_slug: str | None = None,
+        review_status: str | None = None,
+        limit: int | None = None,
+    ) -> MemoryPatchReviewQueueResponse:
+        return await self._client._product_memory_patch_review_list(
+            tenant_slug,
+            project_slug=project_slug,
+            review_status=review_status,
+            limit=limit,
+        )
+
+    async def update(
+        self,
+        tenant_slug: str,
+        run_id: str,
+        patch_id: str,
+        **kwargs: Any,
+    ) -> MemoryPatchReviewUpdateResponse:
+        request = MemoryPatchReviewUpdateRequest(**kwargs)
+        return await self._client._product_memory_patch_review_update(
+            tenant_slug,
+            run_id,
+            patch_id,
+            request,
+        )
+
+
+class _ProductMemoryPatchesNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.review = _ProductMemoryPatchReviewNamespace(client)
+
+
 class _ProductNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
@@ -374,7 +480,9 @@ class _ProductNamespace:
         self.projects = _ProductProjectsNamespace(client)
         self.keys = _ProductKeysNamespace(client)
         self.usage = _ProductUsageNamespace(client)
+        self.members = _ProductMembersNamespace(client)
         self.saved_contexts = _ProductSavedContextsNamespace(client)
+        self.memory_patches = _ProductMemoryPatchesNamespace(client)
 
     async def bootstrap(self) -> ProductBootstrapResponse:
         return await self._client._product_bootstrap()
@@ -924,6 +1032,20 @@ class TheoremContextClient:
         )
         return ProductTenantSummary.model_validate(response.json()['tenant'])
 
+    async def _product_tenant_update(
+        self,
+        tenant_slug: str,
+        request: ProductTenantUpdateRequest,
+    ) -> ProductTenantSummary:
+        response = await self._request(
+            'PUT',
+            f'{self.base_url}/product/tenants/{tenant_slug}/',
+            surface='product tenant update',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductTenantSummary.model_validate(response.json()['tenant'])
+
     async def _product_projects_list(self, tenant_slug: str) -> list[ProductProjectSummary]:
         response = await self._request(
             'GET',
@@ -994,6 +1116,50 @@ class TheoremContextClient:
         )
         return ProductUsageSummary.model_validate(response.json()['usage'])
 
+    async def _product_tenant_members_list(
+        self,
+        tenant_slug: str,
+    ) -> list[ProductTenantMemberSummary]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/members/',
+            surface='product tenant members list',
+            headers=self._headers(),
+        )
+        return [
+            ProductTenantMemberSummary.model_validate(item)
+            for item in response.json().get('members', [])
+        ]
+
+    async def _product_tenant_member_create(
+        self,
+        tenant_slug: str,
+        request: ProductTenantMemberCreateRequest,
+    ) -> ProductTenantMemberSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/members/',
+            surface='product tenant member create',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductTenantMemberSummary.model_validate(response.json()['member'])
+
+    async def _product_tenant_member_update(
+        self,
+        tenant_slug: str,
+        membership_id: int,
+        request: ProductTenantMemberUpdateRequest,
+    ) -> ProductTenantMemberSummary:
+        response = await self._request(
+            'PUT',
+            f'{self.base_url}/product/tenants/{tenant_slug}/members/{membership_id}/',
+            surface='product tenant member update',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return ProductTenantMemberSummary.model_validate(response.json()['member'])
+
     async def _product_saved_contexts_list(
         self,
         tenant_slug: str,
@@ -1047,6 +1213,34 @@ class TheoremContextClient:
         )
         return SavedContextSummary.model_validate(response.json()['saved_context'])
 
+    async def _product_saved_context_promote_memory_patch(
+        self,
+        tenant_slug: str,
+        request: SavedContextPromoteMemoryPatchRequest,
+    ) -> SavedContextSummary:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/promote-memory-patch/',
+            surface='saved context promote memory patch',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_saved_context_preview_recall(
+        self,
+        tenant_slug: str,
+        request: SavedContextRecallPreviewRequest,
+    ) -> SavedContextRecallPreviewResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/product/tenants/{tenant_slug}/saved-contexts/preview-recall/',
+            surface='saved context preview recall',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return SavedContextRecallPreviewResponse.model_validate(response.json())
+
     async def _product_saved_context_mute(
         self,
         tenant_slug: str,
@@ -1087,6 +1281,49 @@ class TheoremContextClient:
             headers=self._headers(),
         )
         return SavedContextSummary.model_validate(response.json()['saved_context'])
+
+    async def _product_memory_patch_review_list(
+        self,
+        tenant_slug: str,
+        *,
+        project_slug: str | None = None,
+        review_status: str | None = None,
+        limit: int | None = None,
+    ) -> MemoryPatchReviewQueueResponse:
+        params: dict[str, Any] = {}
+        if project_slug:
+            params['project_slug'] = project_slug
+        if review_status:
+            params['review_status'] = review_status
+        if limit is not None:
+            params['limit'] = limit
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/product/tenants/{tenant_slug}/memory-patches/review/',
+            surface='product memory patch review list',
+            headers=self._headers(),
+            params=params,
+        )
+        return MemoryPatchReviewQueueResponse.model_validate(response.json())
+
+    async def _product_memory_patch_review_update(
+        self,
+        tenant_slug: str,
+        run_id: str,
+        patch_id: str,
+        request: MemoryPatchReviewUpdateRequest,
+    ) -> MemoryPatchReviewUpdateResponse:
+        response = await self._request(
+            'POST',
+            (
+                f'{self.base_url}/product/tenants/{tenant_slug}/'
+                f'memory-patches/review/{run_id}/{patch_id}/'
+            ),
+            surface='product memory patch review update',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return MemoryPatchReviewUpdateResponse.model_validate(response.json())
 
     def _headers(self) -> dict[str, str]:
         out = {'Content-Type': 'application/json'}
