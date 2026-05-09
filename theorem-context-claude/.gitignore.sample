@@ -1,0 +1,2 @@
+# theorem-context-claude per-project state. Append to your project's .gitignore.
+.theorem/

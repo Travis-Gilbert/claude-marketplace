@@ -1,0 +1,32 @@
+{
+  "name": "theorem-context-claude",
+  "version": "0.1.0",
+  "description": "Out-of-band context compilation for Claude Code. UserPromptSubmit hook runs Theseus orchestrate before each model turn, injects a finished Context Artifact via stdout, records every action into a replayable harness run, and enforces Action Rail on tool use. Defaults to no-tool mode; one MCP tool (orchestrate_refresh) is available as a fallback when context goes stale mid-session.",
+  "author": {
+    "name": "Theorem",
+    "email": "support@travisgilbert.me"
+  },
+  "homepage": "https://github.com/Travis-Gilbert/Index-API",
+  "repository": "https://github.com/Travis-Gilbert/Index-API",
+  "license": "Apache-2.0",
+  "keywords": [
+    "context",
+    "memory",
+    "harness",
+    "mcp",
+    "theseus",
+    "orchestrate",
+    "action-rail"
+  ],
+  "mcpServers": {
+    "theorem-context": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"]
+    },
+    "theseus": {
+      "type": "http",
+      "url": "https://theseus-mcp-production.up.railway.app/mcp",
+      "description": "Theseus knowledge graph (full Mode 3 surface, opt-in)"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "theorem-context-claude",
+  "owner": "Travis-Gilbert",
+  "plugins": [
+    {
+      "source": ".",
+      "name": "theorem-context-claude"
+    }
+  ]
+}
