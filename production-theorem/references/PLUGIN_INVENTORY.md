@@ -11,6 +11,36 @@ Inventory generated for the Orchestrate v1 upgrade.
 | `planning-theorem` | Compatibility command | Internal `plan` mode | Keep available |
 | `execute` | Compatibility command | Internal `execute` mode | Keep available |
 
+## Companion plugins (routing targets)
+
+Plugins that Orchestrate routes to but does not own. Listed here so the
+plugin-router agent knows the available delegation surfaces.
+
+| Plugin | Version | Trigger intent | Owns |
+|---|---|---|---|
+| `ui-design-pro` | 1.2.0+ | "design this", "lay this out", "wireframe", "prototype", "build me a Y component", "how should this look" | Design planning, component selection from 39-item curated catalog + 19 vendored design-system repos (Radix, shadcn, Tailwind, ant-design, carbon, magicui, etc.), applied design theory (10 references) |
+
+When routing design work, prefer `ui-design-pro` over hand-rolling. The
+plugin's `design-pro` skill (v1.2.0 replacement of `design-theory`)
+enforces a components-first protocol: catalog scan → vendored libraries
+→ hand-rolled only as last resort with explicit justification.
+
+## Profiles
+
+Registry-level operating policies. Not skills, not slash commands. They
+change run policy before the agent thinks. See `PROFILES.md` for the
+registry contract.
+
+| Profile | Kind | Default | Priority | Spec |
+|---|---|---|---|---|
+| `engineers-mindset` | `orchestration_profile` | enabled | high | `ENGINEERS_MINDSET.md` |
+| `concise-action` | `output_profile` | enabled | high | `CONCISE_ACTION.md` |
+
+Selected profiles (e.g. `developer-core`, `researcher-core`) are chosen
+per task by the orchestrate backend and carried in
+`decision.selected_profile_id`. They are not registry-static and are not
+listed here.
+
 ## Agents
 
 | Agent | Role |
@@ -59,9 +89,12 @@ Compatibility command language:
 
 - `ARTIFACT_SCHEMAS.md`
 - `CHECKLIST_MANIFESTO.md`
+- `CONCISE_ACTION.md`
+- `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`
 - `ORCHESTRATE_REPORTING.md`
 - `PRODUCTION_GATES.md`
+- `PROFILES.md`
 - `REPORTING.md`
 - `ROUTING.md`
 - `SDK_DATABASE_HARNESS.md`

@@ -123,6 +123,33 @@ if [ -z "$artifact_body" ]; then
   exit 0
 fi
 
+# Append baseline orchestration profile postures (engineers-mindset +
+# concise-action). Both are registry-level defaults, on for every run unless
+# the user explicitly opts out. Specs live in references/ENGINEERS_MINDSET.md
+# and references/CONCISE_ACTION.md. The block here is the short form: deferral
+# rules + output shape, kept compact so it does not bloat the brief.
+posture_block=$(cat <<'POSTURE'
+
+
+### Engineering posture (engineers-mindset)
+- Search internal first (codebase map, tests, traces, prior runs, ADRs).
+- Search external if reality may live outside the repo (GitHub > SO > docs > web).
+- Run one bounded reversible experiment before declaring blocked.
+- Pick the safest useful default unless a true blocker exists.
+- Deferral allowed only for: access, destructive op, product preference,
+  legal/privacy/safety, env outage after recovery, no safe sandbox, explicit
+  user request. NOT for ambiguity, complexity, unfamiliarity, missing docs,
+  multiple approaches, test failure, or vague risk.
+
+### Output posture (concise-action)
+- Default shape: Action / Finding / Next / Need.
+- No narration of internal turns. No generic caveats or apology boilerplate.
+- Specific narrow questions OK; broad clarifications not.
+- Plans cap at the smallest useful checklist.
+POSTURE
+)
+artifact_body="${artifact_body}${posture_block}"
+
 # The task signature is the closest thing to an immutable artifact id for a
 # planning prepare; use it as the artifact identifier in the audit trail.
 artifact_id=$(echo "$artifact_response" | jq -r '.decision.task_signature // ""')
