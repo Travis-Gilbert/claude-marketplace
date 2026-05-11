@@ -9,14 +9,16 @@ description: Use when you have a written implementation plan to execute in a sep
 
 ## plan-pro integration (read first)
 
+The plan file is resolved by `/execute` from either a slug (`docs/plans/<slug>/implementation-plan.md`) or a direct path (any `.md` file, including ad-hoc locations like `~/Downloads/`). Everything below operates on that resolved path, not a hardcoded filename.
+
 Per task:
-1. Read the task's full text from `implementation-plan.md` verbatim.
+1. Read the task's full text from the resolved plan file verbatim.
 2. Invoke the `domain-router` agent with the task text. It returns the specialist plugin to delegate to.
 3. Dispatch the specialist subagent with the full task text and relevant file excerpts.
 4. Run `spec-reviewer` → `quality-reviewer` in that order.
 
 At the end of the full plan:
-- Auto-invoke `/review` over the full implementation. Write `review-report.md` to the plan directory.
+- Auto-invoke `/review` over the full implementation. Write `review-report.md` next to the plan (canonical `docs/plans/<slug>/review-report.md` when the plan was slug-addressed; otherwise `<plan-stem>.review-report.md` in the plan's directory).
 - This step is not optional. Every `/execute` ends with a review-report.
 
 On solve signals during execution ("that worked", "it's fixed", "working now", "problem solved", "that was the issue"), invoke `capture-agent` inline.

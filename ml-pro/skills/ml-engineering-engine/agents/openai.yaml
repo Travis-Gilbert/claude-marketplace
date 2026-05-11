@@ -1,0 +1,4 @@
+interface:
+  display_name: "ML Engineering Engine"
+  short_description: "Build, train, debug, and deploy ML systems with verified APIs and battle-tested templates."
+  default_prompt: "Use $ml-engineering-engine to implement the next ML task with reference verification, template-first execution, and the overfit-one-batch debugging protocol."

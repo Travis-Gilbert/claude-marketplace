@@ -3,8 +3,20 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/JS-Pro" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/d3" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/django-design" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/dj-notebook" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-db" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-filter" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-mcp-server" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-model-utils" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-ninja" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-pandas" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-polymorphic" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/django-rest-framework" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/pydantic" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/django-engine-pro/refs/pydantic-ai" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ui-lab/JS-Pro" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ui-lab/agent-skills" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ui-lab/bencium-marketplace" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ui-lab/motion" vcs="Git" />

@@ -1,6 +1,6 @@
 {
   "name": "ui-design-pro",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "UI design theory and implementation toolkit combining visual design principles (Gestalt, Fitts's Law, WCAG 2.2, screen archetypes) with source-code-backed component engineering (Radix, CVA, Motion, shadcn v4, Tailwind). Includes design rationale workflow and Claude.ai chat companion skill.",
   "author": {
     "name": "Travis Gilbert"
@@ -23,6 +23,8 @@
     "polymorphic",
     "gestalt",
     "typography",
-    "color"
+    "color",
+    "design-pro",
+    "components-first"
   ]
 }

@@ -1,9 +1,0 @@
-{
-  "plugin": "plan-pro",
-  "version": "1.0.0",
-  "active_claims": 0,
-  "retired_claims": 0,
-  "avg_confidence": null,
-  "last_updated": null,
-  "notes": "Shared pipeline: see scripts/epistemic/README.md"
-}

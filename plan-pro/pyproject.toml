@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plan-pro"
+version = "1.1.0"
+requires-python = ">=3.11"
+description = "SDK-driven planning and execution orchestrator (Claude Code plugin)"
+dependencies = [
+  "claude-agent-sdk>=0.1.72,<0.2",
+  "pydantic>=2.5",
+  "anyio>=4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*", "tests*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
