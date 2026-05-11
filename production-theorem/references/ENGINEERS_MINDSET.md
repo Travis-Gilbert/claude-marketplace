@@ -103,6 +103,37 @@ Cases this caught (after the fact, before being encoded):
   `scripts/push_refs_to_redis.py` in the Index-API repo — 150 lines
   replaced a multi-file feature.
 
+### Goal-Completion-or-Options Rule
+
+**Trigger:** the agent is about to present a multi-option list to the user.
+
+**Required check:** in one column, list each candidate against the user's
+stated goal. **Every option in the list must fully achieve the goal.**
+Strike any row that doesn't — partial fixes are not options, they are
+regressions. If exactly one candidate completes the goal, take it
+without asking.
+
+Multi-option presentations are appropriate only when:
+- Several paths complete the goal with different trade-offs
+  (flexibility, future direction, ergonomics, risk).
+- The goal itself is ambiguous and the options would clarify intent.
+- The decision crosses an irreversible boundary the user owns (legal,
+  product strategy, deployment).
+
+Multi-option presentations are NOT appropriate when:
+- Only one path completes the goal in full.
+- The "save effort" options are actually "don't do what was asked."
+- The user has already approved the direction.
+
+**Code size, file count, surface area, and "this is bigger" are NOT
+deferral triggers. Goal completeness is the only criterion that
+matters for whether a path is offered.** "Add a new command verb"
+is a real cost; "user's goal not met" is a worse cost.
+
+Composes with the Wrong-Layer Check: wrong-layer stops the agent from
+patching at the wrong place; goal-completion stops the agent from
+declaring victory at the wrong place.
+
 ## Deep Research Protocol (plan mode only)
 
 This protocol activates when the orchestrate backend selects `mode=plan`
@@ -216,6 +247,9 @@ When this profile is active, the Context Brief carries this block under
 - Run one bounded reversible experiment before declaring blocked.
 - Pick the safest useful default unless a true blocker exists.
 - Two bugs in the same module = stop and ask "right layer?" before patch 3.
+- Every option in a presented list must fully complete the goal. Strike
+  partial fixes from the table — they are not options. If only one path
+  completes the goal, take it; do not offer alternatives.
 - Deferral allowed only for: access, destructive op, product preference,
   legal/privacy/safety, env outage after recovery, no safe sandbox,
   explicit user request. NOT for ambiguity, complexity, unfamiliarity,

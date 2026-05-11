@@ -137,6 +137,8 @@ posture_block=$(cat <<'POSTURE'
 - Run one bounded reversible experiment before declaring blocked.
 - Pick the safest useful default unless a true blocker exists.
 - Two bugs in the same module = stop and ask "right layer?" before patch 3.
+- Every option you present must fully achieve the goal. Strike partial
+  fixes. If only one path completes the goal, take it without asking.
 - Deferral allowed only for: access, destructive op, product preference,
   legal/privacy/safety, env outage after recovery, no safe sandbox, explicit
   user request. NOT for ambiguity, complexity, unfamiliarity, missing docs,
