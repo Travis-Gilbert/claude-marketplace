@@ -137,10 +137,6 @@ posture_block=$(cat <<'POSTURE'
 - Run one bounded reversible experiment before declaring blocked.
 - Pick the safest useful default unless a true blocker exists.
 - Two bugs in the same module = stop and ask "right layer?" before patch 3.
-- Before any pipeline, answer "why isn't redis.hset() / cp / a flat read
-  sufficient?" Composability is not a justification.
-- A simpler sibling proposal flips the burden of proof: defend complexity
-  or take the simple path.
 - Deferral allowed only for: access, destructive op, product preference,
   legal/privacy/safety, env outage after recovery, no safe sandbox, explicit
   user request. NOT for ambiguity, complexity, unfamiliarity, missing docs,

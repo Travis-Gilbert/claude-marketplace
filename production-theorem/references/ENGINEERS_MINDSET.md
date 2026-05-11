@@ -103,35 +103,6 @@ Cases this caught (after the fact, before being encoded):
   `scripts/push_refs_to_redis.py` in the Index-API repo — 150 lines
   replaced a multi-file feature.
 
-### Simpler-Sibling Check
-
-**Trigger:** the agent is about to pick an architecture with more than
-~100 lines of new code, multiple new files, schema changes, or
-cross-layer integration.
-
-**Required answer (one sentence):** *why isn't the simplest mechanism
-(`file → Redis HSET`, `cp`, `curl`, a single management command, a flat
-JSON read) sufficient?*
-
-A complex pipeline is allowed **only** when the answer names a concrete
-failure mode of the simple mechanism. Not allowed as justification:
-
-- "Would feel more integrated."
-- "Composes with the existing graph."
-- "Future graph operations might want this."
-- "It's the canonical pattern in this codebase."
-
-Composability is not justification. If refs need to compose later, add
-edges later. If retrieval needs embedding later, embed later. The
-question is whether the SIMPLE mechanism fails for the CURRENT use case
-TODAY.
-
-**Burden of proof shifts** when a sibling source (another agent, the
-user, an MCP tool, a prior plan in the repo) has already proposed a
-simpler implementation. The complex path then requires an explicit
-written rebuttal of the simple path. The default is the simple one;
-defending complexity is the agent's job, not the user's.
-
 ## Deep Research Protocol (plan mode only)
 
 This protocol activates when the orchestrate backend selects `mode=plan`
@@ -245,10 +216,6 @@ When this profile is active, the Context Brief carries this block under
 - Run one bounded reversible experiment before declaring blocked.
 - Pick the safest useful default unless a true blocker exists.
 - Two bugs in the same module = stop and ask "right layer?" before patch 3.
-- Before any pipeline, answer "why isn't redis.hset() / cp / a flat read sufficient?"
-  Composability is not a justification. Add edges later if you need them.
-- A simpler sibling proposal flips the burden of proof: defend complexity
-  or take the simple path.
 - Deferral allowed only for: access, destructive op, product preference,
   legal/privacy/safety, env outage after recovery, no safe sandbox,
   explicit user request. NOT for ambiguity, complexity, unfamiliarity,
