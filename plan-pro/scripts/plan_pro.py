@@ -184,6 +184,123 @@ def _has_issues(review_text: str) -> tuple[bool, str]:
     return bool(bad), "\n".join(bad)
 
 
+_SPEC_FILENAMES = ("spec.md", "source-spec.md", "SPEC.md")
+_SPEC_FRONTMATTER_RE = re.compile(r"^\s*spec_path:\s*(\S+)\s*$", re.MULTILINE)
+
+
+def _resolve_spec_path(out_dir: Path, plan_text: str) -> Path | None:
+    """Locate the source spec for a plan.
+
+    Looks for, in order:
+      1. A `spec_path: <path>` line in the plan's leading frontmatter or body.
+      2. Any of the conventional filenames in the plan directory.
+    Returns None when no spec is discoverable; the gates treat this as an
+    `error` condition (loud warning, proceed) rather than `blocker`.
+    """
+    m = _SPEC_FRONTMATTER_RE.search(plan_text)
+    if m:
+        candidate = Path(m.group(1))
+        if not candidate.is_absolute():
+            candidate = out_dir / candidate
+        if candidate.exists():
+            return candidate
+    for name in _SPEC_FILENAMES:
+        candidate = out_dir / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _classify_gate_output(text: str) -> tuple[str, str]:
+    """Return ('approved'|'blocker'|'error', payload).
+
+    Scans the gate's output for the canonical decision line (`...: approved`,
+    `...: blocker`, or `...: error`). The decision line may appear before a
+    list of numbered items, so we cannot rely on "last non-empty line". Falls
+    through to `error` when no decision line is present so the orchestrator
+    can warn-and-proceed instead of failing silent.
+    """
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        low = line.lower()
+        if low.endswith(": approved") or low == "approved":
+            return "approved", ""
+        if low.endswith(": blocker") or low.startswith("blocker"):
+            return "blocker", text
+        if ": error" in low or low.startswith("error"):
+            return "error", text
+    return "error", text
+
+
+async def _run_spec_coverage_gate(
+    *, agents, claude_md: str, model: str,
+    plan_path: Path, spec_path: Path | None, out_dir: Path,
+) -> tuple[str, str]:
+    """Pre-execute gate. Returns ('approved'|'blocker'|'error', payload)."""
+    if "spec-coverage-gate" not in agents:
+        return "error", "spec-coverage-gate agent not loaded (missing agents/spec-coverage-gate.md)"
+    if spec_path is None:
+        return "error", "no spec file found (looked for spec.md / source-spec.md / spec_path frontmatter)"
+    deferrals_path = out_dir / "deferrals.md"
+    deferrals_text = deferrals_path.read_text() if deferrals_path.exists() else "(no deferrals.md present; treat all waivers as absent)"
+    system = agents["spec-coverage-gate"].prompt + "\n\n## CLAUDE.md\n\n" + claude_md
+    prompt = (
+        f"spec_path: {spec_path}\n"
+        f"plan_path: {plan_path}\n"
+        f"plan_dir: {out_dir}\n\n"
+        f"Spec contents:\n{spec_path.read_text()}\n\n"
+        f"Plan contents:\n{plan_path.read_text()}\n\n"
+        f"deferrals.md contents:\n{deferrals_text}\n\n"
+        "Run the algorithm in your prompt. Write the coverage matrix to "
+        f"{out_dir / 'spec-coverage-gate.md'} and emit the final decision line."
+    )
+    raw = await _run_subagent(
+        system_prompt=system,
+        prompt=prompt,
+        allowed_tools=["Read", "Write", "Grep", "Glob"],
+        model=model,
+        max_turns=8,
+    )
+    return _classify_gate_output(raw)
+
+
+async def _run_drift_auditor(
+    *, agents, claude_md: str, model: str,
+    spec_path: Path | None, plan_start_sha: str, out_dir: Path,
+) -> tuple[str, str]:
+    """Post-execute auditor. Returns ('approved'|'blocker'|'error', payload)."""
+    if "drift-auditor" not in agents:
+        return "error", "drift-auditor agent not loaded (missing agents/drift-auditor.md)"
+    if spec_path is None:
+        return "error", "no spec file found (looked for spec.md / source-spec.md / spec_path frontmatter)"
+    if not plan_start_sha:
+        return "error", "plan_start_sha not recorded; cannot diff"
+    deferrals_path = out_dir / "deferrals.md"
+    deferrals_text = deferrals_path.read_text() if deferrals_path.exists() else "(no deferrals.md present; treat all waivers as absent)"
+    diff_text = _git_diff_since(plan_start_sha)
+    system = agents["drift-auditor"].prompt + "\n\n## CLAUDE.md\n\n" + claude_md
+    prompt = (
+        f"spec_path: {spec_path}\n"
+        f"plan_start_sha: {plan_start_sha}\n"
+        f"plan_dir: {out_dir}\n\n"
+        f"Spec contents:\n{spec_path.read_text()}\n\n"
+        f"deferrals.md contents:\n{deferrals_text}\n\n"
+        f"git diff {plan_start_sha}..HEAD:\n{diff_text}\n\n"
+        "Run the algorithm in your prompt. Write the audit to "
+        f"{out_dir / 'drift-audit.md'} and emit the final decision line."
+    )
+    raw = await _run_subagent(
+        system_prompt=system,
+        prompt=prompt,
+        allowed_tools=["Read", "Write", "Grep", "Glob", "Bash"],
+        model=model,
+        max_turns=8,
+    )
+    return _classify_gate_output(raw)
+
+
 async def cmd_execute(slug: str) -> Path:
     out_dir = Path("docs/plans") / slug
     plan_path = out_dir / "implementation-plan.md"
@@ -208,6 +325,33 @@ async def cmd_execute(slug: str) -> Path:
     model = os.environ.get("PLAN_PRO_MODEL", "claude-sonnet-4-7")
     tasks = plan.all_tasks()
     total = len(tasks)
+
+    # Pre-execute discipline: spec-coverage-gate.
+    # Compares the plan's checklist coverage against the source spec. Approved
+    # proceeds to the task loop; blocker stops execution with a typed list;
+    # error proceeds with a loud warning so the discipline cannot stall silent.
+    plan_text = plan_path.read_text()
+    spec_path = _resolve_spec_path(out_dir, plan_text)
+    coverage_status, coverage_payload = await _run_spec_coverage_gate(
+        agents=agents, claude_md=claude_md, model=model,
+        plan_path=plan_path, spec_path=spec_path, out_dir=out_dir,
+    )
+    pre_gate_warning: str | None = None
+    if coverage_status == "blocker":
+        sys.stderr.write("Blocker: spec-coverage-gate refused to start execution.\n")
+        sys.stderr.write(coverage_payload + "\n")
+        sys.stderr.write(f"See {out_dir / 'spec-coverage-gate.md'} for the coverage matrix.\n")
+        sys.exit(6)
+    if coverage_status == "error":
+        pre_gate_warning = coverage_payload
+        sys.stderr.write(
+            "Warning: spec-coverage-gate could not run; spec-as-floor discipline NOT enforced this run.\n"
+            f"Cause: {coverage_payload}\n"
+        )
+
+    # Capture the SHA at the start of execution so drift-auditor can diff the
+    # full set of changes produced by the task loop.
+    plan_start_sha = _git_head_sha()
 
     for i, task in enumerate(tasks, 1):
         start_sha = _git_head_sha()
@@ -272,10 +416,34 @@ async def cmd_execute(slug: str) -> Path:
         sha_short = end_sha[:8] if end_sha != start_sha else "(no-commit)"
         print(f"[{i}/{total}] {task.title} → {task.delegate_plugin} → ok → {sha_short}")
 
-    review_path = out_dir / "review-report.md"
-    review_path.write_text(
-        f"# Review report for {slug}\n\nAll {total} tasks completed and committed.\n"
+    # Post-execute discipline: drift-auditor.
+    # Compares every spec requirement against the diff produced by execution.
+    # Approved writes the review report; blocker withholds the report; error
+    # writes the report with a loud warning header.
+    drift_status, drift_payload = await _run_drift_auditor(
+        agents=agents, claude_md=claude_md, model=model,
+        spec_path=spec_path, plan_start_sha=plan_start_sha, out_dir=out_dir,
     )
+    if drift_status == "blocker":
+        sys.stderr.write("Blocker: drift-auditor found unimplemented and unwaived requirements.\n")
+        sys.stderr.write(drift_payload + "\n")
+        sys.stderr.write(f"See {out_dir / 'drift-audit.md'} for the full audit.\n")
+        sys.stderr.write("Final review report withheld.\n")
+        sys.exit(7)
+
+    review_path = out_dir / "review-report.md"
+    header = f"# Review report for {slug}\n\nAll {total} tasks completed and committed.\n"
+    if pre_gate_warning:
+        header += (
+            "\n> WARNING: spec-coverage-gate could not run before execution. "
+            f"Cause: {pre_gate_warning}\n"
+        )
+    if drift_status == "error":
+        header += (
+            "\n> WARNING: drift-auditor could not run after execution. "
+            f"Cause: {drift_payload}\n"
+        )
+    review_path.write_text(header)
     print(f"Done. {total}/{total} tasks complete. Review: {review_path}")
     return review_path
 
