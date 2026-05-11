@@ -19,7 +19,26 @@ repo_opt_in_files:
   - AGENTS.md
   - CLAUDE.md
 repo_opt_in_scope: complex_only
+profiles:
+  engineers_mindset: enabled
+  concise_action: enabled
 ```
+
+## Profiles
+
+Profiles are registry-level operating policies. See `PROFILES.md` for the
+contract and `ENGINEERS_MINDSET.md` / `CONCISE_ACTION.md` for the specs.
+
+| Setting | Meaning |
+|---|---|
+| `profiles.engineers_mindset` | Default `enabled`. Installs the deferral gate. Forces internal research, external research when reality may live outside the repo, a bounded reversible attempt, and a default decision before the run can ask, defer, fail, or mark itself blocked. |
+| `profiles.concise_action` | Default `enabled`. Installs the output guard. Enforces Action/Finding/Next/Need response shape, prunes narration, strips generic caveats, suppresses broad clarifying questions. |
+
+Both default to enabled because they are baseline policies, not optional
+skills. Disable only if the host environment requires verbose agent output
+(e.g. teaching contexts) or if the agent already has a stronger upstream
+posture. User instructions in `AGENTS.md`/`CLAUDE.md` always override
+profile defaults.
 
 ## Exposure Modes
 

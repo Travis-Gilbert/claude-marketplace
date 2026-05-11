@@ -53,6 +53,46 @@ def test_product_client_posts_tenant_command_with_bearer_auth() -> None:
     asyncio.run(run())
 
 
+def test_product_client_encodes_tenant_and_run_path_segments() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                'ok': True,
+                'command': 'THG.RUN.GET',
+                'status': 'ok',
+                'payload': {},
+                'nodes': [],
+                'edges': [],
+                'events': [],
+                'state_hash': 'sha256:test',
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremHotGraphClient(
+            base_url='http://localhost:8380/',
+            token='secret',
+            tenant_id='tenant/a b',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            result = await client.run('run/1?x=y')
+        finally:
+            await client.aclose()
+
+        assert result.ok is True
+        assert (
+            requests[0].url.raw_path.decode()
+            == '/v1/tenants/tenant%2Fa%20b/runs/run%2F1%3Fx%3Dy'
+        )
+
+    asyncio.run(run())
+
+
 def test_product_client_normalizes_http_failures_into_typed_errors() -> None:
     cases = [
         (401, AuthError),

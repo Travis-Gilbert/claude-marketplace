@@ -1,17 +1,17 @@
 {
-  "name": "@theorem/context",
-  "version": "0.1.0",
+  "name": "@context/theorem",
+  "version": "0.1.1",
   "description": "Theorem Context SDK: compile context for AI agents from your knowledge graph.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [

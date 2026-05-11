@@ -58,7 +58,7 @@
     },
     {
       "name": "production-theorem",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "source": "./production-theorem"
     },
     {
@@ -85,11 +85,6 @@
       "name": "swift-pro",
       "version": "1.0.0",
       "source": "./swift-pro"
-    },
-    {
-      "name": "theorem-context-claude",
-      "version": "0.1.0",
-      "source": "./theorem-context-claude"
     },
     {
       "name": "theseus-pro",

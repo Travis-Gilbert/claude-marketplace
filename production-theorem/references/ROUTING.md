@@ -46,6 +46,27 @@ Do not expose these as separate user-facing skills:
 
 These are phases inside Orchestrate.
 
+## Profile Gates
+
+Two registry profiles install state-machine guards that wrap every run.
+See `PROFILES.md`, `ENGINEERS_MINDSET.md`, and `CONCISE_ACTION.md`.
+
+| Guard | Owner | Blocks transition into |
+|---|---|---|
+| `DEFERRAL_GATE.CHECKED` | `engineers-mindset` | `ASK_USER`, `RUN.DEFERRED`, `RUN.FAILED`, `BLOCKED`, `NEEDS_CONTEXT`, `NEEDS_HUMAN_DECISION` |
+| `CONCISE_ACTION.APPLIED` | `concise-action` | `RESPONSE.EMITTED` |
+
+`ASK_USER`, `RUN.DEFERRED`, and `RUN.FAILED` are invalid unless
+`DEFERRAL_GATE.CHECKED` passes. The gate is satisfied by an
+`ENGINEERING_PASS` record (internal sources checked, external sources
+checked when reality may live outside the repo, smallest attempted
+experiment or reason none was safe, current best default action, exact
+remaining blocker, the one specific user input needed).
+
+Both gates compose with the orchestrate routing below. They do not change
+mode selection; they prevent the run from collapsing into lazy deferral
+or verbose narration.
+
 ## Routing Algorithm
 
 1. Use `orchestrate` by default.

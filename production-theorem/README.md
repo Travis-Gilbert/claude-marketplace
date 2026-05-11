@@ -1,6 +1,6 @@
 # production-theorem
 
-Dual-host plugin: works in both Codex and Claude Code from a single source. The host picks up its own manifest at install time; the rest of the directory is shared content.
+Dual-host plugin: works in both Codex and Claude Code from a single source. `plugin.manifest.json` is the canonical source for shared metadata and host-specific manifest payloads; the generated host manifests keep each platform's discovery contract intact.
 
 ## What's shared (both hosts read this)
 
@@ -10,12 +10,20 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. The 
 
 A change to any of these flows to both hosts on next install / sync. There is no port to keep up to date.
 
-## Per-host manifests
+## Manifest source and generated host manifests
 
 | File | Read by | Purpose |
 |---|---|---|
+| `plugin.manifest.json` | maintainer tooling | Canonical source for shared plugin metadata, Claude manifest payload, and Codex manifest payload |
 | `.claude-plugin/plugin.json` | Claude Code | Identity + `mcpServers` registration |
 | `.codex-plugin/plugin.json` | Codex | Identity + `interface` block (displayName, capabilities, defaultPrompt) |
+
+Regenerate and verify the host manifests with:
+
+```bash
+python3 scripts/sync-plugin-manifests.py production-theorem --check
+python3 scripts/sync-plugin-manifests.py production-theorem
+```
 
 ## Claude-only files (Codex ignores these)
 

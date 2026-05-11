@@ -1,5 +1,5 @@
 class TheoremContextError(Exception):
-    """Base exception for theorem-context SDK failures."""
+    """Base exception for Context Theorem SDK failures."""
 
 
 class AuthError(TheoremContextError):

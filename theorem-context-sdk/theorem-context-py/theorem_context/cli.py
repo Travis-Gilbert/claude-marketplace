@@ -19,7 +19,7 @@ from .client import TheoremContextClient
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog='theorem-context')
+    parser = argparse.ArgumentParser(prog='context-theorem')
     parser.add_argument(
         '--base-url',
         default=os.getenv('THEOREM_CONTEXT_BASE_URL'),
@@ -42,6 +42,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers = parser.add_subparsers(dest='command', required=True)
+
+    orchestrate = subparsers.add_parser('orchestrate')
+    orchestrate.add_argument('task')
+    orchestrate.add_argument('--mode', default='plan')
+    orchestrate.add_argument('--actor', default='codex')
+    orchestrate.add_argument('--repo')
+    orchestrate.add_argument('--target')
+    orchestrate.add_argument('--profile-id')
+    orchestrate.add_argument('--risk-mode')
+    orchestrate.add_argument('--budget-tokens', type=int, default=6000)
+    orchestrate.add_argument('--invariants', default=None)
+    orchestrate.add_argument('--max-actions', type=int, default=8)
+    orchestrate.add_argument('--no-context-command', action='store_true')
+    orchestrate.add_argument('--no-context', action='store_true')
+    orchestrate.add_argument('--no-attach', action='store_true')
+    orchestrate.add_argument('--no-actions', action='store_true')
+    orchestrate.add_argument('--dry-run', action='store_true')
 
     harness = subparsers.add_parser('harness')
     harness_sub = harness.add_subparsers(dest='harness_command', required=True)
@@ -128,7 +145,7 @@ def _legacy_run_main(
     *,
     client_factory: Callable[[argparse.Namespace], Any] | None = None,
 ) -> int:
-    parser = argparse.ArgumentParser(prog='theorem-context')
+    parser = argparse.ArgumentParser(prog='context-theorem')
     parser.add_argument('command', choices=['run'])
     parser.add_argument('task')
     parser.add_argument('--actor', default='agent')
@@ -199,6 +216,29 @@ async def _dispatch(client, args: argparse.Namespace) -> dict[str, Any]:
     bundle_dir = Path(args.bundle_dir)
     repo_path = args.repo_path
 
+    if args.command == 'orchestrate':
+        if args.dry_run:
+            return _orchestrate_dry_run(args)
+        result = await client.orchestrate(
+            task=args.task,
+            mode=args.mode,
+            actor=args.actor,
+            repo=args.repo,
+            target=args.target,
+            profile_id=args.profile_id,
+            risk_mode=args.risk_mode,
+            budget_tokens=args.budget_tokens,
+            invariants=args.invariants,
+            max_actions=args.max_actions,
+            resolve_context_command=not args.no_context_command,
+            compile_context=not args.no_context,
+            attach_artifact=not args.no_attach,
+            generate_action_rail=not args.no_actions,
+        )
+        if hasattr(result, 'model_dump'):
+            return result.model_dump(mode='json')
+        return result
+
     if args.command == 'harness' and args.harness_command == 'begin':
         return await begin_harness_bundle(
             client=client,
@@ -247,3 +287,55 @@ async def _dispatch(client, args: argparse.Namespace) -> dict[str, Any]:
         )
 
     raise ValueError('Unsupported command.')
+
+
+def _orchestrate_dry_run(args: argparse.Namespace) -> dict[str, Any]:
+    steps = [
+        {
+            'id': 'ORCH-SDK-001',
+            'method': 'POST',
+            'path': '/harness/runs/',
+            'body': {
+                'task': args.task,
+                'actor': args.actor,
+                'scope': {
+                    'orchestrate': True,
+                    'mode': args.mode,
+                    'repo': args.repo,
+                    'target': args.target,
+                    'profile_id': args.profile_id,
+                    'risk_mode': args.risk_mode,
+                },
+            },
+        },
+    ]
+    if not args.no_context_command:
+        steps.append({
+            'id': 'ORCH-SDK-002',
+            'method': 'POST',
+            'path': '/context-command/resolve/',
+        })
+    if not args.no_context:
+        steps.append({
+            'id': 'ORCH-SDK-003',
+            'method': 'POST',
+            'path': '/context/compile/',
+        })
+    if not args.no_attach:
+        steps.append({
+            'id': 'ORCH-SDK-004',
+            'method': 'POST',
+            'path': '/context/artifacts/{artifact_id}/attach/',
+        })
+    if not args.no_actions:
+        steps.append({
+            'id': 'ORCH-SDK-005',
+            'method': 'POST',
+            'path': '/action-rail/generate/',
+        })
+    return {
+        'command': 'orchestrate',
+        'task': args.task,
+        'mode': args.mode,
+        'checklist': steps,
+    }
