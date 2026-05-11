@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "plugin": {
+    "name": "production-theorem",
+    "version": "0.2.3",
+    "description": "Orchestrate: one-command planning, context, plugin delegation, execution, validation, UI visual gates, Redis harness awareness, and learning.",
+    "author": {
+      "name": "Travis Gilbert"
+    },
+    "keywords": [
+      "planning",
+      "execution",
+      "tdd",
+      "code-review",
+      "production-readiness",
+      "harness-sdk",
+      "workflow-orchestration",
+      "execution-reporting",
+      "orchestrate",
+      "context-control",
+      "graph-harness",
+      "epistemic-graphrag",
+      "plugin-routing",
+      "action-rail",
+      "federated-learning",
+      "redis-harness",
+      "thg-product",
+      "ui-visual-gates",
+      "do-not-downgrade"
+    ]
+  },
+  "hosts": {
+    "claude": {
+      "output": ".claude-plugin/plugin.json",
+      "manifest": {
+        "mcpServers": {
+          "theorem-context": {
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
+            ]
+          },
+          "theseus": {
+            "type": "http",
+            "url": "https://theseus-mcp-production.up.railway.app/mcp",
+            "description": "Theseus knowledge graph (full Mode 3 surface)"
+          }
+        }
+      }
+    },
+    "codex": {
+      "output": ".codex-plugin/plugin.json",
+      "manifest": {
+        "skills": "./skills/",
+        "agents": "./agents/",
+        "interface": {
+          "displayName": "Orchestrate",
+          "shortDescription": "One command for checklist-driven planning, context, delegation, execution, and reporting.",
+          "longDescription": "Orchestrate is the default Production-Theorem surface. It turns ambiguity into grounded decisions, plans into auditable checklists, hidden plugin and Redis harness work into delegated phases, and execution into validated reports with explicit reconciliation and learning.",
+          "developerName": "Travis Gilbert",
+          "category": "Developer Tools",
+          "capabilities": [
+            "Interactive",
+            "Write",
+            "Analyze"
+          ],
+          "defaultPrompt": [
+            "Use orchestrate as the default command for planning, implementation, debugging, review, context preparation, validation, and execution reporting.",
+            "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /orchestrate mode=plan handoff=spark and keep the planner in-thread to review what was built.",
+            "Orchestrate delegates internally to theorize, planning-theorem, execute, SDK harness product awareness, Redis harness agents, and other installed specialists.",
+            "Use stable checklist IDs from plan through report; do not claim done unless the checklist reconciliation supports it.",
+            "For UI visual projects, add the UI Visual Milestone: split Runtime complete, Product complete, and Vision complete; capture before/after/target screenshots; run the Do Not Downgrade gate; and keep a reversible product boundary until the new surface is equal-or-better.",
+            "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing.",
+            "If a host repository opts in through AGENTS.md or CLAUDE.md, prefer harness-backed prepare, preview, and run surfaces for multi-file, high-risk, or long-running work, but do not force harness orchestration for trivial requests."
+          ]
+        }
+      }
+    }
+  }
+}
