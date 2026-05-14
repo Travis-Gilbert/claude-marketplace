@@ -23,12 +23,10 @@ import type {
   ActionRailPreview,
   ActionRailPreviewRequest,
   ActionSelectedRequest,
-  AgentSessionResponse,
   ArtifactExport,
   ArtifactExportFormat,
   ArtifactAttachResponse,
   ArtifactForkResponse,
-  CompileHandoffRequest,
   CompileEvent,
   CompileRequest,
   ContextArtifact,
@@ -50,8 +48,6 @@ import type {
   ContextWebSpendPlanResponse,
   GraphFocusResponse,
   GraphPatchesListResponse,
-  HandoffListResponse,
-  HandoffResponse,
   InferenceRegistryReport,
   KernelReceiptRequest,
   KernelRun,
@@ -83,6 +79,28 @@ import type {
   OrchestratePreviewResult,
   OrchestratePrepareResult,
   OrchestrateResult,
+  AgentDomainCatalogRequest,
+  AgentDomainCatalogResponse,
+  AgentExplainContextRequest,
+  AgentExplainContextResponse,
+  AgentExportArtifactRequest,
+  AgentExportArtifactResponse,
+  AgentGraphqlResponse,
+  AgentHydrateContextRequest,
+  AgentHydrateContextResponse,
+  AgentPrepareRequest,
+  AgentPrepareResponse,
+  AgentRecordOutcomeRequest,
+  AgentRecordOutcomeResponse,
+  AgentRecordStepRequest,
+  AgentRecordStepResponse,
+  AgentRecommendedToolPackRequest,
+  AgentRecommendedToolPackResponse,
+  AgentReviewMemoryRequest,
+  AgentReviewMemoryResponse,
+  AgentSearchContextRequest,
+  AgentSearchContextResponse,
+  AgentToolManifestResponse,
   ProductAPIKeyCreateRequest,
   ProductAPIKeySummary,
   ProductBootstrapResponse,
@@ -106,14 +124,9 @@ import type {
   SavedContextUpdateRequest,
   SolverContextCapsuleRequest,
   SolverResult,
-  StartAgentSessionRequest,
-  EndAgentSessionRequest,
   THGCommandRequest,
   THGCypherRequest,
   THGResult,
-  WorkstreamResolveRequest,
-  WorkstreamResolveResponse,
-  WorkstreamResponse,
 } from './types.js';
 import {
   AuthError,
@@ -180,17 +193,28 @@ export class TheoremContextClient {
       context_spend_plan: 'live',
       structural_signals: 'live',
     },
+    agent: {
+      toolManifest: 'live',
+      domainCatalog: 'live',
+      recommendedToolPack: 'live',
+      prepareAgent: 'live',
+      searchContext: 'live',
+      hydrateContext: 'live',
+      recordStep: 'live',
+      recordOutcome: 'live',
+      explainContext: 'live',
+      exportArtifact: 'live',
+      reviewMemory: 'live',
+      harnessRunConsole: 'live',
+      memoryRecallPreview: 'live',
+      actionRail: 'live',
+    },
     orchestrate: {
       run: 'live',
       preview: 'live',
       prepare: 'live',
       authority: 'server',
       decision_runtime: 'live',
-    },
-    workstream: {
-      resolve: 'live',
-      session: 'live',
-      handoff: 'live',
     },
     thg: {
       profiles: 'live',
@@ -292,6 +316,23 @@ export class TheoremContextClient {
     recordSelected: this.recordSelectedAction.bind(this),
   };
 
+  readonly agent = {
+    toolManifest: this.getAgentToolManifest.bind(this),
+    domainCatalog: this.getAgentDomainCatalog.bind(this),
+    recommendedToolPack: this.getAgentRecommendedToolPack.bind(this),
+    prepareAgent: this.getAgentPrepare.bind(this),
+    searchContext: this.searchAgentContext.bind(this),
+    hydrateContext: this.hydrateAgentContext.bind(this),
+    recordStep: this.recordAgentStep.bind(this),
+    recordOutcome: this.recordAgentOutcome.bind(this),
+    explainContext: this.getAgentExplainContext.bind(this),
+    exportArtifact: this.exportAgentArtifact.bind(this),
+    reviewMemory: this.reviewAgentMemory.bind(this),
+    harnessRunConsole: this.getAgentHarnessRunConsole.bind(this),
+    memoryRecallPreview: this.getAgentMemoryRecallPreview.bind(this),
+    actionRail: this.getAgentActionRail.bind(this),
+  };
+
   readonly learning = {
     profiles: {
       install: this.installLearningProfile.bind(this),
@@ -371,22 +412,6 @@ export class TheoremContextClient {
       get: this.getKernelRun.bind(this),
       appendReceipt: this.appendKernelReceipt.bind(this),
     },
-  };
-
-  readonly workstream = {
-    resolve: this.resolveWorkstream.bind(this),
-    get: this.getWorkstream.bind(this),
-    startSession: this.startWorkstreamSession.bind(this),
-    endSession: this.endWorkstreamSession.bind(this),
-    handoff: {
-      current: this.currentWorkstreamHandoff.bind(this),
-      list: this.listWorkstreamHandoffs.bind(this),
-    },
-    handoffs: this.listWorkstreamHandoffs.bind(this),
-  };
-
-  readonly handoff = {
-    get: this.getHandoff.bind(this),
   };
 
   readonly runs = this.harness;
@@ -568,120 +593,6 @@ export class TheoremContextClient {
       'orchestrate prepare',
     );
     return (await response.json()) as OrchestratePrepareResult;
-  }
-
-  async resolveWorkstream(
-    payload: WorkstreamResolveRequest,
-  ): Promise<WorkstreamResolveResponse> {
-    const response = await this.request(
-      `${this.baseUrl}/workstream/resolve/`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify(payload),
-      },
-      'workstream resolve',
-      'harness',
-    );
-    return (await response.json()) as WorkstreamResolveResponse;
-  }
-
-  async getWorkstream(workstreamId: string): Promise<WorkstreamResponse> {
-    const response = await this.request(
-      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/`,
-      {
-        method: 'GET',
-        headers: this.headers(),
-      },
-      'workstream get',
-      'harness',
-    );
-    return (await response.json()) as WorkstreamResponse;
-  }
-
-  async startWorkstreamSession(
-    workstreamId: string,
-    payload: StartAgentSessionRequest = {},
-  ): Promise<AgentSessionResponse> {
-    const response = await this.request(
-      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/session/start/`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify(payload),
-      },
-      'workstream session start',
-      'harness',
-    );
-    return (await response.json()) as AgentSessionResponse;
-  }
-
-  async endWorkstreamSession(
-    workstreamId: string,
-    payload: EndAgentSessionRequest,
-  ): Promise<AgentSessionResponse> {
-    const response = await this.request(
-      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/session/end/`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify(payload),
-      },
-      'workstream session end',
-      'harness',
-    );
-    return (await response.json()) as AgentSessionResponse;
-  }
-
-  async currentWorkstreamHandoff(
-    workstreamId: string,
-    payload: CompileHandoffRequest = {},
-  ): Promise<HandoffResponse> {
-    const response = await this.request(
-      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/handoff/current/`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify(payload),
-      },
-      'workstream handoff current',
-      'harness',
-    );
-    return (await response.json()) as HandoffResponse;
-  }
-
-  async listWorkstreamHandoffs(
-    workstreamId: string,
-    options: { limit?: number } = {},
-  ): Promise<HandoffListResponse> {
-    const query = new URLSearchParams();
-    if (typeof options.limit === 'number') {
-      query.set('limit', String(options.limit));
-    }
-    const suffix = query.size > 0 ? `?${query.toString()}` : '';
-    const response = await this.request(
-      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/handoffs/${suffix}`,
-      {
-        method: 'GET',
-        headers: this.headers(),
-      },
-      'workstream handoffs list',
-      'harness',
-    );
-    return (await response.json()) as HandoffListResponse;
-  }
-
-  async getHandoff(handoffId: string): Promise<HandoffResponse> {
-    const response = await this.request(
-      `${this.baseUrl}/handoff/${encodeURIComponent(handoffId)}/`,
-      {
-        method: 'GET',
-        headers: this.headers(),
-      },
-      'handoff get',
-      'harness',
-    );
-    return (await response.json()) as HandoffResponse;
   }
 
   async getProductBootstrap(): Promise<ProductBootstrapResponse> {
@@ -1365,6 +1276,214 @@ export class TheoremContextClient {
       'action rail selected',
     );
     return (await response.json()) as { ok: boolean };
+  }
+
+  async getAgentToolManifest(): Promise<AgentToolManifestResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/tool-manifest/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'agent tool manifest',
+    );
+    return (await response.json()) as AgentToolManifestResponse;
+  }
+
+  async getAgentDomainCatalog(
+    actorOrPayload: string | AgentDomainCatalogRequest = {},
+  ): Promise<AgentDomainCatalogResponse> {
+    const payload =
+      typeof actorOrPayload === 'string'
+        ? { actor: actorOrPayload }
+        : actorOrPayload;
+    const response = await this.request(
+      `${this.baseUrl}/agent/domain-catalog/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent domain catalog',
+    );
+    return (await response.json()) as AgentDomainCatalogResponse;
+  }
+
+  async getAgentRecommendedToolPack(
+    payload: AgentRecommendedToolPackRequest = {},
+  ): Promise<AgentRecommendedToolPackResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/recommended-toolpack/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent recommended toolpack',
+    );
+    return (await response.json()) as AgentRecommendedToolPackResponse;
+  }
+
+  async getAgentPrepare(
+    payload: AgentPrepareRequest = {},
+  ): Promise<AgentPrepareResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/prepare/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent prepare',
+    );
+    return (await response.json()) as AgentPrepareResponse;
+  }
+
+  async searchAgentContext(
+    payload: AgentSearchContextRequest = {},
+  ): Promise<AgentSearchContextResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/search-context/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent search context',
+      'harness',
+    );
+    return (await response.json()) as AgentSearchContextResponse;
+  }
+
+  async hydrateAgentContext(
+    payload: AgentHydrateContextRequest = {},
+  ): Promise<AgentHydrateContextResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/hydrate-context/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent hydrate context',
+      'harness',
+    );
+    return (await response.json()) as AgentHydrateContextResponse;
+  }
+
+  async recordAgentStep(
+    payload: AgentRecordStepRequest = {},
+  ): Promise<AgentRecordStepResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/record-step/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent record step',
+      'harness',
+    );
+    return (await response.json()) as AgentRecordStepResponse;
+  }
+
+  async recordAgentOutcome(
+    payload: AgentRecordOutcomeRequest = {},
+  ): Promise<AgentRecordOutcomeResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/record-outcome/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent record outcome',
+      'harness',
+    );
+    return (await response.json()) as AgentRecordOutcomeResponse;
+  }
+
+  async getAgentExplainContext(
+    payload: AgentExplainContextRequest = {},
+  ): Promise<AgentExplainContextResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/explain-context/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent explain context',
+    );
+    return (await response.json()) as AgentExplainContextResponse;
+  }
+
+  async exportAgentArtifact(
+    payload: AgentExportArtifactRequest = {},
+  ): Promise<AgentExportArtifactResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/export-artifact/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent export artifact',
+      'harness',
+    );
+    return (await response.json()) as AgentExportArtifactResponse;
+  }
+
+  async reviewAgentMemory(
+    payload: AgentReviewMemoryRequest = {},
+  ): Promise<AgentReviewMemoryResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/review-memory/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent review memory',
+      'harness',
+    );
+    return (await response.json()) as AgentReviewMemoryResponse;
+  }
+
+  async getAgentHarnessRunConsole(
+    runId: string,
+  ): Promise<AgentGraphqlResponse<Record<string, unknown>>> {
+    return this.requestAgentGraphql('harnessRunConsole', { runId });
+  }
+
+  async getAgentMemoryRecallPreview(
+    runId: string,
+  ): Promise<AgentGraphqlResponse<Record<string, unknown>>> {
+    return this.requestAgentGraphql('memoryRecallPreview', { runId });
+  }
+
+  async getAgentActionRail(
+    runId: string,
+  ): Promise<AgentGraphqlResponse<Record<string, unknown>>> {
+    return this.requestAgentGraphql('actionRail', { runId });
+  }
+
+  private async requestAgentGraphql<T extends Record<string, unknown> = Record<string, unknown>>(
+    operationName: string,
+    variables: Record<string, unknown>,
+  ): Promise<AgentGraphqlResponse<T>> {
+    const response = await this.request(
+      `${this.baseUrl}/graphql/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({ operationName, variables }),
+      },
+      `agent graphql ${operationName}`,
+      'harness',
+    );
+    const body = (await response.json()) as AgentGraphqlResponse<T>;
+    return body;
   }
 
   async installLearningProfile(

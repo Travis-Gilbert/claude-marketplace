@@ -321,149 +321,6 @@ test('context graph namespace maps focus and patches to live routes', async () =
   assert.equal(patches.patches[0].operation, 'object_upsert');
 });
 
-test('workstream and handoff namespaces map to CMH routes', async () => {
-  const requests = [];
-  const handoff = {
-    handoff_id: 'handoff:1',
-    workstream_id: 'workstream:1',
-    previous_agent: 'codex',
-    next_agent_target: 'claude_code',
-    task_state: 'active',
-    summary: 'Continue the CMH slice.',
-    decisions: [],
-    assumptions: [],
-    resolved_assumptions: [],
-    files_touched: [],
-    commands_run: [],
-    tests_run: [],
-    failures: [],
-    open_questions: [],
-    next_actions: ['Run tests'],
-    memory_atoms: [],
-    risk_flags: [],
-    state_hash: 'sha256:abc',
-    created_at: '2026-05-12T00:00:00Z',
-  };
-  const workstream = {
-    workstream_id: 'workstream:1',
-    tenant_id: 'tenant-x',
-    repo: 'Index-API',
-    branch: 'main',
-    title: 'CMH',
-    task_state: 'active',
-    agent_hosts_seen: ['codex'],
-    active_branch: '',
-    current_handoff_id: 'handoff:1',
-    last_state_hash: 'sha256:abc',
-    created_at: '2026-05-12T00:00:00Z',
-    updated_at: '2026-05-12T00:00:00Z',
-  };
-  const client = new TheoremContextClient({
-    baseUrl: 'http://localhost:8000/api/v2/theseus',
-    fetchImpl: async (url, init) => {
-      requests.push({ url, init });
-      const path = String(url);
-      if (path.endsWith('/workstream/resolve/')) {
-        return jsonResponse({ ...workstream, workstream });
-      }
-      if (path.endsWith('/session/start/')) {
-        return jsonResponse({
-          agent_session_id: 'agentsess:1',
-          harness_run_id: 'run:1',
-          run: null,
-          agent_session: {
-            agent_session_id: 'agentsess:1',
-            workstream_id: 'workstream:1',
-            harness_run_id: 'run:1',
-            agent_host: 'codex',
-            agent_model: 'gpt-5.5',
-            started_at: '2026-05-12T00:00:00Z',
-            ended_at: '',
-            outcome: {},
-          },
-        });
-      }
-      if (path.endsWith('/session/end/')) {
-        return jsonResponse({
-          agent_session_id: 'agentsess:1',
-          workstream_id: 'workstream:1',
-          agent_session: {
-            agent_session_id: 'agentsess:1',
-            workstream_id: 'workstream:1',
-            harness_run_id: 'run:1',
-            agent_host: 'codex',
-            agent_model: 'gpt-5.5',
-            started_at: '2026-05-12T00:00:00Z',
-            ended_at: '2026-05-12T00:01:00Z',
-            outcome: { status: 'ready_for_handoff' },
-          },
-        });
-      }
-      if (path.endsWith('/handoff/current/')) {
-        return jsonResponse({
-          handoff,
-          handoff_id: handoff.handoff_id,
-          workstream_id: handoff.workstream_id,
-          state_hash: handoff.state_hash,
-        });
-      }
-      if (path.includes('/workstream/workstream%3A1/handoffs/')) {
-        return jsonResponse({
-          workstream_id: 'workstream:1',
-          handoffs: [handoff],
-          count: 1,
-        });
-      }
-      if (path.includes('/handoff/handoff%3A1/')) {
-        return jsonResponse({
-          handoff,
-          handoff_id: handoff.handoff_id,
-          workstream_id: handoff.workstream_id,
-          state_hash: handoff.state_hash,
-        });
-      }
-      return jsonResponse({ ...workstream, workstream });
-    },
-  });
-
-  const resolved = await client.workstream.resolve({
-    tenant_id: 'tenant-x',
-    repo: 'Index-API',
-    branch: 'main',
-  });
-  const detail = await client.workstream.get('workstream:1');
-  const started = await client.workstream.startSession('workstream:1', {
-    agent_host: 'codex',
-    agent_model: 'gpt-5.5',
-  });
-  const ended = await client.workstream.endSession('workstream:1', {
-    agent_session_id: 'agentsess:1',
-    outcome: { status: 'ready_for_handoff' },
-  });
-  const current = await client.workstream.handoff.current('workstream:1', {
-    next_agent_target: 'claude_code',
-  });
-  const list = await client.workstream.handoffs('workstream:1', { limit: 5 });
-  const fetched = await client.handoff.get('handoff:1');
-
-  assert.equal(
-    requests[0].url,
-    'http://localhost:8000/api/v2/theseus/workstream/resolve/',
-  );
-  assert.equal(JSON.parse(requests[0].init.body).repo, 'Index-API');
-  assert.equal(
-    requests[1].url,
-    'http://localhost:8000/api/v2/theseus/workstream/workstream%3A1/',
-  );
-  assert.equal(resolved.workstream_id, 'workstream:1');
-  assert.equal(detail.workstream.current_handoff_id, 'handoff:1');
-  assert.equal(started.agent_session.agent_host, 'codex');
-  assert.equal(ended.agent_session.outcome.status, 'ready_for_handoff');
-  assert.equal(current.handoff.next_agent_target, 'claude_code');
-  assert.equal(list.handoffs[0].handoff_id, 'handoff:1');
-  assert.equal(fetched.handoff.summary, 'Continue the CMH slice.');
-});
-
 test('inference namespace maps BGI backend routes', async () => {
   const requests = [];
   const client = new TheoremContextClient({
@@ -1865,6 +1722,233 @@ test('product namespace maps membership and review-queue routes', async () => {
     requests[5].url,
     'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/memory-patches/review/run-1/patch-1/',
   );
+});
+
+test('agent namespace maps runtime and GraphQL routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const path = String(url);
+      if (path.endsWith('/agent/tool-manifest/')) {
+        return jsonResponse({ tools: ['context_web.pack'] });
+      }
+      if (path.endsWith('/agent/domain-catalog/')) {
+        const payload = JSON.parse(init.body);
+        return jsonResponse({
+          actor: payload.actor,
+          adapter: payload.adapter ?? null,
+          domains: ['repo', 'web'],
+        });
+      }
+      if (path.endsWith('/agent/recommended-toolpack/')) {
+        return jsonResponse({
+          pack: { id: 'toolpack-1', task_signature: 'sig-1' },
+        });
+      }
+      if (path.endsWith('/agent/prepare/')) {
+        return jsonResponse({ agent: { id: 'agent-1', prepared: true } });
+      }
+      if (path.endsWith('/agent/search-context/')) {
+        return jsonResponse({ search: { run_id: 'run-search' } });
+      }
+      if (path.endsWith('/agent/hydrate-context/')) {
+        return jsonResponse({ hydrated: { count: 1 } });
+      }
+      if (path.endsWith('/agent/record-step/')) {
+        return jsonResponse({ step: { kind: 'tool_call' } });
+      }
+      if (path.endsWith('/agent/record-outcome/')) {
+        return jsonResponse({ outcome: { accepted: true } });
+      }
+      if (path.endsWith('/agent/explain-context/')) {
+        return jsonResponse({ explanation: { summary: 'context explained' } });
+      }
+      if (path.endsWith('/agent/export-artifact/')) {
+        return jsonResponse({ format: 'signed', artifact_id: 'artifact-1' });
+      }
+      if (path.endsWith('/agent/review-memory/')) {
+        return jsonResponse({ memory_patches: [] });
+      }
+      if (path.endsWith('/graphql/')) {
+        const payload = JSON.parse(init.body);
+        return jsonResponse({
+          data: {
+            [payload.operationName]: {
+              run_id: payload.variables.runId,
+              ok: true,
+            },
+          },
+        });
+      }
+      return new Response('', { status: 500 });
+    },
+  });
+
+  const manifest = await client.agent.toolManifest();
+  const domainCatalog = await client.agent.domainCatalog({
+    actor: 'codex',
+    adapter: 'chatgpt',
+  });
+  const domainCatalogByActor = await client.agent.domainCatalog('cursor');
+  const recommended = await client.agent.recommendedToolPack({
+    actor: 'codex',
+    adapter: 'custom',
+    task_signature: 'sig-1',
+  });
+  const prepared = await client.agent.prepareAgent({
+    actor: 'codex',
+    adapter: 'claude_code',
+    task_signature: 'sig-prepare-1',
+  });
+  const search = await client.agent.searchContext({
+    run_id: 'run-search',
+    query: 'find context',
+  });
+  const hydrated = await client.agent.hydrateContext({
+    run_id: 'run-search',
+    handles: ['artifact:1'],
+  });
+  const step = await client.agent.recordStep({
+    run_id: 'run-search',
+    kind: 'tool_call',
+    payload: { tool: 'Bash' },
+  });
+  const outcome = await client.agent.recordOutcome({
+    run_id: 'run-search',
+    accepted: true,
+    tests_passed: true,
+    summary: 'validated',
+  });
+  const explained = await client.agent.explainContext({
+    actor: 'codex',
+    adapter: 'codex',
+    artifact_id: 'art-1',
+  });
+  const exported = await client.agent.exportArtifact({
+    artifact_id: 'artifact-1',
+    format: 'signed',
+  });
+  const reviewed = await client.agent.reviewMemory({
+    run_id: 'run-search',
+  });
+  const harnessConsole = await client.agent.harnessRunConsole('run-1');
+  const memoryPreview = await client.agent.memoryRecallPreview('run-2');
+  const actionRail = await client.agent.actionRail('run-3');
+
+  assert.equal(manifest.tools[0], 'context_web.pack');
+  assert.deepEqual(
+    JSON.parse(requests[1].init.body),
+    { actor: 'codex', adapter: 'chatgpt' },
+  );
+  assert.deepEqual(domainCatalog, {
+    actor: 'codex',
+    adapter: 'chatgpt',
+    domains: ['repo', 'web'],
+  });
+  assert.deepEqual(requests[2].init.body, JSON.stringify({ actor: 'cursor' }));
+  assert.deepEqual(domainCatalogByActor, {
+    actor: 'cursor',
+    domains: ['repo', 'web'],
+    adapter: null,
+  });
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/agent/tool-manifest/',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/agent/domain-catalog/',
+  );
+  assert.equal(
+    requests[2].url,
+    'http://localhost:8000/api/v2/theseus/agent/domain-catalog/',
+  );
+  assert.deepEqual(
+    JSON.parse(requests[3].init.body),
+    { actor: 'codex', adapter: 'custom', task_signature: 'sig-1' },
+  );
+  assert.equal(
+    requests[3].url,
+    'http://localhost:8000/api/v2/theseus/agent/recommended-toolpack/',
+  );
+  assert.equal(
+    requests[4].url,
+    'http://localhost:8000/api/v2/theseus/agent/prepare/',
+  );
+  assert.deepEqual(
+    JSON.parse(requests[4].init.body).task_signature,
+    'sig-prepare-1',
+  );
+  assert.equal(
+    requests[5].url,
+    'http://localhost:8000/api/v2/theseus/agent/search-context/',
+  );
+  assert.deepEqual(
+    JSON.parse(requests[5].init.body),
+    { run_id: 'run-search', query: 'find context' },
+  );
+  assert.equal(
+    requests[6].url,
+    'http://localhost:8000/api/v2/theseus/agent/hydrate-context/',
+  );
+  assert.equal(
+    requests[7].url,
+    'http://localhost:8000/api/v2/theseus/agent/record-step/',
+  );
+  assert.equal(
+    requests[8].url,
+    'http://localhost:8000/api/v2/theseus/agent/record-outcome/',
+  );
+  assert.equal(
+    requests[9].url,
+    'http://localhost:8000/api/v2/theseus/agent/explain-context/',
+  );
+  assert.equal(
+    requests[10].url,
+    'http://localhost:8000/api/v2/theseus/agent/export-artifact/',
+  );
+  assert.equal(
+    requests[11].url,
+    'http://localhost:8000/api/v2/theseus/agent/review-memory/',
+  );
+  assert.equal(
+    requests[12].url,
+    'http://localhost:8000/api/v2/theseus/graphql/',
+  );
+  assert.deepEqual(JSON.parse(requests[12].init.body), {
+    operationName: 'harnessRunConsole',
+    variables: { runId: 'run-1' },
+  });
+  assert.equal(
+    requests[13].url,
+    'http://localhost:8000/api/v2/theseus/graphql/',
+  );
+  assert.deepEqual(JSON.parse(requests[13].init.body), {
+    operationName: 'memoryRecallPreview',
+    variables: { runId: 'run-2' },
+  });
+  assert.equal(
+    requests[14].url,
+    'http://localhost:8000/api/v2/theseus/graphql/',
+  );
+  assert.deepEqual(JSON.parse(requests[14].init.body), {
+    operationName: 'actionRail',
+    variables: { runId: 'run-3' },
+  });
+  assert.equal(recommended.pack.id, 'toolpack-1');
+  assert.equal(prepared.agent.id, 'agent-1');
+  assert.equal(search.search.run_id, 'run-search');
+  assert.equal(hydrated.hydrated.count, 1);
+  assert.equal(step.step.kind, 'tool_call');
+  assert.equal(outcome.outcome.accepted, true);
+  assert.equal(explained.explanation.summary, 'context explained');
+  assert.equal(exported.artifact_id, 'artifact-1');
+  assert.deepEqual(reviewed.memory_patches, []);
+  assert.equal(harnessConsole.data.harnessRunConsole.run_id, 'run-1');
+  assert.equal(memoryPreview.data.memoryRecallPreview.run_id, 'run-2');
+  assert.equal(actionRail.data.actionRail.run_id, 'run-3');
 });
 
 function jsonResponse(body) {

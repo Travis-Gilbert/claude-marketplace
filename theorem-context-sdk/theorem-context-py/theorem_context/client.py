@@ -21,14 +21,12 @@ from .types import (
     ActionSelectedRequest,
     AgentCatalogRequest,
     AgentGraphQLRequest,
-    AgentSessionResponse,
     ArtifactExport,
     ArtifactAttachResponse,
     ArtifactForkResponse,
     ArtifactMarkdownExport,
     ArtifactPdfExport,
     ArtifactSignedExport,
-    CompileHandoffRequest,
     CompileRequest,
     ContextCommandRequest,
     ContextArtifact,
@@ -42,8 +40,6 @@ from .types import (
     ExpressionRenderResult,
     GraphFocusResponse,
     GraphPatchesListResponse,
-    HandoffListResponse,
-    HandoffResponse,
     HarnessBeginRequest,
     HarnessCompareRequest,
     HarnessContextRequest,
@@ -100,14 +96,9 @@ from .types import (
     SavedContextUpdateRequest,
     SolverContextCapsuleRequest,
     SolverResult,
-    StartAgentSessionRequest,
-    EndAgentSessionRequest,
     THGCommandRequest,
     THGCypherRequest,
     THGResult,
-    WorkstreamResolveRequest,
-    WorkstreamResolveResponse,
-    WorkstreamResponse,
 )
 
 DEFAULT_BASE_URL = 'https://index-api-production-a5f7.up.railway.app/api/v2/theseus'
@@ -877,84 +868,6 @@ class _THGNamespace:
         return await self._client._thg_cypher(request)
 
 
-class _WorkstreamHandoffNamespace:
-    def __init__(self, client: 'TheoremContextClient') -> None:
-        self._client = client
-
-    async def current(
-        self,
-        workstream_id: str,
-        **kwargs: Any,
-    ) -> HandoffResponse:
-        request = CompileHandoffRequest(**kwargs)
-        return await self._client._workstream_handoff_current(
-            workstream_id,
-            request,
-        )
-
-    async def list(
-        self,
-        workstream_id: str,
-        *,
-        limit: int | None = None,
-    ) -> HandoffListResponse:
-        return await self._client._workstream_handoffs_list(
-            workstream_id,
-            limit=limit,
-        )
-
-
-class _WorkstreamNamespace:
-    def __init__(self, client: 'TheoremContextClient') -> None:
-        self._client = client
-        self.handoff = _WorkstreamHandoffNamespace(client)
-
-    async def resolve(self, **kwargs: Any) -> WorkstreamResolveResponse:
-        request = WorkstreamResolveRequest(**kwargs)
-        return await self._client._workstream_resolve(request)
-
-    async def get(self, workstream_id: str) -> WorkstreamResponse:
-        return await self._client._workstream_get(workstream_id)
-
-    async def start_session(
-        self,
-        workstream_id: str,
-        **kwargs: Any,
-    ) -> AgentSessionResponse:
-        request = StartAgentSessionRequest(**kwargs)
-        return await self._client._workstream_session_start(
-            workstream_id,
-            request,
-        )
-
-    async def end_session(
-        self,
-        workstream_id: str,
-        **kwargs: Any,
-    ) -> AgentSessionResponse:
-        request = EndAgentSessionRequest(**kwargs)
-        return await self._client._workstream_session_end(
-            workstream_id,
-            request,
-        )
-
-    async def handoffs(
-        self,
-        workstream_id: str,
-        *,
-        limit: int | None = None,
-    ) -> HandoffListResponse:
-        return await self.handoff.list(workstream_id, limit=limit)
-
-
-class _HandoffNamespace:
-    def __init__(self, client: 'TheoremContextClient') -> None:
-        self._client = client
-
-    async def get(self, handoff_id: str) -> HandoffResponse:
-        return await self._client._handoff_get(handoff_id)
-
-
 class _HarnessNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
@@ -1158,8 +1071,6 @@ class TheoremContextClient:
         self.product = _ProductNamespace(self)
         self.inference = _InferenceNamespace(self)
         self.agent = _AgentNamespace(self)
-        self.workstream = _WorkstreamNamespace(self)
-        self.handoff = _HandoffNamespace(self)
         self.harness = _HarnessNamespace(self)
         self.runs = self.harness
         self.thg = _THGNamespace(self)
@@ -1209,11 +1120,6 @@ class TheoremContextClient:
                 'prepare': 'live',
                 'authority': 'server',
                 'decision_runtime': 'live',
-            },
-            'workstream': {
-                'resolve': 'live',
-                'session': 'live',
-                'handoff': 'live',
             },
             'thg': {
                 'profiles': 'live',
@@ -1295,102 +1201,6 @@ class TheoremContextClient:
             kind='harness',
         )
         return OrchestratePrepareResult.model_validate(response.json())
-
-    async def _workstream_resolve(
-        self,
-        request: WorkstreamResolveRequest,
-    ) -> WorkstreamResolveResponse:
-        response = await self._request(
-            'POST',
-            f'{self.base_url}/workstream/resolve/',
-            surface='workstream resolve',
-            headers=self._headers(),
-            content=request.model_dump_json(exclude_none=True),
-            kind='harness',
-        )
-        return WorkstreamResolveResponse.model_validate(response.json())
-
-    async def _workstream_get(self, workstream_id: str) -> WorkstreamResponse:
-        response = await self._request(
-            'GET',
-            f'{self.base_url}/workstream/{workstream_id}/',
-            surface='workstream get',
-            headers=self._headers(),
-            kind='harness',
-        )
-        return WorkstreamResponse.model_validate(response.json())
-
-    async def _workstream_session_start(
-        self,
-        workstream_id: str,
-        request: StartAgentSessionRequest,
-    ) -> AgentSessionResponse:
-        response = await self._request(
-            'POST',
-            f'{self.base_url}/workstream/{workstream_id}/session/start/',
-            surface='workstream session start',
-            headers=self._headers(),
-            content=request.model_dump_json(exclude_none=True),
-            kind='harness',
-        )
-        return AgentSessionResponse.model_validate(response.json())
-
-    async def _workstream_session_end(
-        self,
-        workstream_id: str,
-        request: EndAgentSessionRequest,
-    ) -> AgentSessionResponse:
-        response = await self._request(
-            'POST',
-            f'{self.base_url}/workstream/{workstream_id}/session/end/',
-            surface='workstream session end',
-            headers=self._headers(),
-            content=request.model_dump_json(exclude_none=True),
-            kind='harness',
-        )
-        return AgentSessionResponse.model_validate(response.json())
-
-    async def _workstream_handoff_current(
-        self,
-        workstream_id: str,
-        request: CompileHandoffRequest,
-    ) -> HandoffResponse:
-        response = await self._request(
-            'POST',
-            f'{self.base_url}/workstream/{workstream_id}/handoff/current/',
-            surface='workstream handoff current',
-            headers=self._headers(),
-            content=request.model_dump_json(exclude_none=True),
-            kind='harness',
-        )
-        return HandoffResponse.model_validate(response.json())
-
-    async def _workstream_handoffs_list(
-        self,
-        workstream_id: str,
-        *,
-        limit: int | None = None,
-    ) -> HandoffListResponse:
-        params = {'limit': str(limit)} if limit is not None else None
-        response = await self._request(
-            'GET',
-            f'{self.base_url}/workstream/{workstream_id}/handoffs/',
-            surface='workstream handoffs list',
-            headers=self._headers(),
-            params=params,
-            kind='harness',
-        )
-        return HandoffListResponse.model_validate(response.json())
-
-    async def _handoff_get(self, handoff_id: str) -> HandoffResponse:
-        response = await self._request(
-            'GET',
-            f'{self.base_url}/handoff/{handoff_id}/',
-            surface='handoff get',
-            headers=self._headers(),
-            kind='harness',
-        )
-        return HandoffResponse.model_validate(response.json())
 
     async def _product_bootstrap(self) -> ProductBootstrapResponse:
         response = await self._request(

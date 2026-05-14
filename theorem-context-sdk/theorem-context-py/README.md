@@ -249,43 +249,6 @@ run, resolves a Context Command, compiles and attaches a Context Artifact, and
 generates an Action Rail. It still does not promote memory patches or claim
 canonical graph writes.
 
-## Workstreams And Handoffs
-
-```python
-workstream = await cc.workstream.resolve(
-    tenant_id='tenant-a',
-    repo='Travis-Gilbert/Index-API',
-    branch='main',
-)
-
-session = await cc.workstream.start_session(
-    workstream.workstream_id,
-    agent_host='codex',
-    agent_model='gpt-5.5',
-    task='Finish the SDK parity slice',
-)
-
-current = await cc.workstream.handoff.current(
-    workstream.workstream_id,
-    next_agent_target='claude_code',
-)
-
-await cc.workstream.end_session(
-    workstream.workstream_id,
-    agent_session_id=session.agent_session_id,
-    outcome={'status': 'ready_for_handoff'},
-)
-
-history = await cc.workstream.handoffs(workstream.workstream_id)
-fetched = await cc.handoff.get(current.handoff_id)
-```
-
-These methods call the public Continuous Agent Memory Harness routes under
-`/api/v2/theseus/workstream/...` and `/api/v2/theseus/handoff/...`.
-Workstream, AgentSession, and HandoffArtifact are Memgraph-canonical graph
-primitives; the SDK only transports typed contracts and does not promote memory
-atoms by itself.
-
 ## Codex Bundle
 
 Python is the canonical local wrapper layer for Codex-ready harness setup.

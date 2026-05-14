@@ -1,32 +1,88 @@
-# Epistemic Plugins
+# Context Theorem
 
-Most Claude Code plugins give you a set of slash commands and some domain knowledge. These plugins do something different: they learn.
+A programmable harness that gives AI agents structured memory, orchestrated context, and a verifiable audit trail — across Claude, Codex, Gemini, and any LLM that can call an API.
 
-Each plugin in this repo is a **domain-specialized engineering intelligence** that accumulates knowledge across sessions, grounds itself in real library source code (not training data), and coordinates with a companion chat skill on Claude.ai. The plugin implements. The chat skill plans. Over time, the plugin gets better at its job because it tracks what works, what doesn't, and what it's still uncertain about.
+Context Theorem has two parts: a **harness** (the SDK and runtime) that handles memory, context compilation, orchestration, and auditability; and a fleet of **domain-specialist plugins** that do the actual engineering work, accumulate knowledge across sessions, and ground themselves in real library source code instead of training data.
 
-This is the two-surface architecture: one surface for thinking, one for building.
+The harness doesn't care which model is driving. The plugins don't care which harness run they're inside. Everything participates in the same memory, the same audit trail, and the same orchestration layer.
 
-## What's Inside Each Plugin
+## The Harness
 
-A typical plugin contains four layers:
+The harness is the backbone. It tracks every agent session as a **run** — a first-class object with an ID, a task description, an actor identity, scope metadata, and a full step history. Every decision, search, context compilation, and outcome is recorded as a step. Every state transition carries a cryptographic before/after hash pair. Artifacts can be exported with signatures for verification.
 
-**Specialist agents and slash commands.** Each plugin ships with 3 to 7 agents that handle specific subtasks. UI-Design-Pro has a design critic, a component builder, an accessibility auditor, an animation engineer, and a visual architect. Django-Engine-Pro has agents for model design, ORM optimization, migration planning, and MCP server exposure. Agents compose in defined sequences: you always run the stack detector before the component builder, always run the design critic after.
+The core capabilities:
 
-**Source-code references.** Plugins include `install.sh` scripts that shallow-clone real library repos into a local `refs/` directory. When UI-Design-Pro needs to know how Radix handles focus restoration, it greps the actual Radix source, not its training data. When D3-Pro needs to verify a scale constructor's API, it reads the Observable source directly. This matters because training data goes stale. Source code doesn't.
+**Context compilation.** Given a task and a token budget, the compiler produces a ranked, structured context package organized into channels (system invariants, user task, team policy, repo memory, external content, tool outputs, suggested actions). Every artifact carries a detailed token ledger showing compression ratios and savings.
 
-**Skills and decision frameworks.** Static knowledge: inheritance decision tables, ORM anti-pattern catalogs, polymorphic rendering rules, animation physics constants. These encode the expert judgment that doesn't change between sessions.
+**Context Web.** Graph-structured retrieval that goes beyond flat compilation — returns atoms, edges between atoms, and scored paths through the knowledge graph. Multiple retrieval modes: full, mini, review-delta, research, browser folio, GraphRAG-powered.
 
-**An epistemic knowledge layer.** This is the part that learns. Each plugin maintains a `knowledge/` directory containing typed claims in JSONL, confidence scores, session logs, and (for some plugins) SBERT embeddings. Claims start as drafts. After review, they become active. Active claims carry Bayesian confidence that updates based on session outcomes: when a suggestion informed by a claim gets accepted, confidence rises; when it gets rejected, confidence drops. Over time, each plugin develops its own body of verified, weighted knowledge about its domain.
+**Orchestration.** A decision engine that selects the right profile, skills, agents, tools, validators, renderers, and compute backends for a task, then explains why. Produces transparent decision records with rejected candidates, risk summaries, and policy traces.
 
-## The Two-Surface Architecture
+**Memory.** User-scoped, LLM-agnostic. The same memory works whether the agent is Claude, Codex, Gemini, or anything else. Saved contexts persist at the tenant level. Runtime-generated memory patches flow through a review pipeline before becoming permanent. The full memory contract includes evidence, operational policies, memory banks, recall policies, and hydration handles.
 
-Each plugin here has a counterpart: a chat skill that runs on Claude.ai (or Claude Desktop). The division of labor is deliberate.
+**Inference engine.** Pluggable epistemic computations: a kernel registry, discovery runs for structured hypothesis testing, validator receipts, and controlled writebacks to the canonical graph. All append-only.
 
-The **chat skill** handles planning, reasoning, and decision-making. When you're deciding between DRF and Ninja for an API, or choosing an inheritance strategy for a model hierarchy, or evaluating whether a component needs polymorphic rendering, the chat skill walks you through the tradeoffs and produces a structured handoff document.
+**Fork, replay, compare.** Branch a run at any decision point, try a different approach, compare outcomes. Counterfactual analysis for agent sessions.
 
-The **Claude Code plugin** handles implementation and learning. It takes the handoff document, builds the thing, greps real source code when it needs to verify an API, logs what it tried, and updates its knowledge base with what it learned.
+**Multi-tenancy.** Tenants, projects, API keys with per-hour quotas, role-based membership, usage analytics, and billing.
 
-The chat skill never sees `knowledge/claims.jsonl`. The plugin never produces planning documents. Each surface does what it's good at.
+For the full feature reference, see [`theorem-context-sdk/FEATURES.md`](./theorem-context-sdk/FEATURES.md).
+
+### Dual SDK
+
+The harness ships as both:
+
+- **`theorem-context-ts`** — TypeScript/Node
+- **`theorem-context-py`** — Python (Pydantic v2, async httpx)
+
+Both implement identical APIs with full type safety. Either can be used from any agent framework.
+
+### Codex Adapter
+
+A turnkey integration for Claude Code: one call that detects repo metadata, begins a harness run, compiles context, exports markdown, and writes a `.theorem/` bundle. Any agent framework can participate in the harness lifecycle without custom integration work.
+
+## The Plugins
+
+Each plugin is a domain-specialized engineering intelligence built on the two-surface architecture: a **chat skill** on Claude.ai handles planning and reasoning, a **Claude Code plugin** handles implementation and learning.
+
+### What's Inside Each Plugin
+
+**Specialist agents.** Each plugin ships with 3–7 agents that handle specific subtasks and compose in defined sequences.
+
+**Source-code references.** Plugins shallow-clone real library repos into a local `refs/` directory and grep them at runtime. When UI-Design-Pro needs to know how Radix handles focus restoration, it reads the actual source. Training data goes stale. Source code doesn't.
+
+**Decision frameworks.** Static expert knowledge: inheritance decision tables, ORM anti-pattern catalogs, animation physics constants.
+
+**Epistemic knowledge layer.** The part that learns. Each plugin maintains typed claims with Bayesian confidence scores that update based on session outcomes. Claims start as drafts, get reviewed, and accumulate evidence. Over time, each plugin develops its own body of verified, weighted domain knowledge.
+
+### The Epistemic Protocol
+
+Every plugin with a `knowledge/` directory runs the same cycle:
+
+**Session start** — load active claims sorted by confidence, surface unresolved tensions before making decisions. **During work** — track which claims informed each suggestion, note user acceptance or rejection. **Session end** — write observations, flag contradictions as tension signals, note uncovered patterns.
+
+Knowledge types: claims (factual assertions with confidence), tensions (unresolved conflicts), questions (open research threads), methods (process knowledge), preferences (user-specific overrides).
+
+### Available Plugins
+
+| Plugin | Domain | What It Knows |
+|--------|--------|---------------|
+| **[UI-Design-Pro](./ui-design-pro)** | Web UI | Design theory, shadcn/Radix internals, polymorphic rendering, accessibility |
+| **[Django-Engine-Pro](./django-engine-pro)** | Backend | ORM optimization, DRF vs. Ninja, django-polymorphic, Pydantic v2, MCP servers |
+| **[Django-Design](./django-design)** | Full-Stack Django | HTMX, Alpine.js, Tailwind, D3 integration, Cotton components |
+| **[ML-Pro](./ml-pro)** | Machine Learning | PyTorch, GNNs, Transformers, training loops, deployment |
+| **[SciPy-Pro](./scipy-pro)** | Epistemic Engineering | NLP pipelines, graph theory, causal inference, knowledge representation |
+| **[D3-Pro](./d3-pro)** | Data Visualization | D3.js scales, transitions, force layouts, geographic projections |
+| **[Three-Pro](./three-pro)** | 3D Visualization | Three.js, shaders, physics simulation, WebGL, 3D graph embeddings |
+| **[Animation-Pro](./animation-pro)** | Motion Design | Spring physics, state-driven animation, CSS/JS motion patterns |
+| **[Next-Pro](./next-pro)** | Next.js | App Router, Server Components, data fetching, deployment |
+| **[UX-Pro](./ux-pro)** | UX Research | Interaction design, information architecture, accessibility auditing |
+| **[App-Forge](./app-forge)** | App Conversion | PWA, Tauri desktop, native app planning from web apps |
+| **[Swift-Pro](./swift-pro)** | Native Apple | SwiftUI, SwiftData, AppKit, web-to-native architecture |
+| **[Production-Theorem](./production-theorem)** | Harness Ops | Deployment, monitoring, and operational management for Context Theorem |
+| **[Shipit](./shipit)** | Deployment | Handoff documents, CI/CD configuration, shipping protocols |
+
+### Two-Surface Architecture
 
 | Chat Skill (Claude.ai) | Claude Code Plugin |
 |------------------------|-------------------|
@@ -36,70 +92,7 @@ The chat skill never sees `knowledge/claims.jsonl`. The plugin never produces pl
 | Domain reasoning | Session logging and learning |
 | Static (expert knowledge) | Dynamic (knowledge that evolves) |
 
-## The Epistemic Layer
-
-Every plugin with a `knowledge/` directory runs the same protocol:
-
-**Session start:** Read `manifest.json` for current state. Load active claims sorted by confidence. Check `tensions.jsonl` for unresolved conflicts in the task's domain. Surface tensions before making decisions, not after.
-
-**During work:** Track which claims informed each suggestion. Note when the user accepts, modifies, or rejects a recommendation.
-
-**Session end:** Write observations to `session_log/`. Flag contradictions as tension signals. Note recurring patterns the knowledge base doesn't yet cover.
-
-The knowledge types are borrowed from Theseus (a separate epistemic engine project):
-
-- **Claims**: factual assertions with confidence scores and evidence links
-- **Tensions**: unresolved conflicts between claims or approaches
-- **Questions**: open research threads the plugin hasn't resolved
-- **Methods**: process knowledge (how to do X effectively)
-- **Preferences**: user-specific defaults that override generic best practices
-
-Current knowledge stats across the fleet:
-
-| Plugin | Total Claims | Active | Avg Confidence |
-|--------|-------------|--------|----------------|
-| UI-Design-Pro | 140 | 135 | 0.667 |
-| Django-Engine-Pro | 111 | 29 | 0.75 |
-
-## Available Plugins
-
-| Plugin | Domain | What It Knows |
-|--------|--------|---------------|
-| **[ML-Pro](./ml-pro)** | Machine Learning | PyTorch, GNNs, Transformers, training loops, model architecture, deployment |
-| **[SciPy-Pro](./scipy-pro)** | Epistemic Engineering | NLP pipelines, graph theory, causal inference, knowledge representation, Bayesian reasoning |
-| **[UI-Design-Pro](./ui-design-pro)** | Web UI Design | Design theory, visual judgment, shadcn/Radix internals, polymorphic rendering, accessibility |
-| **[UX-Pro](./ux-pro)** | UX Research | Interaction design, information architecture, accessibility auditing, service design |
-| **[Django-Design](./django-design)** | Full-Stack Django | HTMX, Alpine.js, Tailwind, D3 integration, Cotton components, design systems |
-| **[Django-Engine-Pro](./django-engine-pro)** | Backend Engine | ORM optimization, DRF vs. Ninja, django-polymorphic, Pydantic v2, MCP server design |
-| **[D3-Pro](./d3-pro)** | Data Visualization | D3.js scales, transitions, force layouts, geographic projections, math-heavy viz |
-| **[Three-Pro](./three-pro)** | 3D Visualization | Three.js, shaders, physics simulation, WebGL, 3D graph embeddings |
-| **[Animation-Pro](./animation-pro)** | Motion Design | Spring physics, state-driven animation, CSS/JS motion patterns, performance |
-| **[JS-Pro](./ui-lab/JS-Pro)** | JS Engineering | Advanced JavaScript/TypeScript patterns, React internals, architectural standards |
-| **[Shipit](./shipit)** | Deployment | Handoff documents, CI/CD configuration, shipping protocols |
-
-## Source-Code References
-
-Many plugins grep real library source instead of relying on training data. Each plugin's `install.sh` clones the repos it needs:
-
-**UI-Design-Pro** references: shadcn/ui, Radix Primitives, Motion, Radix Colors, Tailwind CSS, Open Props, cmdk, Vaul, Sonner, DaisyUI, Park UI (~115 MB total with `--depth=1`)
-
-**ML-Pro** references: PyTorch source, Hugging Face Transformers
-
-**D3-Pro** references: Observable's D3 modules, examples collection
-
-**Three-Pro** references: Three.js core, examples, shader chunks
-
-The pattern is always the same: shallow-clone into `refs/`, then grep when you need an answer. The `refs/` directories are gitignored. Run `./install.sh` inside any plugin to populate them.
-
-## Chat Skill Companions
-
-Standalone specifications and chat skills for Claude.ai live in the root directory:
-
-- `django-engine-pro-plugin-spec.md` (60K): Full specification for the Django backend plugin
-- `ui-design-pro-plugin-spec.md` (77K): Full specification for the UI design plugin
-- `django-engine-pro-epistemic-layer.md` (39K): Epistemic layer specification shared across plugins
-
-These specs serve as the bridge between the planning surface (chat skills) and the implementation surface (Claude Code plugins). The chat skills are installed separately via Claude.ai's custom skill system.
+Chat skill specs live in the root directory as `.md` files. The chat skills are installed separately via Claude.ai's custom skill system.
 
 ## Installation
 
@@ -121,7 +114,7 @@ cd codex-plugins
 ./sync-plugins.sh --uninstall d3-pro
 ```
 
-The sync script handles three things: symlinking plugin directories into the Claude Code marketplace path (`~/.claude/plugins/marketplaces/local-desktop-app-uploads/`), registering them in `installed_plugins.json`, and enabling them in `settings.json`. If the enablement step fails, manually add `"<plugin-name>@local-desktop-app-uploads": true` to `enabledPlugins` in `~/.claude/settings.json`.
+The sync script symlinks plugin directories into the Claude Code marketplace path, registers them in `installed_plugins.json`, and enables them in `settings.json`. If enablement fails, manually add `"<plugin-name>@local-desktop-app-uploads": true` to `enabledPlugins` in `~/.claude/settings.json`.
 
 After syncing, populate source references for any plugin you plan to use:
 
@@ -130,25 +123,34 @@ cd ui-design-pro && ./install.sh   # clones 11 repos (~115 MB)
 cd ../ml-pro && ./install.sh        # clones ML source refs
 ```
 
+### SDK Installation
+
+```bash
+# Python
+pip install theorem-context
+
+# TypeScript
+npm install theorem-context-ts
+```
+
 ## How This Compares
 
-The Claude Code plugin ecosystem is growing fast. A few projects are working in adjacent territory:
+Most AI agent tooling falls into one of two categories: horizontal measurement layers that ask "is the agent ready to act?" or role-based starter kits with skills and connectors but no learning and no memory across providers.
 
-**Empirica** (Nubaeon/empirica) is an epistemic measurement system with 13 confidence vectors, a Sentinel gate, and Brier score calibration. It's horizontal: one measurement layer across all of Claude Code, domain-agnostic. It asks "does the agent know enough to act right now?"
+Context Theorem is neither. It is a vertical stack: a harness that provides LLM-agnostic memory, token-aware context compilation, and a cryptographic audit trail, combined with domain-specialist plugins that accumulate knowledge across every session they run. The harness makes agent sessions reproducible, forkable, and verifiable. The plugins make each domain smarter over time.
 
-**epistemic-protocols** (jongwony) offers Socratic self-questioning plugins for surfacing unknowns. Lightweight, no persistence.
-
-**Anthropic's knowledge-work-plugins** provide role-based starter kits (sales, support, product management) with skills and connectors. No epistemic layer, no source-code references.
-
-This repo takes a different approach. Each plugin is a *vertical* specialist that accumulates domain-specific knowledge over time, greps real source code instead of trusting training data, and coordinates with a planning-layer chat skill through structured handoff documents. The question it asks is not "is the agent ready to act?" but "what has this specialist learned across every session it has ever run, and how confident should it be in each piece of that knowledge?"
+The question it asks is not "does the agent know enough?" but "what has this system learned, how confident is it, and can you prove what happened?"
 
 ## Structure
 
 ```
 codex-plugins/
+├── theorem-context-sdk/         # The harness: SDK clients and feature reference
+│   ├── theorem-context-py/      # Python SDK (Pydantic v2, async httpx)
+│   ├── theorem-context-ts/      # TypeScript SDK
+│   └── FEATURES.md              # Full feature reference
 ├── sync-plugins.sh              # Installs/syncs all plugins to Claude Code
 ├── django-engine-pro/           # Backend Django specialist
-│   ├── .claude-plugin/          # Plugin manifest
 │   ├── agents/                  # Specialist agent definitions
 │   ├── commands/                # Slash commands
 │   ├── knowledge/               # Epistemic layer (claims, tensions, sessions)
@@ -165,10 +167,12 @@ codex-plugins/
 ├── d3-pro/                      # D3 visualization specialist
 ├── three-pro/                   # Three.js 3D specialist
 ├── animation-pro/               # Motion design specialist
+├── next-pro/                    # Next.js specialist
 ├── ux-pro/                      # UX research specialist
 ├── django-design/               # Django frontend specialist
+├── app-forge/                   # Web-to-app conversion
+├── swift-pro/                   # Native Apple platform specialist
+├── production-theorem/          # Harness operations
 ├── shipit/                      # Deployment and handoff
-├── ui-lab/JS-Pro/               # JavaScript engineering
-├── skills/                      # Legacy skill workflows
 └── *.md                         # Plugin specs and chat skill definitions
 ```

@@ -181,6 +181,89 @@ export interface OrchestrateRequest {
   queue_operational_policy_patches?: boolean;
 }
 
+export type AgentAdapter =
+  | 'codex'
+  | 'claude_code'
+  | 'cursor'
+  | 'chatgpt'
+  | 'custom'
+  | string;
+
+export interface AgentRuntimeRequest {
+  actor?: string;
+  adapter?: AgentAdapter;
+  [key: string]: unknown;
+}
+
+export type AgentToolManifestResponse = Record<string, unknown>;
+export type AgentToolManifestRequest = Record<string, never>;
+export type AgentDomainCatalogRequest = AgentRuntimeRequest;
+export type AgentDomainCatalogResponse = Record<string, unknown>;
+export type AgentRecommendedToolPackRequest = AgentRuntimeRequest & {
+  task_signature?: string;
+};
+export type AgentRecommendedToolPackResponse = Record<string, unknown>;
+export type AgentPrepareRequest = AgentRuntimeRequest & {
+  task_signature?: string;
+};
+export type AgentPrepareResponse = Record<string, unknown>;
+export type AgentSearchContextRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  query?: string;
+};
+export type AgentSearchContextResponse = Record<string, unknown>;
+export type AgentHydrateContextRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  handles?: string[];
+  artifact_id?: string;
+  artifactId?: string;
+};
+export type AgentHydrateContextResponse = Record<string, unknown>;
+export type AgentRecordStepRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  kind?: string;
+  payload?: Record<string, unknown>;
+};
+export type AgentRecordStepResponse = Record<string, unknown>;
+export type AgentRecordOutcomeRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  accepted?: boolean;
+  tests_passed?: boolean;
+  testsPassed?: boolean;
+  summary?: string;
+};
+export type AgentRecordOutcomeResponse = Record<string, unknown>;
+export type AgentExplainContextRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  artifact_id?: string;
+};
+export type AgentExplainContextResponse = Record<string, unknown>;
+export type AgentExportArtifactRequest = AgentRuntimeRequest & {
+  artifact_id?: string;
+  artifactId?: string;
+  format?: string;
+};
+export type AgentExportArtifactResponse = Record<string, unknown>;
+export type AgentReviewMemoryRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+};
+export type AgentReviewMemoryResponse = Record<string, unknown>;
+
+export interface AgentGraphqlRequest {
+  operationName: string;
+  variables: Record<string, unknown>;
+}
+
+export interface AgentGraphqlResponse<T = Record<string, unknown>> {
+  data?: T;
+  errors?: Array<Record<string, unknown>>;
+}
+
 export interface OrchestrateRejectedCandidate {
   id: string;
   kind: string;
@@ -907,119 +990,6 @@ export interface HarnessRun {
   validations: Array<Record<string, unknown>>;
   created_at?: string | null;
   updated_at?: string | null;
-}
-
-export type WorkstreamTaskState =
-  | 'active'
-  | 'blocked'
-  | 'solved'
-  | 'validating'
-  | 'abandoned'
-  | string;
-
-export interface WorkstreamState {
-  workstream_id: string;
-  tenant_id: string;
-  repo: string;
-  branch: string;
-  title: string;
-  task_state: WorkstreamTaskState;
-  agent_hosts_seen: string[];
-  active_branch: string;
-  current_handoff_id: string;
-  last_state_hash: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface WorkstreamResolveRequest {
-  tenant_id?: string;
-  repo: string;
-  branch?: string;
-  extra_key?: string;
-  title?: string;
-}
-
-export interface WorkstreamResolveResponse extends WorkstreamState {
-  workstream: WorkstreamState;
-}
-
-export interface WorkstreamResponse extends WorkstreamState {
-  workstream: WorkstreamState;
-}
-
-export interface AgentSessionState {
-  agent_session_id: string;
-  workstream_id: string;
-  harness_run_id: string;
-  agent_host: string;
-  agent_model: string;
-  started_at: string;
-  ended_at: string;
-  outcome: Record<string, unknown>;
-}
-
-export interface StartAgentSessionRequest {
-  agent_host?: string;
-  agent_model?: string;
-  harness_run_id?: string | null;
-  task?: string;
-  scope?: Record<string, unknown> | null;
-}
-
-export interface EndAgentSessionRequest {
-  agent_session_id: string;
-  outcome?: Record<string, unknown> | null;
-}
-
-export interface AgentSessionResponse {
-  agent_session: AgentSessionState;
-  agent_session_id: string;
-  harness_run_id?: string;
-  run?: HarnessRun | Record<string, unknown> | null;
-  workstream_id?: string;
-}
-
-export interface CompileHandoffRequest {
-  previous_agent?: string;
-  next_agent_target?: string;
-  target_tokens?: number;
-  hard_cap?: number;
-}
-
-export interface HandoffArtifact {
-  handoff_id: string;
-  workstream_id: string;
-  previous_agent: string;
-  next_agent_target: string;
-  task_state: WorkstreamTaskState;
-  summary: string;
-  decisions: Array<Record<string, unknown>>;
-  assumptions: Array<Record<string, unknown>>;
-  resolved_assumptions: Array<Record<string, unknown>>;
-  files_touched: string[];
-  commands_run: Array<Record<string, unknown>>;
-  tests_run: Array<Record<string, unknown>>;
-  failures: Array<Record<string, unknown>>;
-  open_questions: string[];
-  next_actions: string[];
-  memory_atoms: Array<Record<string, unknown>>;
-  risk_flags: string[];
-  state_hash: string;
-  created_at: string;
-}
-
-export interface HandoffResponse {
-  handoff: HandoffArtifact;
-  handoff_id: string;
-  workstream_id: string;
-  state_hash: string;
-}
-
-export interface HandoffListResponse {
-  workstream_id: string;
-  handoffs: HandoffArtifact[];
-  count: number;
 }
 
 export interface HarnessEvent {
