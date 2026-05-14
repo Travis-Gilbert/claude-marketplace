@@ -19,12 +19,16 @@ from .types import (
     ActionRailGenerateRequest,
     ActionRailPreviewRequest,
     ActionSelectedRequest,
+    AgentCatalogRequest,
+    AgentGraphQLRequest,
+    AgentSessionResponse,
     ArtifactExport,
     ArtifactAttachResponse,
     ArtifactForkResponse,
     ArtifactMarkdownExport,
     ArtifactPdfExport,
     ArtifactSignedExport,
+    CompileHandoffRequest,
     CompileRequest,
     ContextCommandRequest,
     ContextArtifact,
@@ -38,6 +42,8 @@ from .types import (
     ExpressionRenderResult,
     GraphFocusResponse,
     GraphPatchesListResponse,
+    HandoffListResponse,
+    HandoffResponse,
     HarnessBeginRequest,
     HarnessCompareRequest,
     HarnessContextRequest,
@@ -94,9 +100,14 @@ from .types import (
     SavedContextUpdateRequest,
     SolverContextCapsuleRequest,
     SolverResult,
+    StartAgentSessionRequest,
+    EndAgentSessionRequest,
     THGCommandRequest,
     THGCypherRequest,
     THGResult,
+    WorkstreamResolveRequest,
+    WorkstreamResolveResponse,
+    WorkstreamResponse,
 )
 
 DEFAULT_BASE_URL = 'https://index-api-production-a5f7.up.railway.app/api/v2/theseus'
@@ -580,6 +591,202 @@ class _InferenceNamespace:
         return await self._client._inference_registry()
 
 
+class _AgentNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def tool_manifest(self) -> dict[str, Any]:
+        return await self._client._agent_tool_manifest()
+
+    async def domain_catalog(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_domain_catalog(request)
+
+    async def recommended_toolpack(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_recommended_toolpack(request)
+
+    async def prepare(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_prepare(request)
+
+    async def prepare_agent(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        return await self.prepare(actor=actor, adapter=adapter, **payload)
+
+    async def explain_context(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_explain_context(request)
+
+    async def search_context(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_search_context(request)
+
+    async def hydrate_context(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_hydrate_context(request)
+
+    async def record_step(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_record_step(request)
+
+    async def record_outcome(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_record_outcome(request)
+
+    async def export_artifact(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_export_artifact(request)
+
+    async def review_memory(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_review_memory(request)
+
+    async def harness_run_console(
+        self,
+        run_id: str,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+    ) -> dict[str, Any]:
+        return await self._client._agent_graphql_run(
+            operation_name='harnessRunConsole',
+            run_id=run_id,
+            actor=actor,
+            adapter=adapter,
+        )
+
+    async def memory_recall_preview(
+        self,
+        run_id: str,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+    ) -> dict[str, Any]:
+        return await self._client._agent_graphql_run(
+            operation_name='memoryRecallPreview',
+            run_id=run_id,
+            actor=actor,
+            adapter=adapter,
+        )
+
+    async def action_rail(
+        self,
+        run_id: str,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+    ) -> dict[str, Any]:
+        return await self._client._agent_graphql_run(
+            operation_name='actionRail',
+            run_id=run_id,
+            actor=actor,
+            adapter=adapter,
+        )
+
+
 class _THGProfilesNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
@@ -668,6 +875,84 @@ class _THGNamespace:
             params=params or {},
         )
         return await self._client._thg_cypher(request)
+
+
+class _WorkstreamHandoffNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def current(
+        self,
+        workstream_id: str,
+        **kwargs: Any,
+    ) -> HandoffResponse:
+        request = CompileHandoffRequest(**kwargs)
+        return await self._client._workstream_handoff_current(
+            workstream_id,
+            request,
+        )
+
+    async def list(
+        self,
+        workstream_id: str,
+        *,
+        limit: int | None = None,
+    ) -> HandoffListResponse:
+        return await self._client._workstream_handoffs_list(
+            workstream_id,
+            limit=limit,
+        )
+
+
+class _WorkstreamNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.handoff = _WorkstreamHandoffNamespace(client)
+
+    async def resolve(self, **kwargs: Any) -> WorkstreamResolveResponse:
+        request = WorkstreamResolveRequest(**kwargs)
+        return await self._client._workstream_resolve(request)
+
+    async def get(self, workstream_id: str) -> WorkstreamResponse:
+        return await self._client._workstream_get(workstream_id)
+
+    async def start_session(
+        self,
+        workstream_id: str,
+        **kwargs: Any,
+    ) -> AgentSessionResponse:
+        request = StartAgentSessionRequest(**kwargs)
+        return await self._client._workstream_session_start(
+            workstream_id,
+            request,
+        )
+
+    async def end_session(
+        self,
+        workstream_id: str,
+        **kwargs: Any,
+    ) -> AgentSessionResponse:
+        request = EndAgentSessionRequest(**kwargs)
+        return await self._client._workstream_session_end(
+            workstream_id,
+            request,
+        )
+
+    async def handoffs(
+        self,
+        workstream_id: str,
+        *,
+        limit: int | None = None,
+    ) -> HandoffListResponse:
+        return await self.handoff.list(workstream_id, limit=limit)
+
+
+class _HandoffNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def get(self, handoff_id: str) -> HandoffResponse:
+        return await self._client._handoff_get(handoff_id)
 
 
 class _HarnessNamespace:
@@ -872,6 +1157,9 @@ class TheoremContextClient:
         self.learning = _LearningNamespace(self)
         self.product = _ProductNamespace(self)
         self.inference = _InferenceNamespace(self)
+        self.agent = _AgentNamespace(self)
+        self.workstream = _WorkstreamNamespace(self)
+        self.handoff = _HandoffNamespace(self)
         self.harness = _HarnessNamespace(self)
         self.runs = self.harness
         self.thg = _THGNamespace(self)
@@ -901,12 +1189,31 @@ class TheoremContextClient:
                 'context_spend_plan': 'live',
                 'structural_signals': 'live',
             },
+            'agent': {
+                'tool_manifest': 'live',
+                'domain_catalog': 'live',
+                'recommended_toolpack': 'live',
+                'prepare': 'live',
+                'search_context': 'live',
+                'hydrate_context': 'live',
+                'record_step': 'live',
+                'record_outcome': 'live',
+                'explain_context': 'live',
+                'export_artifact': 'live',
+                'review_memory': 'live',
+                'graphql': 'live',
+            },
             'orchestrate': {
                 'run': 'live',
                 'preview': 'live',
                 'prepare': 'live',
                 'authority': 'server',
                 'decision_runtime': 'live',
+            },
+            'workstream': {
+                'resolve': 'live',
+                'session': 'live',
+                'handoff': 'live',
             },
             'thg': {
                 'profiles': 'live',
@@ -988,6 +1295,102 @@ class TheoremContextClient:
             kind='harness',
         )
         return OrchestratePrepareResult.model_validate(response.json())
+
+    async def _workstream_resolve(
+        self,
+        request: WorkstreamResolveRequest,
+    ) -> WorkstreamResolveResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/resolve/',
+            surface='workstream resolve',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return WorkstreamResolveResponse.model_validate(response.json())
+
+    async def _workstream_get(self, workstream_id: str) -> WorkstreamResponse:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/workstream/{workstream_id}/',
+            surface='workstream get',
+            headers=self._headers(),
+            kind='harness',
+        )
+        return WorkstreamResponse.model_validate(response.json())
+
+    async def _workstream_session_start(
+        self,
+        workstream_id: str,
+        request: StartAgentSessionRequest,
+    ) -> AgentSessionResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/{workstream_id}/session/start/',
+            surface='workstream session start',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return AgentSessionResponse.model_validate(response.json())
+
+    async def _workstream_session_end(
+        self,
+        workstream_id: str,
+        request: EndAgentSessionRequest,
+    ) -> AgentSessionResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/{workstream_id}/session/end/',
+            surface='workstream session end',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return AgentSessionResponse.model_validate(response.json())
+
+    async def _workstream_handoff_current(
+        self,
+        workstream_id: str,
+        request: CompileHandoffRequest,
+    ) -> HandoffResponse:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/{workstream_id}/handoff/current/',
+            surface='workstream handoff current',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+            kind='harness',
+        )
+        return HandoffResponse.model_validate(response.json())
+
+    async def _workstream_handoffs_list(
+        self,
+        workstream_id: str,
+        *,
+        limit: int | None = None,
+    ) -> HandoffListResponse:
+        params = {'limit': str(limit)} if limit is not None else None
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/workstream/{workstream_id}/handoffs/',
+            surface='workstream handoffs list',
+            headers=self._headers(),
+            params=params,
+            kind='harness',
+        )
+        return HandoffListResponse.model_validate(response.json())
+
+    async def _handoff_get(self, handoff_id: str) -> HandoffResponse:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/handoff/{handoff_id}/',
+            surface='handoff get',
+            headers=self._headers(),
+            kind='harness',
+        )
+        return HandoffResponse.model_validate(response.json())
 
     async def _product_bootstrap(self) -> ProductBootstrapResponse:
         response = await self._request(
@@ -1716,6 +2119,141 @@ class TheoremContextClient:
             content=request.model_dump_json(exclude_none=True),
         )
         return KernelRun.model_validate(response.json())
+
+    async def _agent_tool_manifest(self) -> dict[str, Any]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/agent/tool-manifest/',
+            surface='agent tool manifest',
+            headers=self._headers(),
+        )
+        return response.json()
+
+    async def _agent_domain_catalog(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/domain-catalog/',
+            surface='agent domain catalog',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_recommended_toolpack(
+        self,
+        request: AgentCatalogRequest,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/recommended-toolpack/',
+            surface='agent recommended toolpack',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_prepare(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/prepare/',
+            surface='agent prepare',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_explain_context(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/explain-context/',
+            surface='agent explain context',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_search_context(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/search-context/',
+            surface='agent search context',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_hydrate_context(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/hydrate-context/',
+            surface='agent hydrate context',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_record_step(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/record-step/',
+            surface='agent record step',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_record_outcome(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/record-outcome/',
+            surface='agent record outcome',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_export_artifact(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/export-artifact/',
+            surface='agent export artifact',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_review_memory(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/review-memory/',
+            surface='agent review memory',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_graphql_run(
+        self,
+        *,
+        operation_name: str,
+        run_id: str,
+        actor: str,
+        adapter: str,
+    ) -> dict[str, Any]:
+        _ = actor
+        _ = adapter
+        request = AgentGraphQLRequest(
+            operationName=operation_name,
+            variables={'runId': run_id},
+        )
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/graphql/',
+            surface=f'agent {operation_name}',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
 
     async def _context_command_resolve(
         self,

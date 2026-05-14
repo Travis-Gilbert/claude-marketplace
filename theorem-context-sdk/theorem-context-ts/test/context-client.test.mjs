@@ -321,6 +321,149 @@ test('context graph namespace maps focus and patches to live routes', async () =
   assert.equal(patches.patches[0].operation, 'object_upsert');
 });
 
+test('workstream and handoff namespaces map to CMH routes', async () => {
+  const requests = [];
+  const handoff = {
+    handoff_id: 'handoff:1',
+    workstream_id: 'workstream:1',
+    previous_agent: 'codex',
+    next_agent_target: 'claude_code',
+    task_state: 'active',
+    summary: 'Continue the CMH slice.',
+    decisions: [],
+    assumptions: [],
+    resolved_assumptions: [],
+    files_touched: [],
+    commands_run: [],
+    tests_run: [],
+    failures: [],
+    open_questions: [],
+    next_actions: ['Run tests'],
+    memory_atoms: [],
+    risk_flags: [],
+    state_hash: 'sha256:abc',
+    created_at: '2026-05-12T00:00:00Z',
+  };
+  const workstream = {
+    workstream_id: 'workstream:1',
+    tenant_id: 'tenant-x',
+    repo: 'Index-API',
+    branch: 'main',
+    title: 'CMH',
+    task_state: 'active',
+    agent_hosts_seen: ['codex'],
+    active_branch: '',
+    current_handoff_id: 'handoff:1',
+    last_state_hash: 'sha256:abc',
+    created_at: '2026-05-12T00:00:00Z',
+    updated_at: '2026-05-12T00:00:00Z',
+  };
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const path = String(url);
+      if (path.endsWith('/workstream/resolve/')) {
+        return jsonResponse({ ...workstream, workstream });
+      }
+      if (path.endsWith('/session/start/')) {
+        return jsonResponse({
+          agent_session_id: 'agentsess:1',
+          harness_run_id: 'run:1',
+          run: null,
+          agent_session: {
+            agent_session_id: 'agentsess:1',
+            workstream_id: 'workstream:1',
+            harness_run_id: 'run:1',
+            agent_host: 'codex',
+            agent_model: 'gpt-5.5',
+            started_at: '2026-05-12T00:00:00Z',
+            ended_at: '',
+            outcome: {},
+          },
+        });
+      }
+      if (path.endsWith('/session/end/')) {
+        return jsonResponse({
+          agent_session_id: 'agentsess:1',
+          workstream_id: 'workstream:1',
+          agent_session: {
+            agent_session_id: 'agentsess:1',
+            workstream_id: 'workstream:1',
+            harness_run_id: 'run:1',
+            agent_host: 'codex',
+            agent_model: 'gpt-5.5',
+            started_at: '2026-05-12T00:00:00Z',
+            ended_at: '2026-05-12T00:01:00Z',
+            outcome: { status: 'ready_for_handoff' },
+          },
+        });
+      }
+      if (path.endsWith('/handoff/current/')) {
+        return jsonResponse({
+          handoff,
+          handoff_id: handoff.handoff_id,
+          workstream_id: handoff.workstream_id,
+          state_hash: handoff.state_hash,
+        });
+      }
+      if (path.includes('/workstream/workstream%3A1/handoffs/')) {
+        return jsonResponse({
+          workstream_id: 'workstream:1',
+          handoffs: [handoff],
+          count: 1,
+        });
+      }
+      if (path.includes('/handoff/handoff%3A1/')) {
+        return jsonResponse({
+          handoff,
+          handoff_id: handoff.handoff_id,
+          workstream_id: handoff.workstream_id,
+          state_hash: handoff.state_hash,
+        });
+      }
+      return jsonResponse({ ...workstream, workstream });
+    },
+  });
+
+  const resolved = await client.workstream.resolve({
+    tenant_id: 'tenant-x',
+    repo: 'Index-API',
+    branch: 'main',
+  });
+  const detail = await client.workstream.get('workstream:1');
+  const started = await client.workstream.startSession('workstream:1', {
+    agent_host: 'codex',
+    agent_model: 'gpt-5.5',
+  });
+  const ended = await client.workstream.endSession('workstream:1', {
+    agent_session_id: 'agentsess:1',
+    outcome: { status: 'ready_for_handoff' },
+  });
+  const current = await client.workstream.handoff.current('workstream:1', {
+    next_agent_target: 'claude_code',
+  });
+  const list = await client.workstream.handoffs('workstream:1', { limit: 5 });
+  const fetched = await client.handoff.get('handoff:1');
+
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/workstream/resolve/',
+  );
+  assert.equal(JSON.parse(requests[0].init.body).repo, 'Index-API');
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/workstream/workstream%3A1/',
+  );
+  assert.equal(resolved.workstream_id, 'workstream:1');
+  assert.equal(detail.workstream.current_handoff_id, 'handoff:1');
+  assert.equal(started.agent_session.agent_host, 'codex');
+  assert.equal(ended.agent_session.outcome.status, 'ready_for_handoff');
+  assert.equal(current.handoff.next_agent_target, 'claude_code');
+  assert.equal(list.handoffs[0].handoff_id, 'handoff:1');
+  assert.equal(fetched.handoff.summary, 'Continue the CMH slice.');
+});
+
 test('inference namespace maps BGI backend routes', async () => {
   const requests = [];
   const client = new TheoremContextClient({

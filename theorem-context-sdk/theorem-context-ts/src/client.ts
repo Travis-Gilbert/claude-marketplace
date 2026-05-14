@@ -23,10 +23,12 @@ import type {
   ActionRailPreview,
   ActionRailPreviewRequest,
   ActionSelectedRequest,
+  AgentSessionResponse,
   ArtifactExport,
   ArtifactExportFormat,
   ArtifactAttachResponse,
   ArtifactForkResponse,
+  CompileHandoffRequest,
   CompileEvent,
   CompileRequest,
   ContextArtifact,
@@ -48,6 +50,8 @@ import type {
   ContextWebSpendPlanResponse,
   GraphFocusResponse,
   GraphPatchesListResponse,
+  HandoffListResponse,
+  HandoffResponse,
   InferenceRegistryReport,
   KernelReceiptRequest,
   KernelRun,
@@ -102,9 +106,14 @@ import type {
   SavedContextUpdateRequest,
   SolverContextCapsuleRequest,
   SolverResult,
+  StartAgentSessionRequest,
+  EndAgentSessionRequest,
   THGCommandRequest,
   THGCypherRequest,
   THGResult,
+  WorkstreamResolveRequest,
+  WorkstreamResolveResponse,
+  WorkstreamResponse,
 } from './types.js';
 import {
   AuthError,
@@ -177,6 +186,11 @@ export class TheoremContextClient {
       prepare: 'live',
       authority: 'server',
       decision_runtime: 'live',
+    },
+    workstream: {
+      resolve: 'live',
+      session: 'live',
+      handoff: 'live',
     },
     thg: {
       profiles: 'live',
@@ -359,6 +373,22 @@ export class TheoremContextClient {
     },
   };
 
+  readonly workstream = {
+    resolve: this.resolveWorkstream.bind(this),
+    get: this.getWorkstream.bind(this),
+    startSession: this.startWorkstreamSession.bind(this),
+    endSession: this.endWorkstreamSession.bind(this),
+    handoff: {
+      current: this.currentWorkstreamHandoff.bind(this),
+      list: this.listWorkstreamHandoffs.bind(this),
+    },
+    handoffs: this.listWorkstreamHandoffs.bind(this),
+  };
+
+  readonly handoff = {
+    get: this.getHandoff.bind(this),
+  };
+
   readonly runs = this.harness;
 
   readonly thg = {
@@ -538,6 +568,120 @@ export class TheoremContextClient {
       'orchestrate prepare',
     );
     return (await response.json()) as OrchestratePrepareResult;
+  }
+
+  async resolveWorkstream(
+    payload: WorkstreamResolveRequest,
+  ): Promise<WorkstreamResolveResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/resolve/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'workstream resolve',
+      'harness',
+    );
+    return (await response.json()) as WorkstreamResolveResponse;
+  }
+
+  async getWorkstream(workstreamId: string): Promise<WorkstreamResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'workstream get',
+      'harness',
+    );
+    return (await response.json()) as WorkstreamResponse;
+  }
+
+  async startWorkstreamSession(
+    workstreamId: string,
+    payload: StartAgentSessionRequest = {},
+  ): Promise<AgentSessionResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/session/start/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'workstream session start',
+      'harness',
+    );
+    return (await response.json()) as AgentSessionResponse;
+  }
+
+  async endWorkstreamSession(
+    workstreamId: string,
+    payload: EndAgentSessionRequest,
+  ): Promise<AgentSessionResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/session/end/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'workstream session end',
+      'harness',
+    );
+    return (await response.json()) as AgentSessionResponse;
+  }
+
+  async currentWorkstreamHandoff(
+    workstreamId: string,
+    payload: CompileHandoffRequest = {},
+  ): Promise<HandoffResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/handoff/current/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'workstream handoff current',
+      'harness',
+    );
+    return (await response.json()) as HandoffResponse;
+  }
+
+  async listWorkstreamHandoffs(
+    workstreamId: string,
+    options: { limit?: number } = {},
+  ): Promise<HandoffListResponse> {
+    const query = new URLSearchParams();
+    if (typeof options.limit === 'number') {
+      query.set('limit', String(options.limit));
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${encodeURIComponent(workstreamId)}/handoffs/${suffix}`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'workstream handoffs list',
+      'harness',
+    );
+    return (await response.json()) as HandoffListResponse;
+  }
+
+  async getHandoff(handoffId: string): Promise<HandoffResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/handoff/${encodeURIComponent(handoffId)}/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'handoff get',
+      'harness',
+    );
+    return (await response.json()) as HandoffResponse;
   }
 
   async getProductBootstrap(): Promise<ProductBootstrapResponse> {

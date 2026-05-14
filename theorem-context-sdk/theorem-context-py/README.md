@@ -2,6 +2,56 @@
 
 Python SDK for Context Theorem.
 
+## OpenAPI
+
+These package clients target the product-facing Context Theorem v2 API. For
+manual HTTP work or generated tooling, use the v2 Django Ninja schema rather
+than the legacy DRF compatibility schema.
+
+| Purpose | URL |
+| --- | --- |
+| SDK `base_url` | `https://<host>/api/v2/theseus` |
+| SDK `plugins_base_url` | `https://<host>/api/v2/plugins` |
+| v2 OpenAPI JSON | `https://<host>/api/v2/openapi.json` |
+| v2 interactive docs | `https://<host>/api/v2/docs` |
+| legacy DRF schema | `https://<host>/api/schema/` |
+| legacy Swagger / ReDoc | `https://<host>/api/schema/swagger/`, `https://<host>/api/schema/redoc/` |
+
+`TheoremContextClient` expects its `base_url` to include `/api/v2/theseus`,
+while the OpenAPI document lives one level higher at `/api/v2/openapi.json`.
+`plugins_base_url` is derived automatically from `base_url` unless you
+override it explicitly.
+
+### Namespace to path mapping
+
+| SDK surface | HTTP path family |
+| --- | --- |
+| `cc.context.*` | `/api/v2/theseus/context/*` |
+| `cc.context_command.*` | `/api/v2/theseus/context-command/*` |
+| `cc.actions.*` | `/api/v2/theseus/action-rail/*` |
+| `cc.harness.*` | `/api/v2/theseus/harness/*` |
+| `cc.orchestrate()`, `cc.orchestrate_preview()`, `cc.orchestrate_prepare()` | `/api/v2/theseus/orchestrate/*` |
+| `cc.inference.*` | `/api/v2/theseus/inference/*` |
+| `cc.learning.*` | `/api/v2/plugins/learning/*` |
+| `cc.product.*` | `/api/v2/theseus/product/*` |
+| `cc.thg.*` | `/api/v2/theseus/harness/thg/*` |
+
+### Pull the live spec
+
+```bash
+curl \
+  -H "Authorization: Bearer $THEOREM_CONTEXT_API_KEY" \
+  "$THEOREM_CONTEXT_SERVER/api/v2/openapi.json"
+```
+
+Set `THEOREM_CONTEXT_SERVER` to the host root, for example
+`https://index-api-production-a5f7.up.railway.app`, not the SDK `base_url`.
+
+The SDK is a hand-written typed wrapper over that OpenAPI surface, so method
+names are curated for ergonomics rather than mirroring raw operation ids.
+When you drop to direct HTTP, keep the v2 trailing-slash convention from the
+spec.
+
 ```bash
 pip install Context-Theorem
 ```
@@ -198,6 +248,43 @@ compiles the visible toolkit, records an Orchestrate decision into the harness
 run, resolves a Context Command, compiles and attaches a Context Artifact, and
 generates an Action Rail. It still does not promote memory patches or claim
 canonical graph writes.
+
+## Workstreams And Handoffs
+
+```python
+workstream = await cc.workstream.resolve(
+    tenant_id='tenant-a',
+    repo='Travis-Gilbert/Index-API',
+    branch='main',
+)
+
+session = await cc.workstream.start_session(
+    workstream.workstream_id,
+    agent_host='codex',
+    agent_model='gpt-5.5',
+    task='Finish the SDK parity slice',
+)
+
+current = await cc.workstream.handoff.current(
+    workstream.workstream_id,
+    next_agent_target='claude_code',
+)
+
+await cc.workstream.end_session(
+    workstream.workstream_id,
+    agent_session_id=session.agent_session_id,
+    outcome={'status': 'ready_for_handoff'},
+)
+
+history = await cc.workstream.handoffs(workstream.workstream_id)
+fetched = await cc.handoff.get(current.handoff_id)
+```
+
+These methods call the public Continuous Agent Memory Harness routes under
+`/api/v2/theseus/workstream/...` and `/api/v2/theseus/handoff/...`.
+Workstream, AgentSession, and HandoffArtifact are Memgraph-canonical graph
+primitives; the SDK only transports typed contracts and does not promote memory
+atoms by itself.
 
 ## Codex Bundle
 

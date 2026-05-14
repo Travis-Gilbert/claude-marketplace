@@ -334,6 +334,317 @@ def test_context_graph_namespace_maps_focus_and_patches_routes() -> None:
     asyncio.run(run())
 
 
+def test_agent_namespace_maps_runtime_and_graphql_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path.endswith('/agent/tool-manifest/'):
+            return httpx.Response(200, json={'tools': ['context_web.pack']})
+        if path.endswith('/agent/domain-catalog/'):
+            payload = json.loads(request.content)
+            return httpx.Response(
+                200,
+                json={
+                    'actor': payload.get('actor'),
+                    'adapter': payload.get('adapter'),
+                    'domains': ['repo', 'web'],
+                },
+            )
+        if path.endswith('/agent/recommended-toolpack/'):
+            return httpx.Response(
+                200,
+                json={'pack': {'id': 'toolpack-1', 'task_signature': 'sig-1'}},
+            )
+        if path.endswith('/agent/prepare/'):
+            return httpx.Response(
+                200,
+                json={'agent': {'id': 'agent-1', 'prepared': True}},
+            )
+        if path.endswith('/agent/search-context/'):
+            return httpx.Response(200, json={'search': {'run_id': 'run-search'}})
+        if path.endswith('/agent/hydrate-context/'):
+            return httpx.Response(200, json={'hydrated': {'count': 1}})
+        if path.endswith('/agent/record-step/'):
+            return httpx.Response(200, json={'step': {'kind': 'tool_call'}})
+        if path.endswith('/agent/record-outcome/'):
+            return httpx.Response(200, json={'outcome': {'accepted': True}})
+        if path.endswith('/agent/explain-context/'):
+            return httpx.Response(
+                200,
+                json={'explanation': {'summary': 'context explained'}},
+            )
+        if path.endswith('/agent/export-artifact/'):
+            return httpx.Response(
+                200,
+                json={'format': 'signed', 'artifact_id': 'artifact-1'},
+            )
+        if path.endswith('/agent/review-memory/'):
+            return httpx.Response(200, json={'memory_patches': []})
+        payload = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                'data': {
+                    payload['operationName']: {
+                        'run_id': payload['variables']['runId'],
+                        'ok': True,
+                    },
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            manifest = await client.agent.tool_manifest()
+            domain_catalog = await client.agent.domain_catalog(
+                actor='codex',
+                adapter='chatgpt',
+            )
+            recommended = await client.agent.recommended_toolpack(
+                actor='codex',
+                adapter='custom',
+                task_signature='sig-1',
+            )
+            prepared = await client.agent.prepare_agent(
+                actor='codex',
+                adapter='claude_code',
+                task_signature='sig-prepare-1',
+            )
+            search = await client.agent.search_context(
+                run_id='run-search',
+                query='find context',
+            )
+            hydrated = await client.agent.hydrate_context(
+                run_id='run-search',
+                handles=['artifact:1'],
+            )
+            step = await client.agent.record_step(
+                run_id='run-search',
+                kind='tool_call',
+                payload={'tool': 'Bash'},
+            )
+            outcome = await client.agent.record_outcome(
+                run_id='run-search',
+                accepted=True,
+                tests_passed=True,
+                summary='validated',
+            )
+            explained = await client.agent.explain_context(
+                actor='codex',
+                adapter='codex',
+                artifact_id='art-1',
+            )
+            exported = await client.agent.export_artifact(
+                artifact_id='artifact-1',
+                format='signed',
+            )
+            reviewed = await client.agent.review_memory(run_id='run-search')
+            run_console = await client.agent.harness_run_console('run-1')
+            recall = await client.agent.memory_recall_preview('run-2')
+            action_rail = await client.agent.action_rail('run-3')
+        finally:
+            await client.aclose()
+
+        assert manifest['tools'] == ['context_web.pack']
+        assert domain_catalog['actor'] == 'codex'
+        assert domain_catalog['adapter'] == 'chatgpt'
+        assert recommended['pack']['id'] == 'toolpack-1'
+        assert prepared['agent']['id'] == 'agent-1'
+        assert search['search']['run_id'] == 'run-search'
+        assert hydrated['hydrated']['count'] == 1
+        assert step['step']['kind'] == 'tool_call'
+        assert outcome['outcome']['accepted'] is True
+        assert explained['explanation']['summary'] == 'context explained'
+        assert exported['artifact_id'] == 'artifact-1'
+        assert reviewed['memory_patches'] == []
+        assert run_console['data']['harnessRunConsole']['run_id'] == 'run-1'
+        assert recall['data']['memoryRecallPreview']['run_id'] == 'run-2'
+        assert action_rail['data']['actionRail']['run_id'] == 'run-3'
+
+        assert requests[0].url.path == '/api/v2/theseus/agent/tool-manifest/'
+        assert requests[1].url.path == '/api/v2/theseus/agent/domain-catalog/'
+        assert json.loads(requests[1].content) == {
+            'actor': 'codex',
+            'adapter': 'chatgpt',
+        }
+        assert requests[2].url.path == '/api/v2/theseus/agent/recommended-toolpack/'
+        assert requests[3].url.path == '/api/v2/theseus/agent/prepare/'
+        assert requests[4].url.path == '/api/v2/theseus/agent/search-context/'
+        assert requests[5].url.path == '/api/v2/theseus/agent/hydrate-context/'
+        assert requests[6].url.path == '/api/v2/theseus/agent/record-step/'
+        assert requests[7].url.path == '/api/v2/theseus/agent/record-outcome/'
+        assert requests[8].url.path == '/api/v2/theseus/agent/explain-context/'
+        assert requests[9].url.path == '/api/v2/theseus/agent/export-artifact/'
+        assert requests[10].url.path == '/api/v2/theseus/agent/review-memory/'
+        assert requests[11].url.path == '/api/v2/theseus/graphql/'
+        assert requests[12].url.path == '/api/v2/theseus/graphql/'
+        assert requests[13].url.path == '/api/v2/theseus/graphql/'
+
+    asyncio.run(run())
+
+
+def test_workstream_and_handoff_namespaces_map_to_cmh_routes() -> None:
+    requests: list[httpx.Request] = []
+    handoff = {
+        'handoff_id': 'handoff:1',
+        'workstream_id': 'workstream:1',
+        'previous_agent': 'codex',
+        'next_agent_target': 'claude_code',
+        'task_state': 'active',
+        'summary': 'Continue the CMH slice.',
+        'decisions': [],
+        'assumptions': [],
+        'resolved_assumptions': [],
+        'files_touched': [],
+        'commands_run': [],
+        'tests_run': [],
+        'failures': [],
+        'open_questions': [],
+        'next_actions': ['Run tests'],
+        'memory_atoms': [],
+        'risk_flags': [],
+        'state_hash': 'sha256:abc',
+        'created_at': '2026-05-12T00:00:00Z',
+    }
+    workstream = {
+        'workstream_id': 'workstream:1',
+        'tenant_id': 'tenant-x',
+        'repo': 'Index-API',
+        'branch': 'main',
+        'title': 'CMH',
+        'task_state': 'active',
+        'agent_hosts_seen': ['codex'],
+        'active_branch': '',
+        'current_handoff_id': 'handoff:1',
+        'last_state_hash': 'sha256:abc',
+        'created_at': '2026-05-12T00:00:00Z',
+        'updated_at': '2026-05-12T00:00:00Z',
+    }
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path.endswith('/workstream/resolve/'):
+            return httpx.Response(200, json={**workstream, 'workstream': workstream})
+        if path.endswith('/session/start/'):
+            return httpx.Response(
+                200,
+                json={
+                    'agent_session_id': 'agentsess:1',
+                    'harness_run_id': 'run:1',
+                    'run': None,
+                    'agent_session': {
+                        'agent_session_id': 'agentsess:1',
+                        'workstream_id': 'workstream:1',
+                        'harness_run_id': 'run:1',
+                        'agent_host': 'codex',
+                        'agent_model': 'gpt-5.5',
+                        'started_at': '2026-05-12T00:00:00Z',
+                        'ended_at': '',
+                        'outcome': {},
+                    },
+                },
+            )
+        if path.endswith('/session/end/'):
+            return httpx.Response(
+                200,
+                json={
+                    'agent_session_id': 'agentsess:1',
+                    'workstream_id': 'workstream:1',
+                    'agent_session': {
+                        'agent_session_id': 'agentsess:1',
+                        'workstream_id': 'workstream:1',
+                        'harness_run_id': 'run:1',
+                        'agent_host': 'codex',
+                        'agent_model': 'gpt-5.5',
+                        'started_at': '2026-05-12T00:00:00Z',
+                        'ended_at': '2026-05-12T00:01:00Z',
+                        'outcome': {'status': 'ready_for_handoff'},
+                    },
+                },
+            )
+        if path.endswith('/handoff/current/'):
+            return httpx.Response(
+                200,
+                json={
+                    'handoff': handoff,
+                    'handoff_id': handoff['handoff_id'],
+                    'workstream_id': handoff['workstream_id'],
+                    'state_hash': handoff['state_hash'],
+                },
+            )
+        if path.endswith('/workstream/workstream:1/handoffs/'):
+            return httpx.Response(
+                200,
+                json={
+                    'workstream_id': 'workstream:1',
+                    'handoffs': [handoff],
+                    'count': 1,
+                },
+            )
+        if path.endswith('/handoff/handoff:1/'):
+            return httpx.Response(
+                200,
+                json={
+                    'handoff': handoff,
+                    'handoff_id': handoff['handoff_id'],
+                    'workstream_id': handoff['workstream_id'],
+                    'state_hash': handoff['state_hash'],
+                },
+            )
+        return httpx.Response(200, json={**workstream, 'workstream': workstream})
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            resolved = await client.workstream.resolve(
+                tenant_id='tenant-x',
+                repo='Index-API',
+                branch='main',
+            )
+            detail = await client.workstream.get('workstream:1')
+            started = await client.workstream.start_session(
+                'workstream:1',
+                agent_host='codex',
+                agent_model='gpt-5.5',
+            )
+            ended = await client.workstream.end_session(
+                'workstream:1',
+                agent_session_id='agentsess:1',
+                outcome={'status': 'ready_for_handoff'},
+            )
+            current = await client.workstream.handoff.current(
+                'workstream:1',
+                next_agent_target='claude_code',
+            )
+            listing = await client.workstream.handoffs('workstream:1', limit=5)
+            fetched = await client.handoff.get('handoff:1')
+        finally:
+            await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/workstream/resolve/'
+        assert json.loads(requests[0].content)['repo'] == 'Index-API'
+        assert requests[1].url.path == '/api/v2/theseus/workstream/workstream:1/'
+        assert resolved.workstream_id == 'workstream:1'
+        assert detail.workstream.current_handoff_id == 'handoff:1'
+        assert started.agent_session.agent_host == 'codex'
+        assert ended.agent_session.outcome['status'] == 'ready_for_handoff'
+        assert current.handoff.next_agent_target == 'claude_code'
+        assert listing.handoffs[0].handoff_id == 'handoff:1'
+        assert fetched.handoff.summary == 'Continue the CMH slice.'
+
+    asyncio.run(run())
+
+
 def test_inference_namespace_maps_bgi_backend_routes() -> None:
     requests: list[httpx.Request] = []
 

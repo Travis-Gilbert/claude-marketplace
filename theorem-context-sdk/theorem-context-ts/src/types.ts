@@ -909,6 +909,119 @@ export interface HarnessRun {
   updated_at?: string | null;
 }
 
+export type WorkstreamTaskState =
+  | 'active'
+  | 'blocked'
+  | 'solved'
+  | 'validating'
+  | 'abandoned'
+  | string;
+
+export interface WorkstreamState {
+  workstream_id: string;
+  tenant_id: string;
+  repo: string;
+  branch: string;
+  title: string;
+  task_state: WorkstreamTaskState;
+  agent_hosts_seen: string[];
+  active_branch: string;
+  current_handoff_id: string;
+  last_state_hash: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkstreamResolveRequest {
+  tenant_id?: string;
+  repo: string;
+  branch?: string;
+  extra_key?: string;
+  title?: string;
+}
+
+export interface WorkstreamResolveResponse extends WorkstreamState {
+  workstream: WorkstreamState;
+}
+
+export interface WorkstreamResponse extends WorkstreamState {
+  workstream: WorkstreamState;
+}
+
+export interface AgentSessionState {
+  agent_session_id: string;
+  workstream_id: string;
+  harness_run_id: string;
+  agent_host: string;
+  agent_model: string;
+  started_at: string;
+  ended_at: string;
+  outcome: Record<string, unknown>;
+}
+
+export interface StartAgentSessionRequest {
+  agent_host?: string;
+  agent_model?: string;
+  harness_run_id?: string | null;
+  task?: string;
+  scope?: Record<string, unknown> | null;
+}
+
+export interface EndAgentSessionRequest {
+  agent_session_id: string;
+  outcome?: Record<string, unknown> | null;
+}
+
+export interface AgentSessionResponse {
+  agent_session: AgentSessionState;
+  agent_session_id: string;
+  harness_run_id?: string;
+  run?: HarnessRun | Record<string, unknown> | null;
+  workstream_id?: string;
+}
+
+export interface CompileHandoffRequest {
+  previous_agent?: string;
+  next_agent_target?: string;
+  target_tokens?: number;
+  hard_cap?: number;
+}
+
+export interface HandoffArtifact {
+  handoff_id: string;
+  workstream_id: string;
+  previous_agent: string;
+  next_agent_target: string;
+  task_state: WorkstreamTaskState;
+  summary: string;
+  decisions: Array<Record<string, unknown>>;
+  assumptions: Array<Record<string, unknown>>;
+  resolved_assumptions: Array<Record<string, unknown>>;
+  files_touched: string[];
+  commands_run: Array<Record<string, unknown>>;
+  tests_run: Array<Record<string, unknown>>;
+  failures: Array<Record<string, unknown>>;
+  open_questions: string[];
+  next_actions: string[];
+  memory_atoms: Array<Record<string, unknown>>;
+  risk_flags: string[];
+  state_hash: string;
+  created_at: string;
+}
+
+export interface HandoffResponse {
+  handoff: HandoffArtifact;
+  handoff_id: string;
+  workstream_id: string;
+  state_hash: string;
+}
+
+export interface HandoffListResponse {
+  workstream_id: string;
+  handoffs: HandoffArtifact[];
+  count: number;
+}
+
 export interface HarnessEvent {
   event_id: string;
   run_id: string;
