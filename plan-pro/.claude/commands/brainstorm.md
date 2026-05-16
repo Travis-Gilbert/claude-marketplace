@@ -1,1 +1,0 @@
-/Users/travisgilbert/Tech Dev Local/codex-plugins/plan-pro/commands/brainstorm.md

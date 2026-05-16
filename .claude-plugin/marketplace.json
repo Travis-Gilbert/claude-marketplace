@@ -52,11 +52,6 @@
       "source": "./next-pro"
     },
     {
-      "name": "plan-pro",
-      "version": "1.0.0",
-      "source": "./plan-pro"
-    },
-    {
       "name": "production-theorem",
       "version": "0.2.3",
       "source": "./production-theorem"
