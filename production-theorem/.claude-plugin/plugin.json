@@ -37,6 +37,11 @@
       "type": "http",
       "url": "https://theseus-mcp-production.up.railway.app/mcp",
       "description": "Theseus knowledge graph (full Mode 3 surface)"
+    },
+    "rustyred-thg": {
+      "type": "http",
+      "url": "https://thg-product-production.up.railway.app/mcp",
+      "description": "RustyRed-THG hot graph: native graph queries (neighbors/query/explain/schema), algorithms (PPR/PageRank/components/communities), and search (fulltext/spatial/vector). Read-only. Requires Bearer auth via $RUSTYRED_THG_API_TOKEN in the MCP client config."
     }
   }
 }
