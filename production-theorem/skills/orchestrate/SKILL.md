@@ -247,6 +247,7 @@ Use these routes internally:
 | context artifact work | context-artifact-specialist |
 | plugin selection | plugin-router |
 | GraphRAG / GNN-RAG evidence context | epistemic-graphrag-specialist |
+| code search ranked by graph structure (PPR / PageRank / components / communities) | compute_code |
 | action recommendations | action-rail-specialist |
 | tests and validation | validator-reporter |
 | federation or learning | federation-learning-recorder |
