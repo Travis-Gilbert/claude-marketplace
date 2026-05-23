@@ -10,6 +10,12 @@
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/begin-run.sh",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionstart-codebase.sh",
+            "timeout": 10
           }
         ]
       }
@@ -22,6 +28,12 @@
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-context.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/subagent-suggest.sh",
+            "timeout": 10
           }
         ]
       }
@@ -35,6 +47,12 @@
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/enforce-action-rail.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pretool-context.sh",
+            "timeout": 10
           }
         ]
       }
@@ -48,6 +66,30 @@
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/record-action.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-context.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/filechange-context.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/filechange-reingest.sh",
+            "timeout": 5
           }
         ]
       }
@@ -58,8 +100,26 @@
           {
             "type": "command",
             "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionend-context.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/finalize-run.sh",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/precompact-flush.sh",
+            "timeout": 10
           }
         ]
       }
