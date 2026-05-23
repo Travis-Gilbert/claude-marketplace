@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SessionStart hook. Begins a new harness run for this Claude Code session.
+# SessionStart hook. Begins a new harness run for the current host session.
 # Stashes the run_id in the per-session state file so subsequent hooks can read it.
 # Fails open: backend unreachable means we still let the session continue.
 
@@ -10,8 +10,9 @@ theorem_require_jq || exit 0
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
-cwd=$(theorem_jq "$input" '.cwd')
-[ -z "$cwd" ] && cwd="${CLAUDE_PROJECT_DIR:-$PWD}"
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
+actor=$(theorem_host)
 
 # If we already have a run for this session, don't begin a new one.
 existing=$(theorem_run_id "$sid")
@@ -24,9 +25,10 @@ fi
 body=$(jq -n \
   --arg sid "$sid" \
   --arg cwd "$cwd" \
+  --arg actor "$actor" \
   '{
-    actor: "claude-code",
-    task: "claude-code session",
+    actor: $actor,
+    task: ($actor + " session"),
     scope: {
       task_type: "session",
       external_session_id: $sid,

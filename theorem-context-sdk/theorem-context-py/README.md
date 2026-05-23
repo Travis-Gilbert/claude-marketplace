@@ -290,6 +290,15 @@ async with TheoremHotGraphClient(
         'THG.RUN.BEGIN',
         {'run_id': 'run:sdk', 'task': 'execute product THG'},
     )
+    await thg.instant_kg_ppr(
+        {'file:src/lib.rs': 1.0},
+        delta={
+            'changed_files': ['src/lib.rs'],
+            'objects': [],
+            'edges': [],
+        },
+        top_k=5,
+    )
 ```
 
 See the TypeScript SDK at `packages/theorem-context-ts` for an equivalent

@@ -1224,6 +1224,53 @@ test('compile honors env-first base URL resolution and exposes surface status', 
   }
 });
 
+test('compile prefers THEOREM_API_KEY over the legacy env alias', async () => {
+  const previousPreferredKey = process.env.THEOREM_API_KEY;
+  const previousLegacyKey = process.env.THEOREM_CONTEXT_API_KEY;
+  process.env.THEOREM_API_KEY = 'preferred-token';
+  process.env.THEOREM_CONTEXT_API_KEY = 'legacy-token';
+  const requests = [];
+
+  try {
+    const client = new TheoremContextClient({
+      baseUrl: 'http://localhost:8000/api/v2/theseus',
+      fetchImpl: async (url, init) => {
+        requests.push({ url, init });
+        return new Response(
+          JSON.stringify({
+            id: 'artifact-1',
+            status: 'compiled',
+            task_type: 'review',
+            task_description: 'Review harness SDK gap',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      },
+    });
+
+    await client.context.compile({
+      task: 'Review harness SDK gap',
+      task_type: 'review',
+    });
+
+    assert.equal(
+      requests[0].init.headers.Authorization,
+      'Bearer preferred-token',
+    );
+  } finally {
+    if (previousPreferredKey === undefined) {
+      delete process.env.THEOREM_API_KEY;
+    } else {
+      process.env.THEOREM_API_KEY = previousPreferredKey;
+    }
+    if (previousLegacyKey === undefined) {
+      delete process.env.THEOREM_CONTEXT_API_KEY;
+    } else {
+      process.env.THEOREM_CONTEXT_API_KEY = previousLegacyKey;
+    }
+  }
+});
+
 test('compile surfaces auth failures as AuthError', async () => {
   const client = new TheoremContextClient({
     baseUrl: 'http://localhost:8000/api/v2/theseus',

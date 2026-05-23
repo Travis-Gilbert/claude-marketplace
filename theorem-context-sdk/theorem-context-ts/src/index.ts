@@ -25,6 +25,7 @@ export {
 } from './errors.js';
 export {
   TheoremHotGraphClient,
+  type InstantKgPayload,
   type TheoremHotGraphClientOptions,
   type THGProductResult,
 } from './product.js';

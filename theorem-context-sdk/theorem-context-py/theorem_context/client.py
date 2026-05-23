@@ -864,7 +864,11 @@ class TheoremContextClient:
         self.plugins_base_url = (
             resolved_plugins_base_url
         ).rstrip('/')
-        self.api_key = api_key or os.getenv('THEOREM_CONTEXT_API_KEY')
+        self.api_key = (
+            api_key
+            or os.getenv('THEOREM_API_KEY')
+            or os.getenv('THEOREM_CONTEXT_API_KEY')
+        )
         self._http = httpx.AsyncClient(timeout=timeout, transport=transport)
         self.context = _ContextNamespace(self)
         self.context_command = _ContextCommandNamespace(self)

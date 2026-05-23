@@ -11,6 +11,8 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 run_id=$(theorem_run_id "$sid")
 [ -z "$run_id" ] && { printf '{"continue":true}\n'; exit 0; }
 

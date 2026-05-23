@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Shared helpers for Theorem Context Claude Code hooks.
-# Sourced by every hook script. Pure bash; depends only on curl and jq.
+# Shared helpers for Theorem Context lifecycle hooks.
+# Sourced by every host-specific hook script. Pure bash; depends only on curl
+# and jq.
 
 set -u
 set -o pipefail
@@ -14,9 +15,35 @@ set -o pipefail
 : "${THEOREM_ACTION_RAIL:=record}"   # one of: record, enforce, off
 : "${THEOREM_DEBUG:=0}"
 
-# Per-project state directory (gitignored by INSTALL.md instructions).
-THEOREM_STATE_DIR="${CLAUDE_PROJECT_DIR:-$PWD}/.theorem"
-mkdir -p "$THEOREM_STATE_DIR" 2>/dev/null || true
+theorem_host() {
+  if [ -n "${PLUGIN_ROOT:-}" ]; then
+    printf 'codex'
+    return
+  fi
+  printf 'claude-code'
+}
+
+theorem_session_prefix() {
+  if [ "$(theorem_host)" = "codex" ]; then
+    printf 'codex'
+    return
+  fi
+  printf 'claude'
+}
+
+theorem_plugin_root() {
+  if [ -n "${PLUGIN_ROOT:-}" ]; then
+    printf '%s' "$PLUGIN_ROOT"
+    return
+  fi
+  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+    printf '%s' "$CLAUDE_PLUGIN_ROOT"
+    return
+  fi
+  (
+    cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd
+  )
+}
 
 theorem_log() {
   if [ "${THEOREM_DEBUG}" = "1" ]; then
@@ -45,16 +72,43 @@ theorem_jq() {
   echo "$blob" | jq -r "$path // empty" 2>/dev/null || echo ""
 }
 
-# Get current session id. Claude Code passes this on stdin for most hooks.
+# Get current session id. Hosts pass this on stdin for most hooks.
 # Falls back to a derived key based on user + cwd.
 theorem_session_id() {
   local stdin_blob="${1:-}"
   local sid
   sid=$(theorem_jq "$stdin_blob" '.session_id')
   if [ -z "$sid" ]; then
-    sid="claude:$(whoami)@$(hostname -s):$(echo "${CLAUDE_PROJECT_DIR:-$PWD}" | shasum | cut -c1-8)"
+    sid="$(theorem_session_prefix):$(whoami)@$(hostname -s):$(theorem_resolve_cwd "$stdin_blob" | shasum | cut -c1-8)"
   fi
   printf '%s' "$sid"
+}
+
+theorem_resolve_cwd() {
+  local stdin_blob="${1:-}"
+  local cwd
+  cwd=$(theorem_jq "$stdin_blob" '.cwd')
+  if [ -n "$cwd" ]; then
+    printf '%s' "$cwd"
+    return
+  fi
+  printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}"
+}
+
+theorem_state_dir() {
+  local cwd="${1:-}"
+  if [ -z "$cwd" ]; then
+    cwd="${CLAUDE_PROJECT_DIR:-$PWD}"
+  fi
+  printf '%s/.theorem' "$cwd"
+}
+
+theorem_init_state_dir() {
+  local cwd="${1:-}"
+  local state_dir
+  state_dir=$(theorem_state_dir "$cwd")
+  mkdir -p "$state_dir" 2>/dev/null || true
+  printf '%s' "$state_dir"
 }
 
 # Read or initialize the current run id for this Claude session.

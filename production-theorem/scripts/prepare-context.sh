@@ -5,7 +5,7 @@
 # and injects the brief into the prompt via hookSpecificOutput.additionalContext.
 #
 # Body matches OrchestrateRunRequest schema:
-#   { task, mode='plan', actor='claude-code', repo, budget_tokens, scope }
+#   { task, mode='plan', actor, repo, budget_tokens, scope }
 # Response keys consumed:
 #   .decision.task_signature, .decision.selected_profile_id,
 #   .decision.selected_tool_ids, .decision.why_selected, .decision.context_plan,
@@ -23,8 +23,9 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
 prompt=$(theorem_jq "$input" '.prompt')
-cwd=$(theorem_jq "$input" '.cwd')
-[ -z "$cwd" ] && cwd="${CLAUDE_PROJECT_DIR:-$PWD}"
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
+actor=$(theorem_host)
 
 # Skip preflight on trivial prompts (acks, single-word replies).
 trimmed=$(echo "$prompt" | tr -d '[:space:]')
@@ -37,9 +38,13 @@ fi
 # Ensure we have a run id; if SessionStart didn't fire, begin lazily.
 run_id=$(theorem_run_id "$sid")
 if [ -z "$run_id" ]; then
-  begin_body=$(jq -n --arg sid "$sid" --arg cwd "$cwd" '{
-    actor: "claude-code",
-    task: "claude-code session",
+  begin_body=$(jq -n \
+    --arg sid "$sid" \
+    --arg cwd "$cwd" \
+    --arg actor "$actor" \
+    '{
+    actor: $actor,
+    task: ($actor + " session"),
     scope: { task_type: "session", external_session_id: $sid, cwd: $cwd, permissions: ["graph_read","code_read","web_browse"] }
   }')
   begin_resp=$(theorem_post "/harness/runs/" "$begin_body" 2>/dev/null) || {
@@ -59,11 +64,12 @@ fi
 prepare_body=$(jq -n \
   --arg task "$prompt" \
   --arg cwd "$cwd" \
+  --arg actor "$actor" \
   --argjson budget "${THEOREM_BUDGET_TOKENS}" \
   '{
     task: $task,
     mode: "plan",
-    actor: "claude-code",
+    actor: $actor,
     repo: $cwd,
     budget_tokens: $budget
   }')
@@ -172,12 +178,13 @@ ln -sf "$runs_dir/last-action-rail.json" "$THEOREM_STATE_DIR/current-action-rail
 if [ -n "$artifact_id" ]; then
   inject_body=$(jq -n \
     --arg artifact_id "$artifact_id" \
-    '{ artifact_id: $artifact_id, adapter: "claude-code", target: "cli" }')
+    --arg actor "$actor" \
+    '{ artifact_id: $artifact_id, adapter: $actor, target: "cli" }')
   theorem_post "/harness/runs/${run_id}/context-injected/" "$inject_body" >/dev/null 2>&1 || true
 fi
 
-# Emit hookSpecificOutput so Claude Code prepends the brief to the user's
-# prompt before the model sees it. This is the inject-first pattern.
+# Emit hookSpecificOutput so the host prepends the brief to the user's prompt
+# before the model sees it. This is the inject-first pattern.
 jq -n \
   --arg ctx "$artifact_body" \
   --arg run "$run_id" \

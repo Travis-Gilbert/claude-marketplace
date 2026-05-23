@@ -141,7 +141,11 @@ export class TheoremContextClient {
       ?? envPluginsBaseUrl
       ?? derivePluginsBaseUrl(this.baseUrl)
     ).replace(/\/$/, '');
-    this.apiKey = options.apiKey ?? readEnv('THEOREM_CONTEXT_API_KEY');
+    this.apiKey = (
+      options.apiKey
+      ?? readEnv('THEOREM_API_KEY')
+      ?? readEnv('THEOREM_CONTEXT_API_KEY')
+    );
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 

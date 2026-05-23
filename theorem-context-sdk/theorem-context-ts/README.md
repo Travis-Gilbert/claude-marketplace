@@ -260,6 +260,18 @@ await thg.command('THG.RUN.BEGIN', {
   run_id: 'run:sdk',
   task: 'execute product THG',
 });
+
+await thg.instantKgPpr(
+  { 'file:src/lib.rs': 1.0 },
+  {
+    delta: {
+      changed_files: ['src/lib.rs'],
+      objects: [],
+      edges: [],
+    },
+    topK: 5,
+  },
+);
 ```
 
 See the Python SDK at `packages/theorem-context-py` for an equivalent

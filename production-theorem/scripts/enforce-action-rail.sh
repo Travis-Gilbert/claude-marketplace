@@ -25,6 +25,8 @@ fi
 theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 tool_name=$(theorem_jq "$input" '.tool_name')
 tool_input=$(theorem_jq "$input" '.tool_input')
 

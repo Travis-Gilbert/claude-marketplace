@@ -10,13 +10,16 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
+host=$(theorem_host)
 run_id=$(theorem_run_id "$sid")
 [ -z "$run_id" ] && { printf '{"continue":true}\n'; exit 0; }
 
 # Record outcome with whatever signals the harness has aggregated.
 outcome_body=$(jq -n \
   --arg sid "$sid" \
-  --arg host "claude-code" \
+  --arg host "$host" \
   '{
     host: $host,
     external_session_id: $sid,
@@ -29,6 +32,7 @@ theorem_post "/harness/runs/${run_id}/outcome/" "$outcome_body" >/dev/null 2>&1 
 state_hash=$(theorem_get "/harness/runs/${run_id}/state-hash/" 2>/dev/null \
   | jq -r '.state_hash // empty')
 if [ -n "$state_hash" ]; then
+  mkdir -p "$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}"
   echo "$state_hash" > "$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}/last-state-hash.txt"
 fi
 

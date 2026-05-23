@@ -18,6 +18,11 @@ export type THGProductResult = THGResult & {
   error?: Record<string, unknown> | null;
 };
 
+export type InstantKgPayload = {
+  manifest?: Record<string, unknown>;
+  delta?: Record<string, unknown>;
+};
+
 export class TheoremHotGraphClient {
   private readonly baseUrl: string;
   private readonly token: string;
@@ -71,6 +76,91 @@ export class TheoremHotGraphClient {
     });
   }
 
+  async instantKgStatus(options: InstantKgPayload = {}): Promise<Record<string, unknown>> {
+    return this.post('/instant-kg/status', this.cleanBody(options));
+  }
+
+  async instantKgPpr(
+    seeds: Record<string, number>,
+    options: InstantKgPayload & {
+      alpha?: number;
+      epsilon?: number;
+      maxPushes?: number;
+      topK?: number;
+    } = {},
+  ): Promise<Record<string, unknown>> {
+    return this.post('/instant-kg/ppr', this.cleanBody({
+      manifest: options.manifest,
+      delta: options.delta,
+      seeds,
+      alpha: options.alpha ?? 0.15,
+      epsilon: options.epsilon ?? 0.0001,
+      max_pushes: options.maxPushes ?? 200000,
+      top_k: options.topK ?? 10,
+    }));
+  }
+
+  async instantKgImpact(options: InstantKgPayload & {
+    seed?: string;
+    symbolName?: string;
+    direction?: 'out' | 'in';
+    maxDepth?: number;
+  }): Promise<Record<string, unknown>> {
+    return this.post('/instant-kg/impact', this.cleanBody({
+      manifest: options.manifest,
+      delta: options.delta,
+      seed: options.seed,
+      symbol_name: options.symbolName,
+      direction: options.direction ?? 'out',
+      max_depth: options.maxDepth ?? 2,
+    }));
+  }
+
+  async instantKgRelatedObjects(
+    seed: string,
+    options: InstantKgPayload & {
+      kinds?: string[];
+      topK?: number;
+    } = {},
+  ): Promise<Record<string, unknown>> {
+    return this.post('/instant-kg/related-objects', this.cleanBody({
+      manifest: options.manifest,
+      delta: options.delta,
+      seed,
+      kinds: options.kinds ?? [],
+      top_k: options.topK ?? 10,
+    }));
+  }
+
+  async instantKgSearch(
+    query: string,
+    options: InstantKgPayload & {
+      kinds?: string[];
+      topK?: number;
+    } = {},
+  ): Promise<Record<string, unknown>> {
+    return this.post('/instant-kg/search', this.cleanBody({
+      manifest: options.manifest,
+      delta: options.delta,
+      query,
+      kinds: options.kinds ?? [],
+      top_k: options.topK ?? 10,
+    }));
+  }
+
+  async instantKgExplainEdge(
+    src: string,
+    dst: string,
+    options: InstantKgPayload = {},
+  ): Promise<Record<string, unknown>> {
+    return this.post('/instant-kg/explain-edge', this.cleanBody({
+      manifest: options.manifest,
+      delta: options.delta,
+      src,
+      dst,
+    }));
+  }
+
   private async post<T>(path: string, body: Record<string, unknown>): Promise<T> {
     const response = await this.request(
       `${this.tenantUrl()}${path}`,
@@ -114,6 +204,12 @@ export class TheoremHotGraphClient {
 
   private tenantUrl(): string {
     return `${this.baseUrl}/v1/tenants/${encodeURIComponent(this.tenantId)}`;
+  }
+
+  private cleanBody(body: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(body).filter(([, value]) => value !== undefined && value !== null),
+    );
   }
 }
 

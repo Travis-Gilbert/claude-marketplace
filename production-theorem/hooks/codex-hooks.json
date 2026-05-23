@@ -1,0 +1,68 @@
+{
+  "description": "Theorem Context lifecycle hooks for Codex. Out-of-band orchestration before each model turn; action recording after each tool use; run finalization at session end.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/begin-run.sh\"",
+            "timeout": 15,
+            "statusMessage": "Starting theorem harness run"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/prepare-context.sh\"",
+            "timeout": 30,
+            "statusMessage": "Preparing theorem context"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/enforce-action-rail.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking theorem action rail"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/record-action.sh\"",
+            "timeout": 10,
+            "statusMessage": "Recording theorem action"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/finalize-run.sh\"",
+            "timeout": 30,
+            "statusMessage": "Finalizing theorem run"
+          }
+        ]
+      }
+    ]
+  }
+}

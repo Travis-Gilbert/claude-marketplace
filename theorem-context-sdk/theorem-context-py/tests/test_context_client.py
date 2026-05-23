@@ -1412,6 +1412,41 @@ def test_compile_uses_env_base_url_and_exposes_surface_status(monkeypatch) -> No
     asyncio.run(run())
 
 
+def test_compile_prefers_theorem_api_key_env(monkeypatch) -> None:
+    monkeypatch.setenv('THEOREM_API_KEY', 'preferred-token')
+    monkeypatch.setenv('THEOREM_CONTEXT_API_KEY', 'legacy-token')
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                'id': 'artifact-1',
+                'status': 'compiled',
+                'task_type': 'review',
+                'task_description': 'Review harness SDK gap',
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            await client.context.compile(
+                task='Review harness SDK gap',
+                task_type='review',
+            )
+        finally:
+            await client.aclose()
+
+        assert requests[0].headers['Authorization'] == 'Bearer preferred-token'
+
+    asyncio.run(run())
+
+
 def test_compile_surfaces_auth_failures_as_auth_error() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, text='missing token')

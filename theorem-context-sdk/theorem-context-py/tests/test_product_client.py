@@ -93,6 +93,55 @@ def test_product_client_encodes_tenant_and_run_path_segments() -> None:
     asyncio.run(run())
 
 
+def test_product_client_maps_instant_kg_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                'ok': True,
+                'tenant': 'tenant-a',
+                'status': {
+                    'protocol_version': 'harness-instant-kg-v1',
+                    'total_objects': 2,
+                },
+                'results': [{'object_id': 'sym:new', 'score': 0.9}],
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremHotGraphClient(
+            base_url='http://localhost:8380/',
+            token='secret',
+            tenant_id='tenant-a',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            status = await client.instant_kg_status(
+                delta={'objects': [{'id': 'sym:new'}]},
+            )
+            ppr = await client.instant_kg_ppr(
+                {'file:lib': 1.0},
+                delta={'changed_files': ['src/lib.rs']},
+                top_k=3,
+            )
+        finally:
+            await client.aclose()
+
+        assert status['status']['protocol_version'] == 'harness-instant-kg-v1'
+        assert ppr['results'][0]['object_id'] == 'sym:new'
+        assert requests[0].url.path == (
+            '/v1/tenants/tenant-a/instant-kg/status'
+        )
+        assert requests[1].url.path == '/v1/tenants/tenant-a/instant-kg/ppr'
+        assert json.loads(requests[1].content)['seeds'] == {'file:lib': 1.0}
+        assert json.loads(requests[1].content)['top_k'] == 3
+
+    asyncio.run(run())
+
+
 def test_product_client_normalizes_http_failures_into_typed_errors() -> None:
     cases = [
         (401, AuthError),

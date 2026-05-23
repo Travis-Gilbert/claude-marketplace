@@ -92,6 +92,106 @@ class TheoremHotGraphClient:
             'params': params or {},
         })
 
+    async def instant_kg_status(
+        self,
+        *,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await self._post_dict('/instant-kg/status', {
+            'manifest': manifest,
+            'delta': delta,
+        })
+
+    async def instant_kg_ppr(
+        self,
+        seeds: dict[str, float],
+        *,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+        alpha: float = 0.15,
+        epsilon: float = 1e-4,
+        max_pushes: int = 200_000,
+        top_k: int = 10,
+    ) -> dict[str, Any]:
+        return await self._post_dict('/instant-kg/ppr', {
+            'manifest': manifest,
+            'delta': delta,
+            'seeds': seeds,
+            'alpha': alpha,
+            'epsilon': epsilon,
+            'max_pushes': max_pushes,
+            'top_k': top_k,
+        })
+
+    async def instant_kg_impact(
+        self,
+        *,
+        seed: str | None = None,
+        symbol_name: str | None = None,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+        direction: str = 'out',
+        max_depth: int = 2,
+    ) -> dict[str, Any]:
+        return await self._post_dict('/instant-kg/impact', {
+            'manifest': manifest,
+            'delta': delta,
+            'seed': seed,
+            'symbol_name': symbol_name,
+            'direction': direction,
+            'max_depth': max_depth,
+        })
+
+    async def instant_kg_related_objects(
+        self,
+        seed: str,
+        *,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+        kinds: list[str] | None = None,
+        top_k: int = 10,
+    ) -> dict[str, Any]:
+        return await self._post_dict('/instant-kg/related-objects', {
+            'manifest': manifest,
+            'delta': delta,
+            'seed': seed,
+            'kinds': kinds or [],
+            'top_k': top_k,
+        })
+
+    async def instant_kg_search(
+        self,
+        query: str,
+        *,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+        kinds: list[str] | None = None,
+        top_k: int = 10,
+    ) -> dict[str, Any]:
+        return await self._post_dict('/instant-kg/search', {
+            'manifest': manifest,
+            'delta': delta,
+            'query': query,
+            'kinds': kinds or [],
+            'top_k': top_k,
+        })
+
+    async def instant_kg_explain_edge(
+        self,
+        src: str,
+        dst: str,
+        *,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await self._post_dict('/instant-kg/explain-edge', {
+            'manifest': manifest,
+            'delta': delta,
+            'src': src,
+            'dst': dst,
+        })
+
     async def _post(self, path: str, body: dict[str, Any]) -> THGResult:
         response = await self._request(
             'POST',
@@ -100,6 +200,15 @@ class TheoremHotGraphClient:
             json=body,
         )
         return THGResult.model_validate(response.json())
+
+    async def _post_dict(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            path,
+            action=path,
+            json={key: value for key, value in body.items() if value is not None},
+        )
+        return response.json()
 
     async def _request(
         self,

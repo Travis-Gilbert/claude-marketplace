@@ -16,7 +16,7 @@ A change to any of these flows to both hosts on next install / sync. There is no
 |---|---|---|
 | `plugin.manifest.json` | maintainer tooling | Canonical source for shared plugin metadata, Claude manifest payload, and Codex manifest payload |
 | `.claude-plugin/plugin.json` | Claude Code | Identity + `mcpServers` registration |
-| `.codex-plugin/plugin.json` | Codex | Identity + `interface` block (displayName, capabilities, defaultPrompt) |
+| `.codex-plugin/plugin.json` | Codex | Identity + `interface` block (displayName, capabilities, defaultPrompt) + Codex hook manifest pointer |
 
 Regenerate and verify the host manifests with:
 
@@ -25,17 +25,27 @@ python3 scripts/sync-plugin-manifests.py production-theorem --check
 python3 scripts/sync-plugin-manifests.py production-theorem
 ```
 
-## Claude-only files (Codex ignores these)
+## Hook manifests and shared runtime
 
 | Path | Purpose |
 |---|---|
-| `hooks/hooks.json` | Auto-loaded by Claude Code on plugin enable. Five lifecycle hooks: `SessionStart` begins a harness run, `UserPromptSubmit` calls `/orchestrate/prepare/` and injects the Context Brief before the model turn, `PreToolUse` enforces the Action Rail, `PostToolUse` records each tool call as a `step` event, `Stop` records run outcome and state hash. |
-| `scripts/*.sh` | Bash implementations of the hooks. Pure bash + curl + jq. |
+| `hooks/hooks.json.disabled` | Claude Code lifecycle hooks kept disabled by default until the Claude hook auto-load path is explicitly re-enabled. Five events: `SessionStart` begins a harness run, `UserPromptSubmit` calls `/orchestrate/prepare/` and injects the Context Brief before the model turn, `PreToolUse` enforces the Action Rail, `PostToolUse` records each tool call as a `step` event, `Stop` records run outcome and state hash. |
+| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same five events, but packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. |
+| `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Three tools: `orchestrate_refresh`, `harness_replay`, `harness_describe_current`. |
 
 The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
 
-## Configuration (Claude side only)
+## Configuration
+
+Codex plugin hooks are off unless the host config enables them:
+
+```toml
+[features]
+plugin_hooks = true
+```
+
+Some hosts look for `hooks/hooks.json` by convention when hook support is enabled. This plugin keeps the Claude-specific manifest disabled and sets an explicit `hooks` path in `.codex-plugin/plugin.json` so Codex uses `hooks/codex-hooks.json`.
 
 | Env var | Default | Purpose |
 |---|---|---|
@@ -54,6 +64,18 @@ cd $(claude plugin path production-theorem)/mcp && npm install
 # 2. Enable in ~/.claude/settings.json:
 #   "production-theorem@codex-marketplace": true
 ```
+
+## Install (Codex)
+
+1. Enable the plugin in Codex.
+2. Turn on plugin hooks in repo or user config:
+
+```toml
+[features]
+plugin_hooks = true
+```
+
+3. Restart the session so Codex reviews and trusts the bundled hook commands.
 
 ## Backend routes (Claude hooks exercise these)
 

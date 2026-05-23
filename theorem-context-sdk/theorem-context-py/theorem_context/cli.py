@@ -30,7 +30,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         '--api-key',
-        default=os.getenv('THEOREM_CONTEXT_API_KEY'),
+        default=(
+            os.getenv('THEOREM_API_KEY')
+            or os.getenv('THEOREM_CONTEXT_API_KEY')
+        ),
     )
     parser.add_argument(
         '--bundle-dir',

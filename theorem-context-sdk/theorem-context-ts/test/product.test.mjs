@@ -42,6 +42,48 @@ test('product client posts tenant command with bearer auth', async () => {
   assert.equal(JSON.parse(requests[0].init.body).args.run_id, 'run:1');
 });
 
+test('product client maps instant KG routes', async () => {
+  const requests = [];
+  const client = new TheoremHotGraphClient({
+    baseUrl: 'http://localhost:8380/',
+    token: 'secret',
+    tenantId: 'tenant-a',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          tenant: 'tenant-a',
+          status: { protocol_version: 'harness-instant-kg-v1' },
+          results: [{ object_id: 'sym:new', score: 0.9 }],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    },
+  });
+
+  const status = await client.instantKgStatus({
+    delta: { objects: [{ id: 'sym:new' }] },
+  });
+  const ppr = await client.instantKgPpr(
+    { 'file:lib': 1.0 },
+    { delta: { changed_files: ['src/lib.rs'] }, topK: 3 },
+  );
+
+  assert.equal(status.status.protocol_version, 'harness-instant-kg-v1');
+  assert.equal(ppr.results[0].object_id, 'sym:new');
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8380/v1/tenants/tenant-a/instant-kg/status',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8380/v1/tenants/tenant-a/instant-kg/ppr',
+  );
+  assert.deepEqual(JSON.parse(requests[1].init.body).seeds, { 'file:lib': 1.0 });
+  assert.equal(JSON.parse(requests[1].init.body).top_k, 3);
+});
+
 test('product client normalizes HTTP failures into typed errors', async () => {
   const cases = [
     { status: 401, expectedError: AuthError },

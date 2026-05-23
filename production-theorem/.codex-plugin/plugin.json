@@ -28,6 +28,7 @@
   ],
   "skills": "./skills/",
   "agents": "./agents/",
+  "hooks": "./hooks/codex-hooks.json",
   "interface": {
     "displayName": "Orchestrate",
     "shortDescription": "One command for checklist-driven planning, context, delegation, execution, and reporting.",
