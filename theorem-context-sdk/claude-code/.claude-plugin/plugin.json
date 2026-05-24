@@ -1,7 +1,7 @@
 {
   "name": "theorem-context-claude",
-  "version": "0.1.0",
-  "description": "Out-of-band context compilation for Claude Code. UserPromptSubmit hook runs Theseus orchestrate before each model turn, injects a finished Context Artifact via stdout, records every action into a replayable harness run, and enforces Action Rail on tool use. Defaults to no-tool mode; one MCP tool (orchestrate_refresh) is available as a fallback when context goes stale mid-session.",
+  "version": "0.1.1",
+  "description": "Out-of-band context compilation for Claude Code. UserPromptSubmit hook runs Theseus orchestrate before each model turn, injects a finished Context Artifact via stdout, records every action into a replayable harness run, and enforces Action Rail on tool use. Defaults to no-tool mode; /context-refresh and the orchestrate_refresh MCP tool are available as fallback when context goes stale mid-session.",
   "author": {
     "name": "Theorem",
     "email": "support@travisgilbert.me"
@@ -15,7 +15,7 @@
     "harness",
     "mcp",
     "theseus",
-    "orchestrate",
+    "context-refresh",
     "action-rail"
   ],
   "mcpServers": {

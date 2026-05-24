@@ -24,12 +24,11 @@ Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `documen
 
 | Verb | Purpose |
 |---|---|
-| `harness_toolkit` | Inspect the available toolkit for a run (selected_tools, scope, permissions) |
+| `harness_toolkit` | Compile or inspect the task toolkit from `task_type`, `permissions`, and `scope` before a run |
 | `harness_begin` | Open a new harness run (task, actor, scope) |
-| `harness_get` | Fetch run state (status, current step, artifact references) |
 | `harness_step` | Record a step inside an open run (tool_call / observation / decision) |
 | `harness_search` | Native search inside the run, recording tool_call + observation steps |
-| `harness_fractal_expansion` | Personalized PageRank expansion from seed PKs (uses PyO3 native push_ppr) |
+| `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run |
 | `harness_context` | Compile the context artifact for the current run |
 | `harness_patch` | Propose a patch to the harness's belief state (review-gated) |
 | `harness_replay` | Get the full event timeline of a run |
@@ -51,26 +50,28 @@ Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `documen
 For "drive a harness run for task T":
 
 1. `harness_begin(task=T, actor='agent')` — opens the run; returns `run_id`.
-2. `harness_toolkit(run_id)` — confirm the run's permissions and selected tools.
+2. `harness_toolkit(task_type='research', permissions=[...], scope={...})` — confirm permissions and selected tools when you need a preflight.
 3. Loop:
-   a. `harness_step(kind='tool_call', payload=...)` for each tool the harness invokes.
-   b. `harness_step(kind='observation', payload=...)` after each call.
-   c. `harness_search(query=..., budget=...)` when the harness needs evidence.
+   a. `harness_step(run_id=run_id, kind='tool_call', payload=...)` for each tool the harness invokes.
+   b. `harness_step(run_id=run_id, kind='observation', payload=...)` after each call.
+   c. `harness_search(run_id=run_id, query=..., budget=...)` when the harness needs evidence.
 4. `harness_context(run_id, budget_tokens=...)` — compile the final context artifact.
-5. `harness_get(run_id)` — read back final state.
+5. `harness_replay(run_id)` — read back the final event timeline when auditability matters.
 
 For fractal expansion (research / discovery):
-- `harness_fractal_expansion(run_id, seeds=[pk1, pk2], depth=...)` — uses native PPR, much faster than Python fallback.
+- `harness_fractal_expansion(query='...', run_id=run_id, top_k=20, budget={...}, scope={...})` — query-driven gap-frontier search. `run_id` is optional; when supplied, the search is recorded inside the harness run.
+- For raw seed-PK PPR, use `ppr_neighborhood` on the Theorem MCP or `mcp__rustyred-thg__algorithm.ppr` directly.
 
 For replay / debugging:
 - `harness_replay(run_id)` — full event timeline.
-- `harness_compare(run_a, run_b)` — divergence analysis.
+- `harness_compare(before_run_id=run_a, after_run_id=run_b)` — divergence analysis.
 
 For exploration:
-- `harness_fork(run_id, at_step=N)` — open a new run branched from step N of an existing run.
+- `harness_fork(run_id=run_id, through_step_id=step_id)` — open a new run branched through a specific step id.
 
 For cross-agent coordination:
 - `presence(actor='codex', mode='heartbeat')` — refresh this actor's TTL presence.
+- `subscribe(actor='codex', doc_id='repo-or-task-channel')` — announce that this actor is polling a shared channel.
 - `coordinate(message='@claude-code please validate TTL', urgency='ask')` — write to the shared coordination document and queue mentions.
 - `mentions(actor='claude-code', consume=true)` — let the target actor load and optionally consume its inbox.
 - `mentions_wait(actor='claude-code', timeout_seconds=30)` — wait briefly for a real ping instead of manually polling.

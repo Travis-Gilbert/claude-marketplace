@@ -1,6 +1,6 @@
 {
   "name": "production-theorem",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Orchestrate: one-command planning, context, plugin delegation, execution, validation, UI visual gates, Redis harness awareness, and learning.",
   "author": {
     "name": "Travis Gilbert"

@@ -1,10 +1,15 @@
 # Production-Theorem / Orchestrate Routing
 
-Production-Theorem exposes one default user-facing skill:
+Production-Theorem exposes one default user-facing skill plus small utility
+skills for refresh, coordination, encoding, and structural code compute:
 
 | Canonical skill | Use when |
 |---|---|
 | `orchestrate` | the user wants planning, implementation, debugging, review, context preparation, validation, reporting, or routed specialist work |
+| `context-refresh` | the current context artifact is stale and the agent only needs a fresh compile |
+| `orchestrate-coordinate` | another agent is active and the task needs presence, @mentions, wait, or handoff protocol |
+| `encode` | a durable feedback item, solution, or postmortem should be saved |
+| `compute_code` | a code-search question benefits from graph-structural ranking |
 
 The older skill names remain compatibility surfaces, but Orchestrate is the
 default product command.
@@ -70,23 +75,30 @@ or verbose narration.
 ## Routing Algorithm
 
 1. Use `orchestrate` by default.
-2. If the user asks for exploration before commitment, run internal
+2. If the user asks only to refresh context, route to `context-refresh`.
+3. If the user asks only to message, ping, or coordinate with another agent,
+   route to `orchestrate-coordinate`.
+4. If the user asks only to encode feedback, a solution, or a postmortem,
+   route to `encode`.
+5. If the user asks only for structural code search over an adjacency, route to
+   `compute_code`.
+6. If the user asks for exploration before commitment, run internal
    `theorize` mode.
-3. If the user asks for a plan, checklist, spec, migration plan, or retrofit
+7. If the user asks for a plan, checklist, spec, migration plan, or retrofit
    artifact, run internal `plan` mode.
-4. If the user asks to modify files, run checks, fix a bug, simplify code, or
+8. If the user asks to modify files, run checks, fix a bug, simplify code, or
    ship, run internal `execute` mode.
-5. If execution reveals unresolved ambiguity, route briefly through internal
+9. If execution reveals unresolved ambiguity, route briefly through internal
    `theorize` mode, then return to the checklist.
-6. Consult `checklist-manifest` before multi-step execution when the parent
+10. Consult `checklist-manifest` before multi-step execution when the parent
    needs the compact table of user intent, current codebase state, additions or
    removals, and exact locations. Consult it again at report time when the
    parent needs the same checklist updated with done, partial, blocked, failed,
    skipped, or not-run reasons.
-7. If work touches the paired harness SDK product or product graph client,
+11. If work touches the paired harness SDK product or product graph client,
    consult `codex-sdk-harness-product` for a read-only context pass before
    locking decisions or editing.
-8. If work touches Redis-backed harness state, THG product service, RESP/Valkey,
+12. If work touches Redis-backed harness state, THG product service, RESP/Valkey,
    tenant Redis keyspaces, or product deployment gates, consult
    `redis-harness-operator` or `redis-product-safety` for guardrails and
    validators. Do not treat those agents as implementation owners unless the

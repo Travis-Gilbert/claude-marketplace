@@ -332,7 +332,7 @@ const TOOLS = [
   {
     name: "presence",
     description:
-      "Refresh or read short-TTL actor presence for headless agent coordination.",
+      "Refresh, end, or read short-TTL actor presence for headless agent coordination.",
     inputSchema: {
       type: "object",
       properties: {
@@ -342,7 +342,7 @@ const TOOLS = [
         surface: { type: "string" },
         ttl_seconds: { type: "integer", default: 60 },
         status: { type: "string", default: "active" },
-        mode: { type: "string", enum: ["heartbeat", "get"], default: "heartbeat" },
+        mode: { type: "string", enum: ["heartbeat", "get", "end"], default: "heartbeat" },
       },
     },
   },
@@ -728,6 +728,18 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     }
 
     if (name === "presence") {
+      if (args?.mode === "end") {
+        const result = await theoremPost("/harness/session/end/", {
+          tenant_slug: args?.tenant_slug ?? null,
+          actor: args?.actor ?? null,
+          session_id: args?.session_id ?? null,
+          surface: args?.surface ?? null,
+          task: "agent session",
+          summary: "",
+          scope: {},
+        });
+        return jsonText(result);
+      }
       const result = await theoremPost("/harness/presence/", {
         tenant_slug: args?.tenant_slug ?? null,
         actor: args?.actor ?? null,

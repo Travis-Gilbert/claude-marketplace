@@ -18,7 +18,9 @@ Borrowed from the Theorem Context spec; the plugin defaults to the strongest one
 
 **Mode 1: No-tool (default).** Context arrives via the `UserPromptSubmit` hook. The model never sees a retrieval tool. Cheapest token economics: no tool schemas in the model's view, no tool-selection reasoning, no raw tool output to synthesize.
 
-**Mode 2: One-tool fallback.** A slim local MCP server exposes three tools for cases the hook can't cover: `orchestrate_refresh` (recompile mid-session), `harness_replay` (audit timeline), `harness_describe_current` (introspect the active artifact). Surfaced via the skills `/orchestrate`, `/replay-last-run`, `/show-context`.
+**Mode 2: One-tool fallback.** A slim local MCP server exposes three tools for cases the hook can't cover: `orchestrate_refresh` (recompile mid-session), `harness_replay` (audit timeline), `harness_describe_current` (introspect the active artifact). Surfaced via `/context-refresh`, `/replay-last-run`, and `/show-context`.
+
+`/context-refresh` is deliberately named to avoid colliding with Production Theorem's `/orchestrate` command. The SDK plugin refreshes an already-running context artifact; the Production Theorem plugin owns the full plan/execute/validate orchestration workflow.
 
 **Mode 3: Full Theseus surface (opt-in).** The fat Theseus MCP at `https://theseus-mcp-production.up.railway.app/mcp` is registered alongside the slim plugin MCP. Power users get the ~50 graph-operation tools (`theseus_ppr_expand`, `theseus_search_knowledge`, `theseus_find_connections`, etc.). To turn this off, remove the second `mcpServers` entry from `plugin.json`.
 

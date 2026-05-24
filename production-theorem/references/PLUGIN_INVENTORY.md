@@ -7,6 +7,9 @@ Inventory generated for the Orchestrate v1 upgrade.
 | Skill | Public role | Orchestrate role | Compatibility |
 |---|---|---|---|
 | `orchestrate` | Default public command | Owns observe, plan, delegate, execute, validate, report, learn | New default |
+| `context-refresh` | Public utility command | Calls `orchestrate_refresh` when an injected artifact is stale | Keep available |
+| `orchestrate-coordinate` | Public utility command | Teaches heartbeat, @mentions, wait, and handoff protocol | Keep available |
+| `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
 | `theorize` | Compatibility command | Internal `theorize` mode | Keep available |
 | `planning-theorem` | Compatibility command | Internal `plan` mode | Keep available |
 | `execute` | Compatibility command | Internal `execute` mode | Keep available |
@@ -62,6 +65,13 @@ listed here.
 Default product command:
 
 - `/orchestrate`
+
+Utility commands:
+
+- `/context-refresh`
+- `/coordinate`
+- `/encode`
+- `/compute_code`
 
 Compatibility command language:
 
