@@ -1,12 +1,16 @@
 ---
-name: orchestrate-coordinate
-description: Teach and run the cross-agent coordination protocol. Use when Codex, Claude Code, Claude.ai, or another agent is working on the same repo/task and the user wants live coordination, mentions, presence, handoff, or a ping-like wait.
+name: harness-coordinate
+description: Teach and run Theorem's Harness cross-agent coordination protocol. Use when Codex, Claude Code, Claude.ai, or another agent is working on the same repo/task and the user wants live coordination, mentions, presence, handoff, or a ping-like wait.
 ---
 
-# Orchestrate Coordinate
+# Harness Coordinate
 
 This skill teaches the behavioral protocol around the coordination tools. The
 tools already exist; this skill makes agents use them predictably.
+
+`/coordinate` is the slash command. `harness-coordinate` is the skill/protocol
+that command invokes. There should not be a separate public
+`/harness-coordinate` command unless a host needs one for disambiguation.
 
 ## When To Use
 
@@ -74,7 +78,7 @@ stable unless the user gives a more specific actor id.
   "urgency": "ask",
   "metadata": {
     "repo": "flint-civic-atlas",
-    "files": ["production-theorem/skills/orchestrate-coordinate/SKILL.md"]
+    "files": ["production-theorem/skills/harness-coordinate/SKILL.md"]
   }
 }
 ```

@@ -6,7 +6,7 @@ description: Refresh the active Theorem Context artifact without running a full 
 # Context Refresh
 
 Use this skill for a narrow refresh of working context. It is intentionally not
-the full `/orchestrate` workflow.
+the full `/harness` workflow.
 
 ## When To Use
 
@@ -18,7 +18,7 @@ Use when:
 - a review or cross-repo synthesis needs a larger context budget
 
 Do not use this for planning, implementation, validation, coordination, or
-learning. Those belong to `/orchestrate`, `/coordinate`, or `/encode`.
+learning. Those belong to `/harness`, `/coordinate`, or `/encode`.
 
 ## Tool
 

@@ -6,7 +6,7 @@ description: This skill should be used when the user asks to "make a plan", "wri
 # Planning-Theorem
 
 Compatibility note: this skill is now an internal planning mode of Orchestrate.
-Prefer `/orchestrate mode=plan` for new workflows.
+Prefer `/harness mode=plan` for new workflows.
 
 Create a production-grade planning artifact that can be executed directly. Ground every task in the live codebase. Do not hide deferred work behind elegant prose.
 
@@ -19,7 +19,7 @@ Create a production-grade planning artifact that can be executed directly. Groun
 When the user requests a handoff workflow, support:
 
 - `/planning-theorem handoff=spark`
-- `/orchestrate mode=plan handoff=spark`
+- `/harness mode=plan handoff=spark`
 
 ## Mission
 

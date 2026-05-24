@@ -1,14 +1,14 @@
-# Orchestrate Reporting
+# Harness Reporting
 
 Orchestrate reports are reconciliation artifacts. They show what was proven,
 what changed, what failed, and what should happen next.
 
-## Orchestrate Brief
+## Harness Brief
 
 Use for exploration and decision support.
 
 ```md
-# Orchestrate Brief: <title>
+# Harness Brief: <title>
 
 ## Executive Summary
 - Current condition:
@@ -34,15 +34,15 @@ Use for exploration and decision support.
 |---|---|---|
 
 ## Planning Inputs
-Concrete inputs for Orchestrate Plan.
+Concrete inputs for Harness Plan.
 ```
 
-## Orchestrate Plan
+## Harness Plan
 
 Use for a plan or checklist.
 
 ```md
-# Orchestrate Plan: <title>
+# Harness Plan: <title>
 
 ## Executive Summary
 - Goal:
@@ -107,15 +107,15 @@ Describe what exists now, with file/test/doc/runtime grounding.
 - Start with:
 - Preserve:
 - Run:
-- Report using Orchestrate Report.
+- Report using Harness Report.
 ```
 
-## Orchestrate Report
+## Harness Report
 
 Use after execution or validation.
 
 ```md
-# Orchestrate Report: <title>
+# Harness Report: <title>
 
 ## Executive Summary
 - Final condition:

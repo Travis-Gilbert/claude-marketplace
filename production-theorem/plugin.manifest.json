@@ -2,8 +2,8 @@
   "schema_version": 1,
   "plugin": {
     "name": "production-theorem",
-    "version": "0.2.8",
-    "description": "Orchestrate: one-command planning, context, plugin delegation, execution, validation, UI visual gates, Redis harness awareness, and learning.",
+    "version": "0.2.9",
+    "description": "Theorem's Harness: one command for planning, context, coordination, execution, validation, memory, and learning.",
     "author": {
       "name": "Travis Gilbert"
     },
@@ -60,9 +60,9 @@
         "agents": "./agents/",
         "hooks": "./hooks/codex-hooks.json",
         "interface": {
-          "displayName": "Orchestrate",
-          "shortDescription": "One command for checklist-driven planning, context, delegation, execution, and reporting.",
-          "longDescription": "Orchestrate is the default Production-Theorem surface. It turns ambiguity into grounded decisions, plans into auditable checklists, hidden plugin and Redis harness work into delegated phases, and execution into validated reports with explicit reconciliation and learning.",
+          "displayName": "Theorem's Harness",
+          "shortDescription": "One command for checklist-driven planning, context, coordination, execution, memory, and reporting.",
+          "longDescription": "Theorem's Harness is the default Production-Theorem surface. It turns ambiguity into grounded decisions, plans into auditable checklists, hidden plugin and harness work into delegated phases, cross-agent work into explicit coordination, and execution into validated reports with explicit reconciliation and learning.",
           "developerName": "Travis Gilbert",
           "category": "Developer Tools",
           "capabilities": [
@@ -71,14 +71,14 @@
             "Analyze"
           ],
           "defaultPrompt": [
-            "Use orchestrate as the default command for planning, implementation, debugging, review, context preparation, validation, and execution reporting.",
-            "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /orchestrate mode=plan handoff=spark and keep the planner in-thread to review what was built.",
-            "Orchestrate delegates internally to theorize, planning-theorem, execute, SDK harness product awareness, Redis harness agents, and other installed specialists.",
+            "Use Theorem's Harness as the default command for planning, implementation, debugging, review, context preparation, validation, coordination, memory, and execution reporting.",
+            "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /harness mode=plan handoff=spark and keep the planner in-thread to review what was built.",
+            "The Harness delegates internally to theorize, planning-theorem, execute, SDK harness product awareness, Redis harness agents, and other installed specialists.",
             "Use stable checklist IDs from plan through report; do not claim done unless the checklist reconciliation supports it.",
             "For UI visual projects, add the UI Visual Milestone: split Runtime complete, Product complete, and Vision complete; capture before/after/target screenshots; run the Do Not Downgrade gate; and keep a reversible product boundary until the new surface is equal-or-better.",
             "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing.",
             "If a host repository opts in through AGENTS.md or CLAUDE.md, prefer harness-backed prepare, preview, and run surfaces for multi-file, high-risk, or long-running work, but do not force harness orchestration for trivial requests.",
-            "For cross-agent work, use the orchestrate-coordinate protocol: heartbeat presence, subscribe to the shared channel, send @mentions with coordinate, and check or wait on mentions at natural checkpoints.",
+            "For cross-agent work, use the harness-coordinate protocol: heartbeat presence, subscribe to the shared channel, send @mentions with coordinate, and check or wait on mentions at natural checkpoints.",
             "Use encode for high-signal feedback, solutions, and postmortems. Agents may auto-trigger encode when a durable lesson emerges, while keeping secrets out of stored memory."
           ]
         }

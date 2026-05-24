@@ -1,10 +1,10 @@
-# Orchestrate Settings
+# Theorem's Harness Settings
 
-Default settings should make Orchestrate the visible product and keep specialist
-plugins internal unless the host explicitly exposes them.
+Default settings should make Theorem's Harness the visible product and keep
+specialist plugins internal unless the host explicitly exposes them.
 
 ```yaml
-exposure_mode: orchestrate_only
+exposure_mode: harness_only
 show_delegated_plugins: true
 allow_direct_plugin_commands: false
 use_federated_priors: true
@@ -44,8 +44,9 @@ profile defaults.
 
 | Mode | Meaning |
 |---|---|
-| `orchestrate_only` | Default. The user sees `/orchestrate`; internals remain delegated. |
-| `profile_tools` | Orchestrate may expose selected profile tools for advanced users. |
+| `harness_only` | Default. The user sees `/harness`; internals remain delegated. |
+| `orchestrate_only` | Deprecated compatibility spelling. Treat as `harness_only`. |
+| `profile_tools` | The Harness may expose selected profile tools for advanced users. |
 | `full_marketplace` | Direct plugin commands may be exposed by host settings. |
 
 ## Redis Harness Modes
@@ -76,12 +77,12 @@ profile defaults.
 
 | Setting | Meaning |
 |---|---|
-| `honor_repo_opt_in` | If true, read AGENTS.md and CLAUDE.md as host preference signals for Orchestrate/harness usage. |
+| `honor_repo_opt_in` | If true, read AGENTS.md and CLAUDE.md as host preference signals for Harness usage. |
 | `repo_opt_in_files` | Host files that may contain the opt-in note. |
 | `repo_opt_in_scope` | Limits opt-in behavior to `complex_only` by default so trivial tasks are not over-orchestrated. |
 
 ## Guardrail
 
-Advanced settings may expose direct commands, but Orchestrate remains the default
-product surface. Do not change default exposure to direct plugin marketplaces
-without a deliberate product decision.
+Advanced settings may expose direct commands, but Theorem's Harness remains the
+default product surface. Do not change default exposure to direct plugin
+marketplaces without a deliberate product decision.

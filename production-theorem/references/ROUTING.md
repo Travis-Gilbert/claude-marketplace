@@ -1,26 +1,28 @@
-# Production-Theorem / Orchestrate Routing
+# Production-Theorem / Theorem's Harness Routing
 
-Production-Theorem exposes one default user-facing skill plus small utility
-skills for refresh, coordination, encoding, and structural code compute:
+Production-Theorem packages Theorem's Harness as the default user-facing skill
+plus small utility skills for refresh, coordination, encoding, and structural
+code compute:
 
 | Canonical skill | Use when |
 |---|---|
-| `orchestrate` | the user wants planning, implementation, debugging, review, context preparation, validation, reporting, or routed specialist work |
+| `harness_theorem` | the user wants planning, implementation, debugging, review, context preparation, validation, reporting, coordination, memory, or routed specialist work |
 | `context-refresh` | the current context artifact is stale and the agent only needs a fresh compile |
-| `orchestrate-coordinate` | another agent is active and the task needs presence, @mentions, wait, or handoff protocol |
+| `harness-coordinate` | another agent is active and the task needs presence, @mentions, wait, or handoff protocol |
 | `encode` | a durable feedback item, solution, or postmortem should be saved |
 | `compute_code` | a code-search question benefits from graph-structural ranking |
 
-The older skill names remain compatibility surfaces, but Orchestrate is the
-default product command.
+The older skill names remain compatibility surfaces, but Theorem's Harness is
+the default product command.
 
-| Compatibility surface | Orchestrate mode |
+| Compatibility surface | Harness target |
 |---|---|
-| `theorize` | `orchestrate mode=theorize` |
-| `brainstorm` | `orchestrate mode=theorize` |
-| `planning-theorem` | `orchestrate mode=plan` |
-| `plan` | `orchestrate mode=plan` |
-| `execute` | `orchestrate mode=execute` |
+| `orchestrate` | `harness_theorem` |
+| `theorize` | `harness_theorem mode=theorize` |
+| `brainstorm` | `harness_theorem mode=theorize` |
+| `planning-theorem` | `harness_theorem mode=plan` |
+| `plan` | `harness_theorem mode=plan` |
+| `execute` | `harness_theorem mode=execute` |
 
 ## Important Note About Aliases
 
@@ -49,7 +51,7 @@ Do not expose these as separate user-facing skills:
 - redis-harness
 - thg-product-safety
 
-These are phases inside Orchestrate.
+These are phases inside Theorem's Harness.
 
 ## Profile Gates
 
@@ -68,16 +70,16 @@ checked when reality may live outside the repo, smallest attempted
 experiment or reason none was safe, current best default action, exact
 remaining blocker, the one specific user input needed).
 
-Both gates compose with the orchestrate routing below. They do not change
+Both gates compose with the Harness routing below. They do not change
 mode selection; they prevent the run from collapsing into lazy deferral
 or verbose narration.
 
 ## Routing Algorithm
 
-1. Use `orchestrate` by default.
+1. Use `harness_theorem` by default.
 2. If the user asks only to refresh context, route to `context-refresh`.
 3. If the user asks only to message, ping, or coordinate with another agent,
-   route to `orchestrate-coordinate`.
+   route to `harness-coordinate`.
 4. If the user asks only to encode feedback, a solution, or a postmortem,
    route to `encode`.
 5. If the user asks only for structural code search over an adjacency, route to

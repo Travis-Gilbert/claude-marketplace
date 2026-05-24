@@ -1,24 +1,69 @@
 ---
 name: harness_theorem
-description: Drive a Theseus database-harness run end-to-end. Use when the user asks to begin a run, record harness steps, replay a session, fork a run, compare alternatives, fractal-expand search, coordinate with another agent, manage typed agent memory, or work the V3 harness state machine. Triggers on phrases like "begin a harness run", "step the harness", "replay this run", "fork run", "compare runs", "harness toolkit", "fractal expansion", "coordinate with Claude", "check mentions", "agent memory".
+description: Theorem's Harness default skill. Use for planning, implementation, debugging, review, context preparation, validation, reporting, cross-agent coordination, typed memory, encode, run lifecycle, replay, fork/compare, fractal search, or V3 harness state-machine work. Triggers on /harness, "Theorem's Harness", "begin a harness run", "coordinate with Claude", "check mentions", "agent memory", "plan/execute through the harness", and compatibility /orchestrate requests.
 ---
 
-# harness_theorem
+# Theorem's Harness
 
-Orchestration skill for the Theorem-side harness cluster on the Theorem MCP. Chains the run-lifecycle, typed-memory, and headless coordination verbs into the canonical flow so the agent doesn't have to invent it.
+Theorem's Harness is the public product surface. It owns the full workflow that
+used to sit under the non-SDK `orchestrate` skill: observe, plan, compile
+context, coordinate, delegate, execute, validate, report, and learn. The SDK is
+plumbing, MCP is the tool bus, and slash commands/skills are the product layer.
 
 ## When to use
 
-User wants to operate the Theseus database harness directly:
-- "Begin a new harness run for task T."
-- "Step the run, then search inside it, then record the outcome."
-- "Replay run R and show me where it diverged from run R'."
-- "Fractal-expand from these seeds."
-- "Coordinate with Claude Code on this repo."
-- "Check whether I have pending mentions."
-- "Save/revise/archive this agent memory."
+Use this by default when the user wants Theorem's Harness to do grounded work:
+
+- plan, implement, debug, review, research, validate, or produce a report
+- compile context or refresh working context as part of a larger task
+- coordinate with Claude Code, Codex, Claude.ai, or another agent
+- begin, step, replay, fork, or compare a harness run
+- fractal-expand search or gather evidence into a run
+- save/revise/archive typed agent memory or encode a durable lesson
+- route across plugins, agents, Redis harness specialists, or code/context tools
 
 Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `document_write`), pure Django mutations (use the relevant verb directly).
+
+## Public command role
+
+- Primary command: `/harness`
+- Compatibility command: `/orchestrate` routes here.
+- Utility commands:
+  - `/context-refresh` for narrow context refresh only.
+  - `/coordinate` for cross-agent presence, @mentions, and waits only.
+  - `/encode` for feedback, solution, or postmortem memory only.
+  - `/compute_code` for graph-structural code ranking only.
+
+## Internal modes
+
+Use modes as phases inside the Harness, not separate products:
+
+- `observe`: understand the task, repo, and current run state.
+- `theorize`: explore options before commitment.
+- `plan`: produce checklist-first implementation plans.
+- `execute`: modify files, run checks, and reconcile the checklist.
+- `coordinate`: heartbeat, send/receive mentions, and avoid overlap.
+- `compile_context`: refresh or build the Context Artifact.
+- `validate`: run focused checks, visual gates, and production gates.
+- `remember`: encode lessons, postmortems, and memory candidates.
+
+When a phase needs the old orchestration contract in detail, load
+`../orchestrate/SKILL.md` as an internal reference. Do not present
+`orchestrate` as the product name in user-facing output.
+
+## Workflow
+
+1. Observe the live repo/tool state and identify the smallest real surface.
+2. Choose a Harness mode: theorize, plan, execute, coordinate, compile_context,
+   validate, or remember.
+3. Build stable checklist IDs before multi-step execution.
+4. Compile or refresh context when the task has drifted or the repo surface is
+   larger than the current prompt.
+5. Coordinate before overlapping with another active agent.
+6. Execute with focused edits, tests, and validation.
+7. Reconcile the checklist and report what is done, partial, blocked, skipped,
+   or failed.
+8. Encode high-signal lessons or postmortems when they will help a future run.
 
 ## Tools owned (Theorem MCP, Form-B short names)
 

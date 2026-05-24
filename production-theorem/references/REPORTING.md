@@ -82,11 +82,11 @@ If the SDK harness product is available, the report should be compatible with th
 
 If the harness is unavailable, preserve the same information in markdown and mark harness writeback as deferred.
 
-## Orchestrate Reporting
+## Harness Reporting
 
 Default report lineage:
 
-`Orchestrate Brief -> Orchestrate Plan -> Orchestrate Report -> Learning Candidate`
+`Harness Brief -> Harness Plan -> Harness Report -> Learning Candidate`
 
 The report must include:
 

@@ -1,15 +1,16 @@
 # Plugin Inventory
 
-Inventory generated for the Orchestrate v1 upgrade.
+Inventory generated for the Theorem's Harness upgrade.
 
 ## Skills
 
 | Skill | Public role | Orchestrate role | Compatibility |
 |---|---|---|---|
-| `orchestrate` | Default public command | Owns observe, plan, delegate, execute, validate, report, learn | New default |
+| `harness_theorem` | Default public command | Owns observe, plan, coordinate, delegate, execute, validate, report, learn | New default |
 | `context-refresh` | Public utility command | Calls `orchestrate_refresh` when an injected artifact is stale | Keep available |
-| `orchestrate-coordinate` | Public utility command | Teaches heartbeat, @mentions, wait, and handoff protocol | Keep available |
+| `harness-coordinate` | Public utility command | Teaches heartbeat, @mentions, wait, and handoff protocol | Keep available |
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
+| `orchestrate` | Compatibility command | Routes into Theorem's Harness | Keep available |
 | `theorize` | Compatibility command | Internal `theorize` mode | Keep available |
 | `planning-theorem` | Compatibility command | Internal `plan` mode | Keep available |
 | `execute` | Compatibility command | Internal `execute` mode | Keep available |
@@ -64,7 +65,7 @@ listed here.
 
 Default product command:
 
-- `/orchestrate`
+- `/harness`
 
 Utility commands:
 
@@ -75,11 +76,12 @@ Utility commands:
 
 Compatibility command language:
 
-- `/theorize` -> `/orchestrate mode=theorize`
-- `/brainstorm` -> `/orchestrate mode=theorize`
-- `/planning-theorem` -> `/orchestrate mode=plan`
-- `/plan` -> `/orchestrate mode=plan`
-- `/execute` -> `/orchestrate mode=execute`
+- `/orchestrate` -> `/harness`
+- `/theorize` -> `/harness mode=theorize`
+- `/brainstorm` -> `/harness mode=theorize`
+- `/planning-theorem` -> `/harness mode=plan`
+- `/plan` -> `/harness mode=plan`
+- `/execute` -> `/harness mode=execute`
 
 ## Internal Modes
 
@@ -113,7 +115,7 @@ Compatibility command language:
 ## Compatibility Risks
 
 - Host environments that enumerate all skills may still show the compatibility
-  skills. The default prompt and routing docs make `/orchestrate` the preferred
+  skills. The default prompt and routing docs make `/harness` the preferred
   surface without deleting old commands.
 - Redis/harness writeback is environment-sensitive. Orchestrate must report
   writeback as proven or deferred per run.

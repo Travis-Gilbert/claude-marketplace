@@ -43,7 +43,7 @@ A task is production-ready only when it passes the relevant gates or explicitly 
 - auth, tenant, and base URL expectations are explicit
 - performance budget or degradation story is understood
 
-### Orchestrate / Redis Harness Changes
+### Harness / Redis Changes
 
 - Orchestrate remains the default user-facing surface unless host settings
   explicitly expose direct plugin commands

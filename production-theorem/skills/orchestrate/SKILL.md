@@ -1,32 +1,35 @@
 ---
 name: orchestrate
-description: Use this skill when the user asks to plan, implement, debug, review, research, validate, route across plugins, compile context, execute a checklist, reconcile product harness work, or produce a production-grade report. Orchestrate is the default Production-Theorem command and delegates internally to planning, theorizing, execution, Redis harness agents, context, action rail, validation, and specialist agents.
+description: Compatibility/internal orchestration reference for Theorem's Harness. Public users should prefer /harness or production-theorem:harness_theorem. Keep this skill available so old /orchestrate calls and internal Harness references still resolve.
 ---
 
-# Orchestrate
+# Harness Orchestration Reference
 
-One command that turns intent into grounded work.
+Compatibility reference for the old Orchestrate workflow. The public product
+surface is now Theorem's Harness (`/harness`, skill `harness_theorem`). Keep this
+file as the detailed orchestration contract that Harness can load internally.
 
-Orchestrate plans the task, compiles the right context, delegates to hidden
+Harness plans the task, compiles the right context, delegates to hidden
 specialists, exposes an action rail, validates the outcome, and records learning
 candidates. It is the public upgrade path for Planning-Theorem: planning remains
-an internal phase, while Orchestrate owns the whole run from observation through
+an internal phase, while Harness owns the whole run from observation through
 report.
 
 ## User-Facing Role
 
-- Primary command: `/orchestrate`
+- Primary command: `/harness`
+- Compatibility command: `/orchestrate`
 - Compatibility aliases in prose:
-  - `/plan` -> `/orchestrate mode=plan`
-  - `/planning-theorem handoff=spark` -> `/orchestrate mode=plan handoff=spark`
-  - `/planning-theorem` -> `/orchestrate mode=plan`
-  - `/theorize` -> `/orchestrate mode=theorize`
-  - `/brainstorm` -> `/orchestrate mode=theorize`
-  - `/execute` -> `/orchestrate mode=execute`
+  - `/plan` -> `/harness mode=plan`
+  - `/planning-theorem handoff=spark` -> `/harness mode=plan handoff=spark`
+  - `/planning-theorem` -> `/harness mode=plan`
+  - `/theorize` -> `/harness mode=theorize`
+  - `/brainstorm` -> `/harness mode=theorize`
+  - `/execute` -> `/harness mode=execute`
 - Deliverables:
-  - `Orchestrate Brief`
-  - `Orchestrate Plan`
-  - `Orchestrate Report`
+  - `Harness Brief`
+  - `Harness Plan`
+  - `Harness Report`
 
 ## Checklist Manifesto
 
@@ -135,7 +138,7 @@ Recommended behavior:
 
 - prefer `prepare`, `preview`, `run`, or equivalent harness-backed surfaces for
   multi-file, high-risk, long-running, or context-heavy work
-- prefer `/orchestrate mode=plan handoff=spark` when the repo explicitly opts
+- prefer `/harness mode=plan handoff=spark` when the repo explicitly opts
   into planner-plus-worker execution
 - do not force harness or Orchestrate for trivial or clearly self-contained
   requests
@@ -252,12 +255,12 @@ Use these routes internally:
 | tests and validation | validator-reporter |
 | federation or learning | federation-learning-recorder |
 
-## Output Contract: Orchestrate Brief
+## Output Contract: Harness Brief
 
 Use this when the user wants exploration or decision support.
 
 ```md
-# Orchestrate Brief: <title>
+# Harness Brief: <title>
 
 ## Executive Summary
 - Current condition:
@@ -283,15 +286,15 @@ Use this when the user wants exploration or decision support.
 |---|---|---|
 
 ## Planning Inputs
-Concrete inputs for Orchestrate Plan.
+Concrete inputs for Harness Plan.
 ```
 
-## Output Contract: Orchestrate Plan
+## Output Contract: Harness Plan
 
 Use this when the user wants a plan/checklist.
 
 ```md
-# Orchestrate Plan: <title>
+# Harness Plan: <title>
 
 ## Executive Summary
 - Goal:
@@ -370,15 +373,15 @@ Include only for UI visual work.
 - Start with:
 - Preserve:
 - Run:
-- Report using Orchestrate Report.
+- Report using Harness Report.
 ```
 
-## Output Contract: Orchestrate Report
+## Output Contract: Harness Report
 
 Use this when work was executed or validated.
 
 ```md
-# Orchestrate Report: <title>
+# Harness Report: <title>
 
 ## Executive Summary
 - Final condition:
