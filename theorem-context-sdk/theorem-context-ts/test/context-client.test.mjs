@@ -40,6 +40,162 @@ test('context artifacts export calls signed export route', async () => {
   assert.deepEqual(result.payload, { id: 'artifact-1' });
 });
 
+test('encode namespace runs plan and searches operators', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const path = new URL(String(url)).pathname;
+      if (path.endsWith('/encode/plan/run/')) {
+        return new Response(
+          JSON.stringify({
+            plan_version: '0.1.0',
+            source_packet_id: 'source:mcp-fixture',
+            lowering_receipts: [],
+            derived_atoms: [],
+            discovery_candidates: [{ candidate_id: 'candidate:1' }],
+            validators_run: [],
+            proposals_emitted: [],
+            candidates_rejected: [],
+            cost_paid: {},
+            operator_candidates: [{ operator_id: 'operator:1' }],
+            capability_deltas: [{ delta_id: 'delta:1' }],
+            use_receipts: [{ receipt_id: 'use:1' }],
+            encoding_schemas: [{ schema_id: 'schema:1' }],
+            encoding_priors: [],
+            schemas_strengthened: ['schema:1'],
+            schemas_weakened: [],
+            discovery_run: { run_id: 'encode:1' },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (path.endsWith('/encode/operators/search/')) {
+        return new Response(
+          JSON.stringify([{ operator_id: 'operator:1' }]),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return new Response('{}', { status: 404 });
+    },
+  });
+
+  const result = await client.encode.runPlan({
+    source_packet: { source_packet_id: 'source:mcp-fixture' },
+    task: 'Prepare MCP context',
+  });
+  const operators = await client.encode.searchOperators({
+    runtime_surface: 'context_compile',
+  });
+
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/encode/plan/run/',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/encode/operators/search/?runtime_surface=context_compile',
+  );
+  assert.equal(result.discovery_run.run_id, 'encode:1');
+  assert.equal(result.capability_deltas[0].delta_id, 'delta:1');
+  assert.equal(operators[0].operator_id, 'operator:1');
+});
+
+test('first-class runtime namespaces map to shipped HTTP and THG routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    thgProductBaseUrl: 'http://localhost:8380',
+    thgApiToken: 'thg-token',
+    thgTenantId: 'tenant-a',
+    fetchImpl: async (url, init) => {
+      requests.push({ url: String(url), init });
+      const path = new URL(String(url)).pathname;
+      if (path.endsWith('/harness/runs/')) {
+        return new Response(
+          JSON.stringify({
+            run: {
+              run_id: 'run-1',
+              task: 'Research: pairformer gaps',
+              actor: 'agent',
+              scope: {},
+              status: 'running',
+              steps: [],
+              search_runs: [],
+              artifacts: [],
+              memory_patches: [],
+              validations: [],
+            },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return new Response(
+        JSON.stringify({ ok: true, path }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    },
+  });
+
+  await client.code.search({ query: 'Pairformer', entityType: 'class', limit: 5 });
+  await client.code.crawl({ repo: 'owner/repo', language: 'python' });
+  await client.instant_kg.status({ manifest: { version: 1 } });
+  await client.instantKg.reingest('https://example.com/doc');
+  await client.fractal.expand({ query: 'pairformer gaps' });
+  await client.provenance.trace({ traceId: 'trace-1', objectPk: 42 });
+  await client.provenance.trace({ query: 'safety', minConfidence: 0.5 });
+  await client.domains.list({ user: 'me' });
+  await client.domains.install({ packSlugs: ['code'] });
+  await client.coordinate({
+    message: '@claude-code hello',
+    docId: 'repo:codex-plugins',
+  });
+  await client.coordinate.mentions_wait({
+    actor: 'codex',
+    consume: true,
+    timeoutSeconds: 2,
+  });
+
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/code/symbols/?search=Pairformer&entity_type=class&limit=5',
+  );
+  assert.equal(requests[1].url, 'http://localhost:8000/api/v2/theseus/code/ingest/');
+  assert.equal(
+    requests[2].url,
+    'http://localhost:8380/v1/tenants/tenant-a/instant-kg/status',
+  );
+  assert.equal(requests[2].init.headers.Authorization, 'Bearer thg-token');
+  assert.equal(
+    requests[3].url,
+    'http://localhost:8000/api/v2/theseus/capture/instant-kg/',
+  );
+  assert.equal(requests[4].url, 'http://localhost:8000/api/v2/theseus/harness/runs/');
+  assert.equal(
+    requests[5].url,
+    'http://localhost:8000/api/v2/theseus/harness/runs/run-1/fractal-expansion/',
+  );
+  assert.equal(
+    requests[6].url,
+    'http://localhost:8000/api/v2/theseus/trace/trace-1/explain/42/',
+  );
+  assert.equal(
+    requests[7].url,
+    'http://localhost:8000/api/v2/theseus/trace/search/?query=safety&min_confidence=0.5&limit=20',
+  );
+  assert.equal(requests[8].url, 'http://localhost:8000/api/v2/packs/?user=me');
+  assert.equal(requests[9].url, 'http://localhost:8000/api/v2/pack-installs/');
+  assert.equal(
+    requests[10].url,
+    'http://localhost:8000/api/v2/theseus/harness/coordinate/',
+  );
+  assert.equal(
+    requests[11].url,
+    'http://localhost:8000/api/v2/theseus/harness/mentions/wait/',
+  );
+});
+
 test('context artifacts export wraps markdown route output', async () => {
   const requests = [];
   const client = new TheoremContextClient({
@@ -1769,6 +1925,233 @@ test('product namespace maps membership and review-queue routes', async () => {
     requests[5].url,
     'http://localhost:8000/api/v2/theseus/product/tenants/tenant-1/memory-patches/review/run-1/patch-1/',
   );
+});
+
+test('agent namespace maps runtime and GraphQL routes', async () => {
+  const requests = [];
+  const client = new TheoremContextClient({
+    baseUrl: 'http://localhost:8000/api/v2/theseus',
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      const path = String(url);
+      if (path.endsWith('/agent/tool-manifest/')) {
+        return jsonResponse({ tools: ['context_web.pack'] });
+      }
+      if (path.endsWith('/agent/domain-catalog/')) {
+        const payload = JSON.parse(init.body);
+        return jsonResponse({
+          actor: payload.actor,
+          adapter: payload.adapter ?? null,
+          domains: ['repo', 'web'],
+        });
+      }
+      if (path.endsWith('/agent/recommended-toolpack/')) {
+        return jsonResponse({
+          pack: { id: 'toolpack-1', task_signature: 'sig-1' },
+        });
+      }
+      if (path.endsWith('/agent/prepare/')) {
+        return jsonResponse({ agent: { id: 'agent-1', prepared: true } });
+      }
+      if (path.endsWith('/agent/search-context/')) {
+        return jsonResponse({ search: { run_id: 'run-search' } });
+      }
+      if (path.endsWith('/agent/hydrate-context/')) {
+        return jsonResponse({ hydrated: { count: 1 } });
+      }
+      if (path.endsWith('/agent/record-step/')) {
+        return jsonResponse({ step: { kind: 'tool_call' } });
+      }
+      if (path.endsWith('/agent/record-outcome/')) {
+        return jsonResponse({ outcome: { accepted: true } });
+      }
+      if (path.endsWith('/agent/explain-context/')) {
+        return jsonResponse({ explanation: { summary: 'context explained' } });
+      }
+      if (path.endsWith('/agent/export-artifact/')) {
+        return jsonResponse({ format: 'signed', artifact_id: 'artifact-1' });
+      }
+      if (path.endsWith('/agent/review-memory/')) {
+        return jsonResponse({ memory_patches: [] });
+      }
+      if (path.endsWith('/graphql/')) {
+        const payload = JSON.parse(init.body);
+        return jsonResponse({
+          data: {
+            [payload.operationName]: {
+              run_id: payload.variables.runId,
+              ok: true,
+            },
+          },
+        });
+      }
+      return new Response('', { status: 500 });
+    },
+  });
+
+  const manifest = await client.agent.toolManifest();
+  const domainCatalog = await client.agent.domainCatalog({
+    actor: 'codex',
+    adapter: 'chatgpt',
+  });
+  const domainCatalogByActor = await client.agent.domainCatalog('cursor');
+  const recommended = await client.agent.recommendedToolPack({
+    actor: 'codex',
+    adapter: 'custom',
+    task_signature: 'sig-1',
+  });
+  const prepared = await client.agent.prepareAgent({
+    actor: 'codex',
+    adapter: 'claude_code',
+    task_signature: 'sig-prepare-1',
+  });
+  const search = await client.agent.searchContext({
+    run_id: 'run-search',
+    query: 'find context',
+  });
+  const hydrated = await client.agent.hydrateContext({
+    run_id: 'run-search',
+    handles: ['artifact:1'],
+  });
+  const step = await client.agent.recordStep({
+    run_id: 'run-search',
+    kind: 'tool_call',
+    payload: { tool: 'Bash' },
+  });
+  const outcome = await client.agent.recordOutcome({
+    run_id: 'run-search',
+    accepted: true,
+    tests_passed: true,
+    summary: 'validated',
+  });
+  const explained = await client.agent.explainContext({
+    actor: 'codex',
+    adapter: 'codex',
+    artifact_id: 'art-1',
+  });
+  const exported = await client.agent.exportArtifact({
+    artifact_id: 'artifact-1',
+    format: 'signed',
+  });
+  const reviewed = await client.agent.reviewMemory({
+    run_id: 'run-search',
+  });
+  const harnessConsole = await client.agent.harnessRunConsole('run-1');
+  const memoryPreview = await client.agent.memoryRecallPreview('run-2');
+  const actionRail = await client.agent.actionRail('run-3');
+
+  assert.equal(manifest.tools[0], 'context_web.pack');
+  assert.deepEqual(
+    JSON.parse(requests[1].init.body),
+    { actor: 'codex', adapter: 'chatgpt' },
+  );
+  assert.deepEqual(domainCatalog, {
+    actor: 'codex',
+    adapter: 'chatgpt',
+    domains: ['repo', 'web'],
+  });
+  assert.deepEqual(requests[2].init.body, JSON.stringify({ actor: 'cursor' }));
+  assert.deepEqual(domainCatalogByActor, {
+    actor: 'cursor',
+    domains: ['repo', 'web'],
+    adapter: null,
+  });
+  assert.equal(
+    requests[0].url,
+    'http://localhost:8000/api/v2/theseus/agent/tool-manifest/',
+  );
+  assert.equal(
+    requests[1].url,
+    'http://localhost:8000/api/v2/theseus/agent/domain-catalog/',
+  );
+  assert.equal(
+    requests[2].url,
+    'http://localhost:8000/api/v2/theseus/agent/domain-catalog/',
+  );
+  assert.deepEqual(
+    JSON.parse(requests[3].init.body),
+    { actor: 'codex', adapter: 'custom', task_signature: 'sig-1' },
+  );
+  assert.equal(
+    requests[3].url,
+    'http://localhost:8000/api/v2/theseus/agent/recommended-toolpack/',
+  );
+  assert.equal(
+    requests[4].url,
+    'http://localhost:8000/api/v2/theseus/agent/prepare/',
+  );
+  assert.deepEqual(
+    JSON.parse(requests[4].init.body).task_signature,
+    'sig-prepare-1',
+  );
+  assert.equal(
+    requests[5].url,
+    'http://localhost:8000/api/v2/theseus/agent/search-context/',
+  );
+  assert.deepEqual(
+    JSON.parse(requests[5].init.body),
+    { run_id: 'run-search', query: 'find context' },
+  );
+  assert.equal(
+    requests[6].url,
+    'http://localhost:8000/api/v2/theseus/agent/hydrate-context/',
+  );
+  assert.equal(
+    requests[7].url,
+    'http://localhost:8000/api/v2/theseus/agent/record-step/',
+  );
+  assert.equal(
+    requests[8].url,
+    'http://localhost:8000/api/v2/theseus/agent/record-outcome/',
+  );
+  assert.equal(
+    requests[9].url,
+    'http://localhost:8000/api/v2/theseus/agent/explain-context/',
+  );
+  assert.equal(
+    requests[10].url,
+    'http://localhost:8000/api/v2/theseus/agent/export-artifact/',
+  );
+  assert.equal(
+    requests[11].url,
+    'http://localhost:8000/api/v2/theseus/agent/review-memory/',
+  );
+  assert.equal(
+    requests[12].url,
+    'http://localhost:8000/api/v2/theseus/graphql/',
+  );
+  assert.deepEqual(JSON.parse(requests[12].init.body), {
+    operationName: 'harnessRunConsole',
+    variables: { runId: 'run-1' },
+  });
+  assert.equal(
+    requests[13].url,
+    'http://localhost:8000/api/v2/theseus/graphql/',
+  );
+  assert.deepEqual(JSON.parse(requests[13].init.body), {
+    operationName: 'memoryRecallPreview',
+    variables: { runId: 'run-2' },
+  });
+  assert.equal(
+    requests[14].url,
+    'http://localhost:8000/api/v2/theseus/graphql/',
+  );
+  assert.deepEqual(JSON.parse(requests[14].init.body), {
+    operationName: 'actionRail',
+    variables: { runId: 'run-3' },
+  });
+  assert.equal(recommended.pack.id, 'toolpack-1');
+  assert.equal(prepared.agent.id, 'agent-1');
+  assert.equal(search.search.run_id, 'run-search');
+  assert.equal(hydrated.hydrated.count, 1);
+  assert.equal(step.step.kind, 'tool_call');
+  assert.equal(outcome.outcome.accepted, true);
+  assert.equal(explained.explanation.summary, 'context explained');
+  assert.equal(exported.artifact_id, 'artifact-1');
+  assert.deepEqual(reviewed.memory_patches, []);
+  assert.equal(harnessConsole.data.harnessRunConsole.run_id, 'run-1');
+  assert.equal(memoryPreview.data.memoryRecallPreview.run_id, 'run-2');
+  assert.equal(actionRail.data.actionRail.run_id, 'run-3');
 });
 
 function jsonResponse(body) {

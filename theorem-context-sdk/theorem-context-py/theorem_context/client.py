@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from typing import Any, AsyncIterator
+from urllib.parse import quote, urlencode
 
 import httpx
 
@@ -19,6 +20,8 @@ from .types import (
     ActionRailGenerateRequest,
     ActionRailPreviewRequest,
     ActionSelectedRequest,
+    AgentCatalogRequest,
+    AgentGraphQLRequest,
     ArtifactExport,
     ArtifactAttachResponse,
     ArtifactForkResponse,
@@ -34,6 +37,9 @@ from .types import (
     DiscoveryRunPreview,
     DiscoveryValidatorReceiptRequest,
     DiscoveryWritebackReviewRequest,
+    EncodePlanRunRequest,
+    EncodePlanRunResult,
+    EncodePromotionRequest,
     ExpressionRenderRequest,
     ExpressionRenderResult,
     GraphFocusResponse,
@@ -97,9 +103,18 @@ from .types import (
     THGCommandRequest,
     THGCypherRequest,
     THGResult,
+    Workstream,
+    AgentSession,
+    HandoffArtifact,
+    WorkstreamResolveRequest,
+    StartAgentSessionRequest,
+    EndAgentSessionRequest,
+    CompileHandoffRequest,
+    HandoffListResponse,
 )
 
 DEFAULT_BASE_URL = 'https://index-api-production-a5f7.up.railway.app/api/v2/theseus'
+DEFAULT_THG_PRODUCT_BASE_URL = 'https://thg-product-production.up.railway.app'
 
 
 class _ContextNamespace:
@@ -580,6 +595,233 @@ class _InferenceNamespace:
         return await self._client._inference_registry()
 
 
+class _EncodeNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def get_plan(self, plan_id: str = 'mcp_protocol_v1') -> dict[str, Any]:
+        return await self._client._encode_get_plan(plan_id)
+
+    async def run_plan(self, **kwargs: Any) -> EncodePlanRunResult:
+        request = EncodePlanRunRequest(**kwargs)
+        return await self._client._encode_run_plan(request)
+
+    async def get_run(self, run_id: str) -> dict[str, Any]:
+        return await self._client._encode_get_run(run_id)
+
+    async def candidates(self, run_id: str) -> list[dict[str, Any]]:
+        return await self._client._encode_get_candidates(run_id)
+
+    async def shadow(self, run_id: str) -> dict[str, Any]:
+        return await self._client._encode_shadow(run_id)
+
+    async def promote(self, candidate_id: str, **kwargs: Any) -> dict[str, Any]:
+        request = EncodePromotionRequest(**kwargs)
+        return await self._client._encode_promote(candidate_id, request)
+
+    async def search_operators(self, **filters: Any) -> list[dict[str, Any]]:
+        return await self._client._encode_search_operators(filters)
+
+    async def schemas(self, **filters: Any) -> list[dict[str, Any]]:
+        return await self._client._encode_schemas(filters)
+
+
+class _AgentNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def tool_manifest(self) -> dict[str, Any]:
+        return await self._client._agent_tool_manifest()
+
+    async def domain_catalog(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_domain_catalog(request)
+
+    async def recommended_toolpack(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_recommended_toolpack(request)
+
+    async def prepare(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_prepare(request)
+
+    async def prepare_agent(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        return await self.prepare(actor=actor, adapter=adapter, **payload)
+
+    async def explain_context(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_explain_context(request)
+
+    async def search_context(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_search_context(request)
+
+    async def hydrate_context(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_hydrate_context(request)
+
+    async def record_step(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_record_step(request)
+
+    async def record_outcome(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_record_outcome(request)
+
+    async def export_artifact(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_export_artifact(request)
+
+    async def review_memory(
+        self,
+        *,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+        **payload: Any,
+    ) -> dict[str, Any]:
+        request = AgentCatalogRequest(
+            actor=actor,
+            adapter=adapter,
+            **payload,
+        )
+        return await self._client._agent_review_memory(request)
+
+    async def harness_run_console(
+        self,
+        run_id: str,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+    ) -> dict[str, Any]:
+        return await self._client._agent_graphql_run(
+            operation_name='harnessRunConsole',
+            run_id=run_id,
+            actor=actor,
+            adapter=adapter,
+        )
+
+    async def memory_recall_preview(
+        self,
+        run_id: str,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+    ) -> dict[str, Any]:
+        return await self._client._agent_graphql_run(
+            operation_name='memoryRecallPreview',
+            run_id=run_id,
+            actor=actor,
+            adapter=adapter,
+        )
+
+    async def action_rail(
+        self,
+        run_id: str,
+        actor: str = 'agent',
+        adapter: str = 'custom',
+    ) -> dict[str, Any]:
+        return await self._client._agent_graphql_run(
+            operation_name='actionRail',
+            run_id=run_id,
+            actor=actor,
+            adapter=adapter,
+        )
+
+
 class _THGProfilesNamespace:
     def __init__(self, client: 'TheoremContextClient') -> None:
         self._client = client
@@ -829,6 +1071,237 @@ class _HarnessNamespace:
         return await self._client._harness_compare(request)
 
 
+class _CodeNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def search(self, query: str, **filters: Any) -> dict[str, Any]:
+        return await self._client._code_search(query, filters)
+
+    async def crawl(self, **kwargs: Any) -> dict[str, Any]:
+        return await self._client._code_crawl(kwargs)
+
+
+class _InstantKgNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def status(
+        self,
+        *,
+        tenant_slug: str | None = None,
+        tenant_id: str | None = None,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await self._client._instant_kg_status(
+            tenant_slug=tenant_slug,
+            tenant_id=tenant_id,
+            manifest=manifest,
+            delta=delta,
+        )
+
+    async def reingest(
+        self,
+        input: str,
+        *,
+        kind: str = 'url',
+        relation_confidence_floor: float | None = None,
+    ) -> dict[str, Any]:
+        return await self._client._instant_kg_reingest(
+            input=input,
+            kind=kind,
+            relation_confidence_floor=relation_confidence_floor,
+        )
+
+
+class _FractalNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def expand(
+        self,
+        query: str,
+        *,
+        run_id: str | None = None,
+        top_k: int = 20,
+        budget: dict[str, Any] | None = None,
+        scope: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await self._client._fractal_expand(
+            query=query,
+            run_id=run_id,
+            top_k=top_k,
+            budget=budget,
+            scope=scope,
+        )
+
+
+class _ProvenanceNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def trace(
+        self,
+        *,
+        trace_id: str | None = None,
+        object_pk: str | int | None = None,
+        query: str = '',
+        policy_intent: str | None = None,
+        min_confidence: float | None = None,
+        max_confidence: float | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        return await self._client._provenance_trace(
+            trace_id=trace_id,
+            object_pk=object_pk,
+            query=query,
+            policy_intent=policy_intent,
+            min_confidence=min_confidence,
+            max_confidence=max_confidence,
+            limit=limit,
+        )
+
+
+class _DomainsNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def list(self, *, user: str | None = None) -> dict[str, Any]:
+        return await self._client._domain_list(user=user)
+
+    async def install(
+        self,
+        pack_slugs: list[str],
+        *,
+        user: str = 'me',
+    ) -> dict[str, Any]:
+        return await self._client._domain_install(
+            pack_slugs=pack_slugs,
+            user=user,
+        )
+
+
+class _CoordinateNamespace:
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def __call__(self, **kwargs: Any) -> dict[str, Any]:
+        return await self.send(**kwargs)
+
+    async def send(self, **kwargs: Any) -> dict[str, Any]:
+        return await self._client._coordinate_send(**kwargs)
+
+    async def mentions(self, **kwargs: Any) -> dict[str, Any]:
+        return await self._client.mentions(**kwargs)
+
+    async def mentions_wait(self, **kwargs: Any) -> dict[str, Any]:
+        return await self._client.mentions_wait(**kwargs)
+
+    async def presence(self, **kwargs: Any) -> dict[str, Any]:
+        return await self._client.presence(**kwargs)
+
+    async def subscribe(self, **kwargs: Any) -> dict[str, Any]:
+        return await self._client.subscribe(**kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Continuous Agent Memory Harness namespaces.
+# See Index-API/docs/Harness Expansion.md §1, §5, §6.3, §8, §10, §12.
+# ---------------------------------------------------------------------------
+
+
+class _AgentSessionNamespace:
+    """``client.workstream.session.*`` actions on the active workstream."""
+
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def start(
+        self,
+        workstream_id: str,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        request = StartAgentSessionRequest(**kwargs)
+        return await self._client._workstream_session_start(
+            workstream_id,
+            request,
+        )
+
+    async def end(
+        self,
+        workstream_id: str,
+        agent_session_id: str,
+        *,
+        outcome: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        request = EndAgentSessionRequest(
+            agent_session_id=agent_session_id,
+            outcome=outcome,
+        )
+        return await self._client._workstream_session_end(
+            workstream_id,
+            request,
+        )
+
+
+class _WorkstreamHandoffNamespace:
+    """``client.workstream.handoff.*`` capsule operations."""
+
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def current(
+        self,
+        workstream_id: str,
+        **kwargs: Any,
+    ) -> HandoffArtifact:
+        request = CompileHandoffRequest(**kwargs)
+        return await self._client._workstream_handoff_current(
+            workstream_id,
+            request,
+        )
+
+
+class _WorkstreamNamespace:
+    """``client.workstream.*`` cross-agent memory workstream surface."""
+
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+        self.session = _AgentSessionNamespace(client)
+        self.handoff = _WorkstreamHandoffNamespace(client)
+
+    async def resolve(self, **kwargs: Any) -> Workstream:
+        request = WorkstreamResolveRequest(**kwargs)
+        return await self._client._workstream_resolve(request)
+
+    async def get(self, workstream_id: str) -> Workstream:
+        return await self._client._workstream_get(workstream_id)
+
+    async def handoffs(
+        self,
+        workstream_id: str,
+        *,
+        limit: int = 20,
+        cursor: str | None = None,
+    ) -> HandoffListResponse:
+        return await self._client._workstream_handoffs_list(
+            workstream_id,
+            limit=limit,
+            cursor=cursor,
+        )
+
+
+class _HandoffNamespace:
+    """``client.handoff.*`` lookups by handoff id."""
+
+    def __init__(self, client: 'TheoremContextClient') -> None:
+        self._client = client
+
+    async def get(self, handoff_id: str) -> HandoffArtifact:
+        return await self._client._handoff_get(handoff_id)
+
+
 class TheoremContextClient:
     """Async HTTP client for the Theorem Context Compiler.
 
@@ -845,7 +1318,11 @@ class TheoremContextClient:
         self,
         *,
         base_url: str | None = None,
+        api_root_url: str | None = None,
         plugins_base_url: str | None = None,
+        thg_product_base_url: str | None = None,
+        thg_api_token: str | None = None,
+        thg_tenant_id: str | None = None,
         api_key: str | None = None,
         timeout: float = 60.0,
         transport: httpx.AsyncBaseTransport | None = None,
@@ -861,9 +1338,34 @@ class TheoremContextClient:
             or _derive_plugins_base_url(resolved_base_url)
         )
         self.base_url = resolved_base_url.rstrip('/')
+        self.api_root_url = (
+            api_root_url
+            or _derive_api_root_url(resolved_base_url)
+        ).rstrip('/')
         self.plugins_base_url = (
             resolved_plugins_base_url
         ).rstrip('/')
+        self.thg_product_base_url = (
+            thg_product_base_url
+            or os.getenv('RUSTYRED_THG_BASE_URL')
+            or os.getenv('THEOREMS_HARNESS_THG_BASE_URL')
+            or os.getenv('THEOREM_HOT_GRAPH_BASE_URL')
+            or DEFAULT_THG_PRODUCT_BASE_URL
+        ).rstrip('/')
+        self.thg_api_token = (
+            thg_api_token
+            or os.getenv('RUSTYRED_THG_API_TOKEN')
+            or os.getenv('THEOREMS_HARNESS_THG_API_TOKEN')
+            or os.getenv('THEOREM_HOT_GRAPH_API_TOKEN')
+            or os.getenv('THEOREM_THG_API_TOKEN')
+        )
+        self.thg_tenant_id = (
+            thg_tenant_id
+            or os.getenv('THEOREMS_HARNESS_TENANT')
+            or os.getenv('RUSTYRED_THG_TENANT')
+            or os.getenv('THEOREM_TENANT_SLUG')
+            or 'default'
+        )
         self.api_key = (
             api_key
             or os.getenv('THEOREM_API_KEY')
@@ -876,9 +1378,19 @@ class TheoremContextClient:
         self.learning = _LearningNamespace(self)
         self.product = _ProductNamespace(self)
         self.inference = _InferenceNamespace(self)
+        self.encode = _EncodeNamespace(self)
+        self.agent = _AgentNamespace(self)
         self.harness = _HarnessNamespace(self)
         self.runs = self.harness
         self.thg = _THGNamespace(self)
+        self.workstream = _WorkstreamNamespace(self)
+        self.handoff = _HandoffNamespace(self)
+        self.code = _CodeNamespace(self)
+        self.instant_kg = _InstantKgNamespace(self)
+        self.fractal = _FractalNamespace(self)
+        self.provenance = _ProvenanceNamespace(self)
+        self.domains = _DomainsNamespace(self)
+        self.coordinate = _CoordinateNamespace(self)
         self.surface_status = {
             'artifacts': {
                 'export': {
@@ -899,11 +1411,27 @@ class TheoremContextClient:
                 'state_machine_public': False,
                 'state_machine_surface': 'thg',
                 'state_machine_run_model': 'HarnessRunState',
+                'mentions_wait': 'live',
+                'encode_memory': 'live',
             },
             'learning': {
                 'profiles': 'live',
                 'context_spend_plan': 'live',
                 'structural_signals': 'live',
+            },
+            'agent': {
+                'tool_manifest': 'live',
+                'domain_catalog': 'live',
+                'recommended_toolpack': 'live',
+                'prepare': 'live',
+                'search_context': 'live',
+                'hydrate_context': 'live',
+                'record_step': 'live',
+                'record_outcome': 'live',
+                'explain_context': 'live',
+                'export_artifact': 'live',
+                'review_memory': 'live',
+                'graphql': 'live',
             },
             'orchestrate': {
                 'run': 'live',
@@ -921,6 +1449,37 @@ class TheoremContextClient:
                 'expression': 'live',
                 'solver': 'live',
                 'discovery_run_preview': 'live',
+            },
+            'encode': {
+                'plan_run': 'live',
+                'operators_search': 'live',
+                'schemas': 'live',
+                'memory': 'live',
+            },
+            'code': {
+                'search': 'live',
+                'crawl': 'live',
+            },
+            'instant_kg': {
+                'status': 'thg-product',
+                'reingest': 'live',
+            },
+            'fractal': {
+                'expand': 'live',
+            },
+            'provenance': {
+                'trace': 'live',
+            },
+            'domains': {
+                'list': 'live',
+                'install': 'live',
+            },
+            'coordinate': {
+                'send': 'live',
+                'mentions': 'live',
+                'mentions_wait': 'live',
+                'presence': 'live',
+                'subscribe': 'live',
             },
         }
 
@@ -1335,6 +1894,21 @@ class TheoremContextClient:
             out['Authorization'] = f'Bearer {self.api_key}'
         return out
 
+    def _thg_product_headers(self) -> dict[str, str]:
+        out = {'Content-Type': 'application/json'}
+        if self.thg_api_token:
+            out['Authorization'] = f'Bearer {self.thg_api_token}'
+        return out
+
+    def _thg_tenant_url(
+        self,
+        *,
+        tenant_slug: str | None = None,
+        tenant_id: str | None = None,
+    ) -> str:
+        resolved_tenant = tenant_id or tenant_slug or self.thg_tenant_id
+        return f'{self.thg_product_base_url}/v1/tenants/{quote(resolved_tenant, safe="")}'
+
     async def _request(
         self,
         method: str,
@@ -1580,6 +2154,96 @@ class TheoremContextClient:
         )
         return SolverResult.model_validate(response.json())
 
+    async def _encode_get_plan(self, plan_id: str) -> dict[str, Any]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/encode/plans/{plan_id}/',
+            surface='encode plan get',
+            headers=self._headers(),
+        )
+        return dict(response.json())
+
+    async def _encode_run_plan(
+        self,
+        request: EncodePlanRunRequest,
+    ) -> EncodePlanRunResult:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/encode/plan/run/',
+            surface='encode plan run',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return EncodePlanRunResult.model_validate(response.json())
+
+    async def _encode_get_run(self, run_id: str) -> dict[str, Any]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/encode/runs/{run_id}/',
+            surface='encode run get',
+            headers=self._headers(),
+        )
+        return dict(response.json())
+
+    async def _encode_get_candidates(self, run_id: str) -> list[dict[str, Any]]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/encode/runs/{run_id}/candidates/',
+            surface='encode run candidates',
+            headers=self._headers(),
+        )
+        return [dict(item) for item in response.json()]
+
+    async def _encode_shadow(self, run_id: str) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/encode/runs/{run_id}/shadow/',
+            surface='encode shadow',
+            headers=self._headers(),
+            content='{}',
+        )
+        return dict(response.json())
+
+    async def _encode_promote(
+        self,
+        candidate_id: str,
+        request: EncodePromotionRequest,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/encode/proposals/{candidate_id}/promote/',
+            surface='encode promote',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return dict(response.json())
+
+    async def _encode_search_operators(
+        self,
+        filters: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/encode/operators/search/',
+            surface='encode operators search',
+            headers=self._headers(),
+            params=filters,
+        )
+        return [dict(item) for item in response.json()]
+
+    async def _encode_schemas(
+        self,
+        filters: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/encode/schemas/',
+            surface='encode schemas',
+            headers=self._headers(),
+            params=filters,
+        )
+        return [dict(item) for item in response.json()]
+
     async def _inference_discovery_preview(
         self,
         request: DiscoveryPreviewRequest,
@@ -1720,6 +2384,141 @@ class TheoremContextClient:
             content=request.model_dump_json(exclude_none=True),
         )
         return KernelRun.model_validate(response.json())
+
+    async def _agent_tool_manifest(self) -> dict[str, Any]:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/agent/tool-manifest/',
+            surface='agent tool manifest',
+            headers=self._headers(),
+        )
+        return response.json()
+
+    async def _agent_domain_catalog(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/domain-catalog/',
+            surface='agent domain catalog',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_recommended_toolpack(
+        self,
+        request: AgentCatalogRequest,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/recommended-toolpack/',
+            surface='agent recommended toolpack',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_prepare(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/prepare/',
+            surface='agent prepare',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_explain_context(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/explain-context/',
+            surface='agent explain context',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_search_context(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/search-context/',
+            surface='agent search context',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_hydrate_context(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/hydrate-context/',
+            surface='agent hydrate context',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_record_step(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/record-step/',
+            surface='agent record step',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_record_outcome(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/record-outcome/',
+            surface='agent record outcome',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_export_artifact(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/export-artifact/',
+            surface='agent export artifact',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_review_memory(self, request: AgentCatalogRequest) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/agent/review-memory/',
+            surface='agent review memory',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _agent_graphql_run(
+        self,
+        *,
+        operation_name: str,
+        run_id: str,
+        actor: str,
+        adapter: str,
+    ) -> dict[str, Any]:
+        _ = actor
+        _ = adapter
+        request = AgentGraphQLRequest(
+            operationName=operation_name,
+            variables={'runId': run_id},
+        )
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/graphql/',
+            surface=f'agent {operation_name}',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
 
     async def _context_command_resolve(
         self,
@@ -1885,6 +2684,576 @@ class TheoremContextClient:
         )
         return response.json()
 
+    async def _recall(
+        self,
+        *,
+        query: str = '',
+        actor: str | None = None,
+        surface: str | None = None,
+        kind: str | None = None,
+        since: str | None = None,
+        limit: int = 10,
+        tenant_slug: str | None = None,
+        include_low_fitness: bool = False,
+        include_consolidation_sources: bool = False,
+        consume_handoffs: bool = False,
+    ) -> dict:
+        """Hit POST /v2/harness/recall (MEM-029 endpoint)."""
+        body: dict[str, Any] = {
+            'query': query,
+            'limit': limit,
+            'include_low_fitness': include_low_fitness,
+            'include_consolidation_sources': include_consolidation_sources,
+            'consume_handoffs': consume_handoffs,
+        }
+        if actor:
+            body['actor'] = actor
+        if surface:
+            body['surface'] = surface
+        if kind:
+            body['kind'] = kind
+        if since:
+            body['since'] = since
+        if tenant_slug:
+            body['tenant_slug'] = tenant_slug
+
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/recall/',
+            surface='recall',
+            kind='harness',
+            headers=self._headers(),
+            json=body,
+        )
+        return response.json()
+
+    async def recall(
+        self,
+        *,
+        query: str = '',
+        actor: str | None = None,
+        surface: str | None = None,
+        kind: str | None = None,
+        since: str | None = None,
+        limit: int = 10,
+        tenant_slug: str | None = None,
+        include_low_fitness: bool = False,
+        include_consolidation_sources: bool = False,
+        consume_handoffs: bool = False,
+    ) -> dict:
+        """Unified cross-surface memory recall (MEM-032).
+
+        Mirrors the TS client's top-level ``recall`` method. Hits the
+        MEM-029 endpoint and returns the same shape the MCP `recall`
+        verb returns: ``{results, count}``.
+        """
+        return await self._recall(
+            query=query,
+            actor=actor,
+            surface=surface,
+            kind=kind,
+            since=since,
+            limit=limit,
+            tenant_slug=tenant_slug,
+            include_low_fitness=include_low_fitness,
+            include_consolidation_sources=include_consolidation_sources,
+            consume_handoffs=consume_handoffs,
+        )
+
+    async def self_note(
+        self,
+        *,
+        content: str,
+        title: str | None = None,
+        kind: str = 'self_note',
+        memory_node_type: str = 'belief',
+        tenant_slug: str | None = None,
+        tags: list[str] | None = None,
+        links: list[str] | None = None,
+        summary: str = '',
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/memory/self-note/',
+            surface='self note',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'title': title,
+                'content': content,
+                'kind': kind,
+                'memory_node_type': memory_node_type,
+                'tags': tags or [],
+                'links': links or [],
+                'summary': summary,
+            },
+        )
+        return response.json()
+
+    async def self_revise(
+        self,
+        *,
+        doc_id: str,
+        content: str,
+        title: str | None = None,
+        summary: str = '',
+        reason: str = '',
+        memory_node_type: str | None = None,
+        tenant_slug: str | None = None,
+        cites_doc_ids: list[str] | None = None,
+        derived_from_doc_ids: list[str] | None = None,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/memory/self-revise/',
+            surface='self revise',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'doc_id': doc_id,
+                'content': content,
+                'title': title,
+                'summary': summary,
+                'reason': reason,
+                'memory_node_type': memory_node_type,
+                'cites_doc_ids': cites_doc_ids or [],
+                'derived_from_doc_ids': derived_from_doc_ids or [],
+            },
+        )
+        return response.json()
+
+    async def self_archive(
+        self,
+        *,
+        doc_id: str,
+        reason: str = '',
+        title: str | None = None,
+        tenant_slug: str | None = None,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/memory/self-archive/',
+            surface='self archive',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'doc_id': doc_id,
+                'reason': reason,
+                'title': title,
+            },
+        )
+        return response.json()
+
+    async def self_recall_archive(
+        self,
+        *,
+        query: str = '',
+        actor: str | None = None,
+        limit: int = 10,
+        tenant_slug: str | None = None,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/memory/self-recall-archive/',
+            surface='self recall archive',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'query': query,
+                'actor': actor,
+                'limit': limit,
+            },
+        )
+        return response.json()
+
+    async def encode_memory(
+        self,
+        *,
+        content: str,
+        title: str | None = None,
+        kind: str = 'encode',
+        outcome: str = 'neutral',
+        signal: str | None = None,
+        reason: str = '',
+        event_id: str = '',
+        tenant_slug: str | None = None,
+        tags: list[str] | None = None,
+        links: list[str] | None = None,
+        summary: str = '',
+        metadata: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
+        auto_triggered: bool = False,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/encode/',
+            surface='encode memory',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'title': title,
+                'content': content,
+                'kind': kind,
+                'outcome': outcome,
+                'signal': signal,
+                'reason': reason,
+                'event_id': event_id,
+                'tags': tags or [],
+                'links': links or [],
+                'summary': summary,
+                'metadata': metadata or {},
+                'context': context or {},
+                'auto_triggered': auto_triggered,
+            },
+        )
+        return response.json()
+
+    async def _code_search(
+        self,
+        query: str,
+        filters: dict[str, Any],
+    ) -> dict[str, Any]:
+        params = {
+            'search': query,
+            'entity_type': filters.get('entity_type') or filters.get('entityType'),
+            'language': filters.get('language'),
+            'repo': filters.get('repo'),
+            'limit': filters.get('limit'),
+        }
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/code/symbols/',
+            surface='code search',
+            kind='harness',
+            headers=self._headers(),
+            params=_compact_dict(params),
+        )
+        return response.json()
+
+    async def _code_crawl(self, options: dict[str, Any]) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/code/ingest/',
+            surface='code crawl',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'repo': options.get('repo'),
+                'path': options.get('path'),
+                'paths': options.get('paths'),
+                'language': options.get('language'),
+                'notebook_id': (
+                    options.get('notebook_id')
+                    or options.get('notebookId')
+                ),
+                'graph_write_token': (
+                    options.get('graph_write_token')
+                    or options.get('graphWriteToken')
+                ),
+            },
+        )
+        return response.json()
+
+    async def _instant_kg_status(
+        self,
+        *,
+        tenant_slug: str | None = None,
+        tenant_id: str | None = None,
+        manifest: dict[str, Any] | None = None,
+        delta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self._thg_tenant_url(tenant_slug=tenant_slug, tenant_id=tenant_id)}/instant-kg/status',
+            surface='instant kg status',
+            kind='harness',
+            headers=self._thg_product_headers(),
+            json=_compact_dict({
+                'manifest': manifest,
+                'delta': delta,
+            }),
+        )
+        return response.json()
+
+    async def _instant_kg_reingest(
+        self,
+        *,
+        input: str,
+        kind: str = 'url',
+        relation_confidence_floor: float | None = None,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/capture/instant-kg/',
+            surface='instant kg reingest',
+            kind='harness',
+            headers=self._headers(),
+            json=_compact_dict({
+                'input': input,
+                'kind': kind,
+                'relation_confidence_floor': relation_confidence_floor,
+            }),
+        )
+        return response.json()
+
+    async def _fractal_expand(
+        self,
+        *,
+        query: str,
+        run_id: str | None = None,
+        top_k: int = 20,
+        budget: dict[str, Any] | None = None,
+        scope: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        active_run_id = run_id
+        if not active_run_id:
+            run = await self._harness_begin(
+                HarnessBeginRequest(
+                    task=f'Research: {query}',
+                    actor='agent',
+                    scope={'mode': 'research', 'source': 'theorem-context-sdk'},
+                )
+            )
+            active_run_id = run.run_id
+        if not active_run_id:
+            raise HarnessError('fractal expand failed: unable to resolve harness run id')
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/runs/{active_run_id}/fractal-expansion/',
+            surface='fractal expand',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'query': query,
+                'budget': {
+                    **(budget or {}),
+                    'top_k': top_k,
+                },
+                'scope': scope or {},
+            },
+        )
+        return {'run_id': active_run_id, **response.json()}
+
+    async def _provenance_trace(
+        self,
+        *,
+        trace_id: str | None = None,
+        object_pk: str | int | None = None,
+        query: str = '',
+        policy_intent: str | None = None,
+        min_confidence: float | None = None,
+        max_confidence: float | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        if trace_id and object_pk is not None:
+            response = await self._request(
+                'GET',
+                (
+                    f'{self.base_url}/trace/{quote(trace_id, safe="")}/'
+                    f'explain/{quote(str(object_pk), safe="")}/'
+                ),
+                surface='provenance trace explain',
+                kind='harness',
+                headers=self._headers(),
+            )
+            return response.json()
+        if trace_id:
+            response = await self._request(
+                'GET',
+                f'{self.base_url}/trace/{quote(trace_id, safe="")}/',
+                surface='provenance trace',
+                kind='harness',
+                headers=self._headers(),
+            )
+            return response.json()
+        params = _compact_dict({
+            'query': query,
+            'policy_intent': policy_intent,
+            'min_confidence': min_confidence,
+            'max_confidence': max_confidence,
+            'limit': limit,
+        })
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/trace/search/?{urlencode(params)}',
+            surface='provenance trace search',
+            kind='harness',
+            headers=self._headers(),
+        )
+        return response.json()
+
+    async def _domain_list(
+        self,
+        *,
+        user: str | None = None,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'GET',
+            f'{self.api_root_url}/packs/',
+            surface='domain list',
+            kind='harness',
+            headers=self._headers(),
+            params=_compact_dict({'user': user}),
+        )
+        return response.json()
+
+    async def _domain_install(
+        self,
+        *,
+        pack_slugs: list[str],
+        user: str = 'me',
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.api_root_url}/pack-installs/',
+            surface='domain install',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'user': user,
+                'pack_slugs': pack_slugs,
+            },
+        )
+        return response.json()
+
+    async def _coordinate_send(
+        self,
+        *,
+        message: str,
+        doc_id: str | None = None,
+        urgency: str = 'info',
+        title: str | None = None,
+        tenant_slug: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/coordinate/',
+            surface='coordinate',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'doc_id': doc_id,
+                'message': message,
+                'urgency': urgency,
+                'title': title,
+                'metadata': metadata or {},
+            },
+        )
+        return response.json()
+
+    async def coordinate_message(
+        self,
+        **kwargs: Any,
+    ) -> dict:
+        return await self._coordinate_send(**kwargs)
+
+    async def mentions(
+        self,
+        *,
+        actor: str | None = None,
+        tenant_slug: str | None = None,
+        limit: int = 20,
+        consume: bool = False,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/mentions/',
+            surface='mentions',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'actor': actor,
+                'limit': limit,
+                'consume': consume,
+            },
+        )
+        return response.json()
+
+    async def mentions_wait(
+        self,
+        *,
+        actor: str | None = None,
+        tenant_slug: str | None = None,
+        limit: int = 20,
+        consume: bool = False,
+        timeout_seconds: int = 30,
+        interval_seconds: float = 1.0,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/mentions/wait/',
+            surface='mentions wait',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'actor': actor,
+                'limit': limit,
+                'consume': consume,
+                'timeout_seconds': timeout_seconds,
+                'interval_seconds': interval_seconds,
+            },
+        )
+        return response.json()
+
+    async def presence(
+        self,
+        *,
+        actor: str | None = None,
+        tenant_slug: str | None = None,
+        session_id: str | None = None,
+        surface: str | None = None,
+        ttl_seconds: int = 60,
+        status: str = 'active',
+        mode: str = 'heartbeat',
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/presence/',
+            surface='presence',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'actor': actor,
+                'session_id': session_id,
+                'surface': surface,
+                'ttl_seconds': ttl_seconds,
+                'status': status,
+                'mode': mode,
+            },
+        )
+        return response.json()
+
+    async def subscribe(
+        self,
+        *,
+        actor: str | None = None,
+        tenant_slug: str | None = None,
+        doc_id: str | None = None,
+    ) -> dict:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/harness/subscribe/',
+            surface='subscribe',
+            kind='harness',
+            headers=self._headers(),
+            json={
+                'tenant_slug': tenant_slug,
+                'actor': actor,
+                'doc_id': doc_id,
+            },
+        )
+        return response.json()
+
     async def _search_postmortems(self, query: str) -> dict:
         response = await self._http.get(
             f'{self.base_url}/',
@@ -1905,6 +3274,120 @@ class TheoremContextClient:
             content=request.model_dump_json(exclude_none=True),
         )
         return HarnessRun.model_validate(response.json()['run'])
+
+    # ------------------------------------------------------------------
+    # Continuous Agent Memory Harness HTTP surface.
+    # See Index-API/apps/orchestrate/api/workstream.py for the server
+    # routes and `Index-API/docs/Harness Expansion.md` §1, §5, §12 for
+    # the contract.
+    # ------------------------------------------------------------------
+
+    async def _workstream_resolve(
+        self,
+        request: WorkstreamResolveRequest,
+    ) -> Workstream:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/resolve/',
+            surface='workstream resolve',
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        payload = response.json()
+        return Workstream.model_validate(payload.get('workstream') or payload)
+
+    async def _workstream_get(self, workstream_id: str) -> Workstream:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/workstream/{workstream_id}/',
+            surface='workstream get',
+            kind='harness',
+            headers=self._headers(),
+        )
+        payload = response.json()
+        return Workstream.model_validate(payload.get('workstream') or payload)
+
+    async def _workstream_session_start(
+        self,
+        workstream_id: str,
+        request: StartAgentSessionRequest,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/{workstream_id}/session/start/',
+            surface='workstream session start',
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _workstream_session_end(
+        self,
+        workstream_id: str,
+        request: EndAgentSessionRequest,
+    ) -> dict[str, Any]:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/{workstream_id}/session/end/',
+            surface='workstream session end',
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        return response.json()
+
+    async def _workstream_handoff_current(
+        self,
+        workstream_id: str,
+        request: CompileHandoffRequest,
+    ) -> HandoffArtifact:
+        response = await self._request(
+            'POST',
+            f'{self.base_url}/workstream/{workstream_id}/handoff/current/',
+            surface='workstream handoff current',
+            kind='harness',
+            headers=self._headers(),
+            content=request.model_dump_json(exclude_none=True),
+        )
+        payload = response.json()
+        return HandoffArtifact.model_validate(
+            payload.get('handoff') or payload,
+        )
+
+    async def _workstream_handoffs_list(
+        self,
+        workstream_id: str,
+        *,
+        limit: int = 20,
+        cursor: str | None = None,
+    ) -> HandoffListResponse:
+        params: dict[str, Any] = {'limit': int(limit)}
+        if cursor:
+            params['cursor'] = str(cursor)
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/workstream/{workstream_id}/handoffs/',
+            surface='workstream handoffs',
+            kind='harness',
+            headers=self._headers(),
+            params=params,
+        )
+        return HandoffListResponse.model_validate(response.json())
+
+    async def _handoff_get(self, handoff_id: str) -> HandoffArtifact:
+        response = await self._request(
+            'GET',
+            f'{self.base_url}/handoff/{handoff_id}/',
+            surface='handoff get',
+            kind='harness',
+            headers=self._headers(),
+        )
+        payload = response.json()
+        return HandoffArtifact.model_validate(
+            payload.get('handoff') or payload,
+        )
 
     async def _harness_get(self, run_id: str) -> HarnessRun:
         response = await self._request(
@@ -2189,6 +3672,12 @@ def _derive_plugins_base_url(base_url: str) -> str:
     if base_url.endswith('/theseus'):
         return f'{base_url[:-len("/theseus")]}/plugins'
     return f'{base_url}/plugins'
+
+
+def _derive_api_root_url(base_url: str) -> str:
+    if base_url.endswith('/theseus'):
+        return base_url[:-len('/theseus')]
+    return base_url
 
 
 def _compact_dict(data: dict[str, Any]) -> dict[str, Any]:

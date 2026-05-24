@@ -1,5 +1,5 @@
 {
-  "description": "Theorem Context lifecycle hooks for Claude Code. Out-of-band orchestration before each model turn; action recording after each tool use; run finalization at session end.",
+  "description": "Theorem Context lifecycle hooks for Claude Code. Out-of-band orchestration before each model turn; action recording after each tool use; run finalization at session end. Mirrors the schema of codex-hooks.json but uses Claude Code's ${CLAUDE_PLUGIN_ROOT} env var and shell:bash invocation style.",
   "hooks": {
     "SessionStart": [
       {
@@ -9,13 +9,15 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/begin-run.sh",
-            "timeout": 15
+            "timeout": 15,
+            "statusMessage": "Starting theorem harness run"
           },
           {
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionstart-codebase.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Loading codebase context"
           }
         ]
       }
@@ -27,13 +29,15 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-context.sh",
-            "timeout": 30
+            "timeout": 30,
+            "statusMessage": "Preparing theorem context"
           },
           {
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/subagent-suggest.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Suggesting subagents"
           }
         ]
       }
@@ -46,13 +50,15 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/enforce-action-rail.sh",
-            "timeout": 5
+            "timeout": 5,
+            "statusMessage": "Checking theorem action rail"
           },
           {
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pretool-context.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Loading pre-tool context"
           }
         ]
       }
@@ -65,13 +71,15 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/record-action.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Recording theorem action"
           },
           {
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-context.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Recording post-tool context"
           }
         ]
       }
@@ -83,13 +91,15 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/filechange-context.sh",
-            "timeout": 5
+            "timeout": 5,
+            "statusMessage": "Capturing file-change context"
           },
           {
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/filechange-reingest.sh",
-            "timeout": 5
+            "timeout": 5,
+            "statusMessage": "Reingesting changed files"
           }
         ]
       }
@@ -101,13 +111,15 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionend-context.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Flushing session-end context"
           },
           {
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/finalize-run.sh",
-            "timeout": 30
+            "timeout": 30,
+            "statusMessage": "Finalizing theorem run"
           }
         ]
       }
@@ -119,7 +131,8 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/precompact-flush.sh",
-            "timeout": 10
+            "timeout": 10,
+            "statusMessage": "Flushing context before compaction"
           }
         ]
       }

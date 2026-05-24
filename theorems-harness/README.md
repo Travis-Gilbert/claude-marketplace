@@ -50,9 +50,18 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 | `hooks/hooks.json.disabled` | Claude Code lifecycle hooks kept disabled by default until the Claude hook auto-load path is explicitly re-enabled. Five events: `SessionStart` begins a harness run, `UserPromptSubmit` calls the internal prepare route and injects the Context Brief before the model turn, `PreToolUse` enforces the Action Rail, `PostToolUse` records each tool call as a `step` event, `Stop` records run outcome and state hash. |
 | `hooks/codex-hooks.json` | Codex lifecycle hooks. Same five events, but packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
-| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes context refresh/replay, code search, research/fractal expansion, saved-context product tools, memory-patch review tools, headless coordination tools (`self_note`, `coordinate`, `mentions`, `mentions_wait`, `presence`, etc.), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
+| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
 
 The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
+
+The slim MCP advertises these launch-facing tools through `listTools`:
+
+- Context and runs: `context_compile`, `orchestrate_refresh`, `harness_replay`, `harness_describe_current`
+- Code and research: `code_search`, `code_crawl`, `harness_fractal_expansion`, `fractal_expand`
+- Pairformer/graph readiness: `instant_kg_status`, `instant_kg_reingest`, `provenance_trace`
+- Coordination: `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`
+- Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
+- Product/domain operations: `product_bootstrap`, `saved_contexts_list`, `saved_context_create`, `saved_context_update`, `saved_context_mute`, `saved_context_activate`, `saved_context_delete`, `saved_context_preview_recall`, `memory_patch_review_queue`, `memory_patch_review_update`, `domain_list`, `domain_install`
 
 ## Configuration
 
@@ -103,6 +112,11 @@ plugin_hooks = true
 - `POST /api/v2/theseus/harness/runs/` (begin run)
 - `POST /api/v2/theseus/orchestrate/prepare/` (internal prepare route; public command is `/context-refresh`)
 - `POST /api/v2/theseus/context/compile/` (PPR-compiled artifact, auth-gated)
+- `GET  /api/v2/theseus/code/symbols/` (code graph symbol search)
+- `POST /api/v2/theseus/code/ingest/` (operator-approved code graph ingest/crawl)
+- `POST /api/v2/theseus/capture/instant-kg/` (enqueue Instant KG reingest/capture)
+- `GET  /api/v2/theseus/trace/search/` and `GET /api/v2/theseus/trace/{id}/` (reasoning provenance trace reads)
+- `GET  /api/v2/packs/` and `POST /api/v2/pack-installs/` (domain pack list/install)
 - `POST /api/v2/theseus/harness/runs/{id}/step/` (record tool use)
 - `POST /api/v2/theseus/harness/runs/{id}/outcome/` (run outcome)
 - `POST /api/v2/theseus/harness/runs/{id}/context-injected/` (mark inject)

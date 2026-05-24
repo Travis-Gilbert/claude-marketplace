@@ -2,12 +2,66 @@
 
 TypeScript / JavaScript SDK for Context Theorem.
 
+## OpenAPI
+
+These package clients target the product-facing Context Theorem v2 API. For
+manual HTTP work or generated tooling, use the v2 Django Ninja schema rather
+than the legacy DRF compatibility schema.
+
+| Purpose | URL |
+| --- | --- |
+| SDK `baseUrl` | `https://<host>/api/v2/theseus` |
+| SDK `pluginsBaseUrl` | `https://<host>/api/v2/plugins` |
+| v2 OpenAPI JSON | `https://<host>/api/v2/openapi.json` |
+| v2 interactive docs | `https://<host>/api/v2/docs` |
+| legacy DRF schema | `https://<host>/api/schema/` |
+| legacy Swagger / ReDoc | `https://<host>/api/schema/swagger/`, `https://<host>/api/schema/redoc/` |
+
+`TheoremContextClient` expects its `baseUrl` to include `/api/v2/theseus`,
+while the OpenAPI document lives one level higher at `/api/v2/openapi.json`.
+`pluginsBaseUrl` is derived automatically from `baseUrl` unless you override
+it explicitly.
+
+### Namespace to path mapping
+
+| SDK surface | HTTP path family |
+| --- | --- |
+| `cc.context.*` | `/api/v2/theseus/context/*` |
+| `cc.contextCommand.*` | `/api/v2/theseus/context-command/*` |
+| `cc.actions.*` | `/api/v2/theseus/action-rail/*` |
+| `cc.harness.*` | `/api/v2/theseus/harness/*` |
+| `cc.orchestrate()`, `cc.orchestratePreview()`, `cc.orchestratePrepare()` | `/api/v2/theseus/orchestrate/*` |
+| `cc.inference.*` | `/api/v2/theseus/inference/*` |
+| `cc.encode.*` | `/api/v2/theseus/encode/*` |
+| `cc.learning.*` | `/api/v2/plugins/learning/*` |
+| `cc.product.*` | `/api/v2/theseus/product/*` |
+| `cc.thg.*` | `/api/v2/theseus/harness/thg/*` |
+
+### Pull the live spec
+
+```bash
+curl \
+  -H "Authorization: Bearer $THEOREM_API_KEY" \
+  "$THEOREM_CONTEXT_SERVER/api/v2/openapi.json"
+```
+
+Set `THEOREM_CONTEXT_SERVER` to the host root, for example
+`https://index-api-production-a5f7.up.railway.app`, not the SDK `baseUrl`.
+
+The SDK is a hand-written typed wrapper over that OpenAPI surface, so method
+names are curated for ergonomics rather than mirroring raw operation ids.
+When you drop to direct HTTP, keep the v2 trailing-slash convention from the
+spec.
+
+Prefer `THEOREM_API_KEY` for agent and MCP wiring. `THEOREM_CONTEXT_API_KEY`
+remains accepted as a legacy alias during the transition.
+
 ```ts
 import { TheoremContextClient } from '@context/theorem';
 
 const cc = new TheoremContextClient({
   baseUrl: process.env.THEOREM_CONTEXT_BASE_URL,
-  apiKey: process.env.THEOREM_CONTEXT_API_KEY,
+  apiKey: process.env.THEOREM_API_KEY ?? process.env.THEOREM_CONTEXT_API_KEY,
 });
 
 const artifact = await cc.context.compile({
@@ -22,6 +76,63 @@ for await (const event of cc.context.compileStream({ task: '...' })) {
   console.log(event.event, event.data);
 }
 ```
+
+## Memory and Harness Facade
+
+The `Harness` class is an additive ergonomic facade over
+`TheoremContextClient` that exposes three responsibility-scoped
+namespaces matching the conversation's three-MCP split mental model
+(memory / action / diagnose). The underlying `TheoremContextClient`
+keeps working unchanged; the facade is purely a more-ergonomic surface
+on top.
+
+```ts
+import { Harness, TheoremContextClient } from '@context/theorem';
+
+const cc = new TheoremContextClient({ apiKey: process.env.THEOREM_API_KEY });
+const harness = new Harness({ client: cc });
+
+const memory = await harness.memory.recall({
+  query: 'auth refactor',
+  actor: 'claude-ai',
+  kind: 'session_summary',
+  limit: 5,
+});
+// {results: [...], count: 5}
+
+const written = await harness.memory.remember({
+  observation: 'Cluster D shipped; SDK Harness facade is live.',
+  evidence: ['commit:d4d787af'],
+});
+
+const handoff = await harness.action.handoff({
+  workstreamId: 'ws-123',
+  nextAgent: 'claude-code',
+  previousAgent: 'claude-ai',
+});
+```
+
+`harness.memory.recall(...)` hits the unified harness recall endpoint
+(`POST /api/v2/theseus/harness/recall`) which wraps the cross-surface
+memory store. It returns the same shape as the MCP `recall` verb so
+MCP-aware callers and SDK callers reach the same store with the same
+semantics.
+
+`harness.diagnose` is reserved for an intelligence-diagnostics cluster
+(iq / health / stats). Methods are NOT added until their backend
+endpoints exist; the SDK harness product rule forbids shipping facade
+methods without real backing wiring.
+
+For callers who need the lower-level `client.recall(...)` directly
+without the facade:
+
+```ts
+const memory = await cc.recall({ query: '...', kind: 'session_summary' });
+```
+
+`cc.recall(...)` is a top-level method on `TheoremContextClient`
+alongside the existing `cc.remember(...)`. Both hit the same backend
+endpoints the MCP `recall`/`remember` verbs call.
 
 ## Artifact exports
 
@@ -192,7 +303,7 @@ import { prepareCodexBundle, TheoremContextClient } from '@context/theorem';
 
 const cc = new TheoremContextClient({
   baseUrl: process.env.THEOREM_CONTEXT_BASE_URL,
-  apiKey: process.env.THEOREM_CONTEXT_API_KEY,
+  apiKey: process.env.THEOREM_API_KEY ?? process.env.THEOREM_CONTEXT_API_KEY,
 });
 
 await prepareCodexBundle({

@@ -26,8 +26,15 @@
     "redis-harness",
     "thg-product",
     "ui-visual-gates",
-    "do-not-downgrade"
+    "do-not-downgrade",
+    "pairformer",
+    "file-change-context",
+    "session-offload",
+    "curiosity-driven-research",
+    "codebase-context",
+    "subagent-suggestions"
   ],
+  "mcpServers": "./.mcp.json",
   "skills": "./skills/",
   "agents": "./agents/",
   "hooks": "./hooks/codex-hooks.json",

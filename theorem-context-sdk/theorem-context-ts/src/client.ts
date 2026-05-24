@@ -39,6 +39,9 @@ import type {
   DiscoveryRunPreview,
   DiscoveryValidatorReceiptRequest,
   DiscoveryWritebackReviewRequest,
+  EncodePlanRunRequest,
+  EncodePlanRunResult,
+  EncodePromotionRequest,
   ExpressionRenderRequest,
   ExpressionRenderResult,
   ContextWebIndex,
@@ -79,6 +82,28 @@ import type {
   OrchestratePreviewResult,
   OrchestratePrepareResult,
   OrchestrateResult,
+  AgentDomainCatalogRequest,
+  AgentDomainCatalogResponse,
+  AgentExplainContextRequest,
+  AgentExplainContextResponse,
+  AgentExportArtifactRequest,
+  AgentExportArtifactResponse,
+  AgentGraphqlResponse,
+  AgentHydrateContextRequest,
+  AgentHydrateContextResponse,
+  AgentPrepareRequest,
+  AgentPrepareResponse,
+  AgentRecordOutcomeRequest,
+  AgentRecordOutcomeResponse,
+  AgentRecordStepRequest,
+  AgentRecordStepResponse,
+  AgentRecommendedToolPackRequest,
+  AgentRecommendedToolPackResponse,
+  AgentReviewMemoryRequest,
+  AgentReviewMemoryResponse,
+  AgentSearchContextRequest,
+  AgentSearchContextResponse,
+  AgentToolManifestResponse,
   ProductAPIKeyCreateRequest,
   ProductAPIKeySummary,
   ProductBootstrapResponse,
@@ -105,6 +130,16 @@ import type {
   THGCommandRequest,
   THGCypherRequest,
   THGResult,
+  Workstream,
+  AgentSession,
+  HandoffArtifact,
+  WorkstreamResolveRequest,
+  StartAgentSessionRequest,
+  StartAgentSessionResponse,
+  EndAgentSessionRequest,
+  EndAgentSessionResponse,
+  CompileHandoffRequest,
+  HandoffListResponse,
 } from './types.js';
 import {
   AuthError,
@@ -116,17 +151,105 @@ import {
 
 export interface TheoremContextClientOptions {
   baseUrl?: string;
+  apiRootUrl?: string;
   pluginsBaseUrl?: string;
+  thgProductBaseUrl?: string;
+  thgApiToken?: string;
+  thgTenantId?: string;
   apiKey?: string;
   fetchImpl?: typeof fetch;
 }
 
 const DEFAULT_BASE_URL =
   'https://index-api-production-a5f7.up.railway.app/api/v2/theseus';
+const DEFAULT_THG_PRODUCT_BASE_URL =
+  'https://thg-product-production.up.railway.app';
+
+export interface CodeSearchOptions {
+  query: string;
+  entityType?: string;
+  entity_type?: string;
+  language?: string;
+  repo?: string;
+  limit?: number;
+}
+
+export interface CodeCrawlOptions {
+  repo?: string;
+  path?: string;
+  paths?: string[];
+  language?: string;
+  notebookId?: string;
+  notebook_id?: string;
+  graphWriteToken?: string;
+  graph_write_token?: string;
+}
+
+export interface InstantKgStatusOptions {
+  tenantSlug?: string;
+  tenant_slug?: string;
+  tenantId?: string;
+  tenant_id?: string;
+  manifest?: Record<string, unknown>;
+  delta?: Record<string, unknown>;
+}
+
+export interface InstantKgReingestOptions {
+  input: string;
+  kind?: string;
+  relationConfidenceFloor?: number;
+  relation_confidence_floor?: number;
+}
+
+export interface FractalExpandOptions {
+  query: string;
+  runId?: string;
+  run_id?: string;
+  topK?: number;
+  top_k?: number;
+  budget?: Record<string, unknown>;
+  scope?: Record<string, unknown>;
+}
+
+export interface ProvenanceTraceOptions {
+  traceId?: string;
+  trace_id?: string;
+  objectPk?: string | number;
+  object_pk?: string | number;
+  query?: string;
+  policyIntent?: string;
+  policy_intent?: string;
+  minConfidence?: number;
+  min_confidence?: number;
+  maxConfidence?: number;
+  max_confidence?: number;
+  limit?: number;
+}
+
+export interface DomainInstallOptions {
+  user?: string;
+  packSlugs?: string[];
+  pack_slugs?: string[];
+}
+
+export interface CoordinateMessageOptions {
+  message: string;
+  docId?: string;
+  doc_id?: string;
+  urgency?: 'info' | 'ask' | 'block' | string;
+  title?: string;
+  tenantSlug?: string;
+  tenant_slug?: string;
+  metadata?: Record<string, unknown>;
+}
 
 export class TheoremContextClient {
   private readonly baseUrl: string;
+  private readonly apiRootUrl: string;
   private readonly pluginsBaseUrl: string;
+  private readonly thgProductBaseUrl: string;
+  private readonly thgApiToken: string | undefined;
+  private readonly thgTenantId: string;
   private readonly apiKey: string | undefined;
   private readonly fetchImpl: typeof fetch;
 
@@ -136,11 +259,36 @@ export class TheoremContextClient {
     this.baseUrl = (
       options.baseUrl ?? envBaseUrl ?? DEFAULT_BASE_URL
     ).replace(/\/$/, '');
+    this.apiRootUrl = (
+      options.apiRootUrl
+      ?? deriveApiRootUrl(this.baseUrl)
+    ).replace(/\/$/, '');
     this.pluginsBaseUrl = (
       options.pluginsBaseUrl
       ?? envPluginsBaseUrl
       ?? derivePluginsBaseUrl(this.baseUrl)
     ).replace(/\/$/, '');
+    this.thgProductBaseUrl = (
+      options.thgProductBaseUrl
+      ?? readEnv('RUSTYRED_THG_BASE_URL')
+      ?? readEnv('THEOREMS_HARNESS_THG_BASE_URL')
+      ?? readEnv('THEOREM_HOT_GRAPH_BASE_URL')
+      ?? DEFAULT_THG_PRODUCT_BASE_URL
+    ).replace(/\/$/, '');
+    this.thgApiToken = (
+      options.thgApiToken
+      ?? readEnv('RUSTYRED_THG_API_TOKEN')
+      ?? readEnv('THEOREMS_HARNESS_THG_API_TOKEN')
+      ?? readEnv('THEOREM_HOT_GRAPH_API_TOKEN')
+      ?? readEnv('THEOREM_THG_API_TOKEN')
+    );
+    this.thgTenantId = (
+      options.thgTenantId
+      ?? readEnv('THEOREMS_HARNESS_TENANT')
+      ?? readEnv('RUSTYRED_THG_TENANT')
+      ?? readEnv('THEOREM_TENANT_SLUG')
+      ?? 'default'
+    );
     this.apiKey = (
       options.apiKey
       ?? readEnv('THEOREM_API_KEY')
@@ -169,11 +317,29 @@ export class TheoremContextClient {
       state_machine_public: false,
       state_machine_surface: 'thg',
       state_machine_run_model: 'HarnessRunState',
+      mentions_wait: 'live',
+      encode_memory: 'live',
     },
     learning: {
       profiles: 'live',
       context_spend_plan: 'live',
       structural_signals: 'live',
+    },
+    agent: {
+      toolManifest: 'live',
+      domainCatalog: 'live',
+      recommendedToolPack: 'live',
+      prepareAgent: 'live',
+      searchContext: 'live',
+      hydrateContext: 'live',
+      recordStep: 'live',
+      recordOutcome: 'live',
+      explainContext: 'live',
+      exportArtifact: 'live',
+      reviewMemory: 'live',
+      harnessRunConsole: 'live',
+      memoryRecallPreview: 'live',
+      actionRail: 'live',
     },
     orchestrate: {
       run: 'live',
@@ -191,6 +357,37 @@ export class TheoremContextClient {
       expression: 'live',
       solver: 'live',
       discovery_run_preview: 'live',
+    },
+    encode: {
+      planRun: 'live',
+      operatorsSearch: 'live',
+      schemas: 'live',
+      memory: 'live',
+    },
+    code: {
+      search: 'live',
+      crawl: 'live',
+    },
+    instantKg: {
+      status: 'thg-product',
+      reingest: 'live',
+    },
+    fractal: {
+      expand: 'live',
+    },
+    provenance: {
+      trace: 'live',
+    },
+    domains: {
+      list: 'live',
+      install: 'live',
+    },
+    coordinate: {
+      send: 'live',
+      mentions: 'live',
+      mentionsWait: 'live',
+      presence: 'live',
+      subscribe: 'live',
     },
   } as const;
 
@@ -282,6 +479,23 @@ export class TheoremContextClient {
     recordSelected: this.recordSelectedAction.bind(this),
   };
 
+  readonly agent = {
+    toolManifest: this.getAgentToolManifest.bind(this),
+    domainCatalog: this.getAgentDomainCatalog.bind(this),
+    recommendedToolPack: this.getAgentRecommendedToolPack.bind(this),
+    prepareAgent: this.getAgentPrepare.bind(this),
+    searchContext: this.searchAgentContext.bind(this),
+    hydrateContext: this.hydrateAgentContext.bind(this),
+    recordStep: this.recordAgentStep.bind(this),
+    recordOutcome: this.recordAgentOutcome.bind(this),
+    explainContext: this.getAgentExplainContext.bind(this),
+    exportArtifact: this.exportAgentArtifact.bind(this),
+    reviewMemory: this.reviewAgentMemory.bind(this),
+    harnessRunConsole: this.getAgentHarnessRunConsole.bind(this),
+    memoryRecallPreview: this.getAgentMemoryRecallPreview.bind(this),
+    actionRail: this.getAgentActionRail.bind(this),
+  };
+
   readonly learning = {
     profiles: {
       install: this.installLearningProfile.bind(this),
@@ -363,6 +577,17 @@ export class TheoremContextClient {
     },
   };
 
+  readonly encode = {
+    getPlan: this.getEncodePlan.bind(this),
+    runPlan: this.runEncodePlan.bind(this),
+    getRun: this.getEncodeRun.bind(this),
+    candidates: this.getEncodeRunCandidates.bind(this),
+    shadow: this.shadowEncodeRun.bind(this),
+    promote: this.promoteEncodeCandidate.bind(this),
+    searchOperators: this.searchEncodeOperators.bind(this),
+    schemas: this.listEncodeSchemas.bind(this),
+  };
+
   readonly runs = this.harness;
 
   readonly thg = {
@@ -389,6 +614,43 @@ export class TheoremContextClient {
     updateIndex: this.thgContextWebUpdateIndex.bind(this),
   };
 
+  readonly code = {
+    search: this.searchCode.bind(this),
+    crawl: this.crawlCode.bind(this),
+  };
+
+  readonly instantKg = {
+    status: this.instantKgStatus.bind(this),
+    reingest: this.instantKgReingest.bind(this),
+  };
+
+  readonly instant_kg = this.instantKg;
+
+  readonly fractal = {
+    expand: this.expandFractal.bind(this),
+  };
+
+  readonly provenance = {
+    trace: this.traceProvenance.bind(this),
+  };
+
+  readonly domains = {
+    list: this.listDomains.bind(this),
+    install: this.installDomains.bind(this),
+  };
+
+  readonly coordinate = Object.assign(
+    (input: CoordinateMessageOptions) => this.sendCoordinate(input),
+    {
+      send: this.sendCoordinate.bind(this),
+      mentions: this.mentions.bind(this),
+      mentionsWait: this.mentionsWait.bind(this),
+      mentions_wait: this.mentionsWait.bind(this),
+      presence: this.presence.bind(this),
+      subscribe: this.subscribe.bind(this),
+    },
+  );
+
   private headers(): Record<string, string> {
     const out: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -397,6 +659,32 @@ export class TheoremContextClient {
       out['Authorization'] = `Bearer ${this.apiKey}`;
     }
     return out;
+  }
+
+  private thgProductHeaders(): Record<string, string> {
+    const out: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (this.thgApiToken) {
+      out.Authorization = `Bearer ${this.thgApiToken}`;
+    }
+    return out;
+  }
+
+  private thgTenantUrl(input: {
+    tenantSlug?: string;
+    tenant_slug?: string;
+    tenantId?: string;
+    tenant_id?: string;
+  } = {}): string {
+    const tenantId = (
+      input.tenant_id
+      ?? input.tenantId
+      ?? input.tenant_slug
+      ?? input.tenantSlug
+      ?? this.thgTenantId
+    );
+    return `${this.thgProductBaseUrl}/v1/tenants/${encodeURIComponent(tenantId)}`;
   }
 
   private async request(
@@ -964,6 +1252,564 @@ export class TheoremContextClient {
     return (await response.json()) as { id: number; slug: string; title: string };
   }
 
+  /**
+   * Unified cross-surface memory recall (MEM-032).
+   *
+   * Hits the harness recall endpoint added in MEM-029
+   * (`POST /api/v2/theseus/harness/recall`) which wraps
+   * `apps.orchestrate.runtime.cross_surface_memory.recall`. Returns
+   * inline document content with actor/surface/session provenance,
+   * matching the MCP `recall` verb's shape.
+   *
+   * Use to load prior cross-surface memory: documents, saved nodes,
+   * harness runs, context artifacts. Mirror the MCP verb's input
+   * parameters one-to-one so MCP-aware callers and HTTP callers
+   * reach the same store with the same semantics.
+   */
+  async recall(input: {
+    query?: string;
+    actor?: string;
+    surface?: string;
+    kind?: string;
+    since?: string;
+    limit?: number;
+    tenantSlug?: string;
+    includeLowFitness?: boolean;
+    includeConsolidationSources?: boolean;
+    consumeHandoffs?: boolean;
+  } = {}): Promise<{ results: unknown[]; count: number }> {
+    const body: Record<string, unknown> = {
+      query: input.query ?? '',
+      limit: input.limit ?? 10,
+      include_low_fitness: input.includeLowFitness ?? false,
+      include_consolidation_sources: input.includeConsolidationSources ?? false,
+      consume_handoffs: input.consumeHandoffs ?? false,
+    };
+    if (input.actor) body.actor = input.actor;
+    if (input.surface) body.surface = input.surface;
+    if (input.kind) body.kind = input.kind;
+    if (input.since) body.since = input.since;
+    if (input.tenantSlug) body.tenant_slug = input.tenantSlug;
+
+    const response = await this.request(
+      `${this.baseUrl}/harness/recall/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(body),
+      },
+      'recall',
+      'harness',
+    );
+    return (await response.json()) as { results: unknown[]; count: number };
+  }
+
+  async selfNote(input: {
+    content: string;
+    title?: string;
+    kind?: string;
+    memoryNodeType?: string;
+    tenantSlug?: string;
+    tags?: string[];
+    links?: string[];
+    summary?: string;
+  }): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/memory/self-note/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          title: input.title,
+          content: input.content,
+          kind: input.kind ?? 'self_note',
+          memory_node_type: input.memoryNodeType ?? 'belief',
+          tags: input.tags ?? [],
+          links: input.links ?? [],
+          summary: input.summary ?? '',
+        }),
+      },
+      'self note',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async selfRevise(input: {
+    docId: string;
+    content: string;
+    title?: string;
+    summary?: string;
+    reason?: string;
+    memoryNodeType?: string;
+    tenantSlug?: string;
+    citesDocIds?: string[];
+    derivedFromDocIds?: string[];
+  }): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/memory/self-revise/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          doc_id: input.docId,
+          content: input.content,
+          title: input.title,
+          summary: input.summary ?? '',
+          reason: input.reason ?? '',
+          memory_node_type: input.memoryNodeType,
+          cites_doc_ids: input.citesDocIds ?? [],
+          derived_from_doc_ids: input.derivedFromDocIds ?? [],
+        }),
+      },
+      'self revise',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async selfArchive(input: {
+    docId: string;
+    reason?: string;
+    title?: string;
+    tenantSlug?: string;
+  }): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/memory/self-archive/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          doc_id: input.docId,
+          reason: input.reason ?? '',
+          title: input.title,
+        }),
+      },
+      'self archive',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async selfRecallArchive(input: {
+    query?: string;
+    actor?: string;
+    limit?: number;
+    tenantSlug?: string;
+  } = {}): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/memory/self-recall-archive/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          query: input.query ?? '',
+          actor: input.actor,
+          limit: input.limit ?? 10,
+        }),
+      },
+      'self recall archive',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async encodeMemory(input: {
+    content: string;
+    title?: string;
+    kind?: 'encode' | 'feedback' | 'solution' | 'postmortem' | string;
+    outcome?: 'positive' | 'negative' | 'mixed' | 'neutral' | string;
+    signal?: string;
+    reason?: string;
+    eventId?: string;
+    tenantSlug?: string;
+    tags?: string[];
+    links?: string[];
+    summary?: string;
+    metadata?: Record<string, unknown>;
+    context?: Record<string, unknown>;
+    autoTriggered?: boolean;
+  }): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/encode/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          title: input.title,
+          content: input.content,
+          kind: input.kind ?? 'encode',
+          outcome: input.outcome ?? 'neutral',
+          signal: input.signal,
+          reason: input.reason ?? '',
+          event_id: input.eventId ?? '',
+          tags: input.tags ?? [],
+          links: input.links ?? [],
+          summary: input.summary ?? '',
+          metadata: input.metadata ?? {},
+          context: input.context ?? {},
+          auto_triggered: input.autoTriggered ?? false,
+        }),
+      },
+      'encode memory',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async searchCode(
+    queryOrOptions: string | CodeSearchOptions,
+  ): Promise<Record<string, unknown>> {
+    const input = typeof queryOrOptions === 'string'
+      ? { query: queryOrOptions }
+      : queryOrOptions;
+    const query = new URLSearchParams();
+    query.set('search', input.query);
+    const optional = {
+      entity_type: input.entity_type ?? input.entityType,
+      language: input.language,
+      repo: input.repo,
+      limit: input.limit,
+    };
+    for (const [key, value] of Object.entries(optional)) {
+      if (value !== undefined && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const response = await this.request(
+      `${this.baseUrl}/code/symbols/?${query.toString()}`,
+      { method: 'GET', headers: this.headers() },
+      'code search',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async crawlCode(input: CodeCrawlOptions = {}): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/code/ingest/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          repo: input.repo ?? null,
+          path: input.path ?? null,
+          paths: input.paths ?? null,
+          language: input.language ?? null,
+          notebook_id: input.notebook_id ?? input.notebookId ?? null,
+          graph_write_token: input.graph_write_token ?? input.graphWriteToken ?? null,
+        }),
+      },
+      'code crawl',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async instantKgStatus(
+    input: InstantKgStatusOptions = {},
+  ): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.thgTenantUrl(input)}/instant-kg/status`,
+      {
+        method: 'POST',
+        headers: this.thgProductHeaders(),
+        body: JSON.stringify(compactRecord({
+          manifest: input.manifest,
+          delta: input.delta,
+        })),
+      },
+      'instant kg status',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async instantKgReingest(
+    inputOrUrl: string | InstantKgReingestOptions,
+  ): Promise<Record<string, unknown>> {
+    const input = typeof inputOrUrl === 'string'
+      ? { input: inputOrUrl }
+      : inputOrUrl;
+    const response = await this.request(
+      `${this.baseUrl}/capture/instant-kg/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(compactRecord({
+          input: input.input,
+          kind: input.kind ?? 'url',
+          relation_confidence_floor:
+            input.relation_confidence_floor ?? input.relationConfidenceFloor,
+        })),
+      },
+      'instant kg reingest',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async expandFractal(
+    queryOrOptions: string | FractalExpandOptions,
+  ): Promise<Record<string, unknown>> {
+    const input = typeof queryOrOptions === 'string'
+      ? { query: queryOrOptions }
+      : queryOrOptions;
+    let activeRunId = input.run_id ?? input.runId;
+    if (!activeRunId) {
+      const begin = await this.beginHarness({
+        task: `Research: ${input.query}`,
+        actor: 'agent',
+        scope: { mode: 'research', source: 'theorem-context-sdk' },
+      });
+      activeRunId = begin.run_id;
+    }
+    if (!activeRunId) {
+      throw new HarnessError('fractal expand failed: unable to resolve harness run id');
+    }
+    const budget = {
+      ...(input.budget ?? {}),
+      top_k: input.top_k ?? input.topK ?? input.budget?.top_k ?? 20,
+    };
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${activeRunId}/fractal-expansion/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          query: input.query,
+          budget,
+          scope: input.scope ?? {},
+        }),
+      },
+      'fractal expand',
+      'harness',
+    );
+    return {
+      run_id: activeRunId,
+      ...((await response.json()) as Record<string, unknown>),
+    };
+  }
+
+  async traceProvenance(
+    input: ProvenanceTraceOptions = {},
+  ): Promise<Record<string, unknown>> {
+    const traceId = input.trace_id ?? input.traceId;
+    const objectPk = input.object_pk ?? input.objectPk;
+    if (traceId && objectPk !== undefined && objectPk !== null) {
+      const response = await this.request(
+        `${this.baseUrl}/trace/${encodeURIComponent(traceId)}/explain/${encodeURIComponent(String(objectPk))}/`,
+        { method: 'GET', headers: this.headers() },
+        'provenance trace explain',
+        'harness',
+      );
+      return (await response.json()) as Record<string, unknown>;
+    }
+    if (traceId) {
+      const response = await this.request(
+        `${this.baseUrl}/trace/${encodeURIComponent(traceId)}/`,
+        { method: 'GET', headers: this.headers() },
+        'provenance trace',
+        'harness',
+      );
+      return (await response.json()) as Record<string, unknown>;
+    }
+    const query = new URLSearchParams();
+    const optional = {
+      query: input.query ?? '',
+      policy_intent: input.policy_intent ?? input.policyIntent,
+      min_confidence: input.min_confidence ?? input.minConfidence,
+      max_confidence: input.max_confidence ?? input.maxConfidence,
+      limit: input.limit ?? 20,
+    };
+    for (const [key, value] of Object.entries(optional)) {
+      if (value !== undefined && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const response = await this.request(
+      `${this.baseUrl}/trace/search/?${query.toString()}`,
+      { method: 'GET', headers: this.headers() },
+      'provenance trace search',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async listDomains(
+    userOrOptions: string | { user?: string } = {},
+  ): Promise<Record<string, unknown>> {
+    const user = typeof userOrOptions === 'string'
+      ? userOrOptions
+      : userOrOptions.user;
+    const query = new URLSearchParams();
+    if (user) {
+      query.set('user', user);
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.apiRootUrl}/packs/${suffix}`,
+      { method: 'GET', headers: this.headers() },
+      'domain list',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async installDomains(
+    packSlugsOrOptions: string[] | DomainInstallOptions,
+  ): Promise<Record<string, unknown>> {
+    const input = Array.isArray(packSlugsOrOptions)
+      ? { pack_slugs: packSlugsOrOptions }
+      : packSlugsOrOptions;
+    const response = await this.request(
+      `${this.apiRootUrl}/pack-installs/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          user: input.user ?? 'me',
+          pack_slugs: input.pack_slugs ?? input.packSlugs ?? [],
+        }),
+      },
+      'domain install',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async sendCoordinate(
+    input: CoordinateMessageOptions,
+  ): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/coordinate/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenant_slug ?? input.tenantSlug,
+          doc_id: input.doc_id ?? input.docId,
+          message: input.message,
+          urgency: input.urgency ?? 'info',
+          title: input.title,
+          metadata: input.metadata ?? {},
+        }),
+      },
+      'coordinate',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async mentions(input: {
+    actor?: string;
+    tenantSlug?: string;
+    limit?: number;
+    consume?: boolean;
+  } = {}): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/mentions/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          actor: input.actor,
+          limit: input.limit ?? 20,
+          consume: input.consume ?? false,
+        }),
+      },
+      'mentions',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async mentionsWait(input: {
+    actor?: string;
+    tenantSlug?: string;
+    limit?: number;
+    consume?: boolean;
+    timeoutSeconds?: number;
+    intervalSeconds?: number;
+  } = {}): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/mentions/wait/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          actor: input.actor,
+          limit: input.limit ?? 20,
+          consume: input.consume ?? false,
+          timeout_seconds: input.timeoutSeconds ?? 30,
+          interval_seconds: input.intervalSeconds ?? 1,
+        }),
+      },
+      'mentions wait',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async presence(input: {
+    actor?: string;
+    tenantSlug?: string;
+    sessionId?: string;
+    surface?: string;
+    ttlSeconds?: number;
+    status?: string;
+    mode?: 'heartbeat' | 'get' | string;
+  } = {}): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/presence/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          actor: input.actor,
+          session_id: input.sessionId,
+          surface: input.surface,
+          ttl_seconds: input.ttlSeconds ?? 60,
+          status: input.status ?? 'active',
+          mode: input.mode ?? 'heartbeat',
+        }),
+      },
+      'presence',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async subscribe(input: {
+    actor?: string;
+    tenantSlug?: string;
+    docId?: string;
+  } = {}): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/harness/subscribe/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({
+          tenant_slug: input.tenantSlug,
+          actor: input.actor,
+          doc_id: input.docId,
+        }),
+      },
+      'subscribe',
+      'harness',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
   async audit(artifactId: string): Promise<ContextArtifact> {
     const response = await this.request(
       `${this.baseUrl}/context/artifacts/${artifactId}/`,
@@ -1227,6 +2073,214 @@ export class TheoremContextClient {
     return (await response.json()) as { ok: boolean };
   }
 
+  async getAgentToolManifest(): Promise<AgentToolManifestResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/tool-manifest/`,
+      {
+        method: 'GET',
+        headers: this.headers(),
+      },
+      'agent tool manifest',
+    );
+    return (await response.json()) as AgentToolManifestResponse;
+  }
+
+  async getAgentDomainCatalog(
+    actorOrPayload: string | AgentDomainCatalogRequest = {},
+  ): Promise<AgentDomainCatalogResponse> {
+    const payload =
+      typeof actorOrPayload === 'string'
+        ? { actor: actorOrPayload }
+        : actorOrPayload;
+    const response = await this.request(
+      `${this.baseUrl}/agent/domain-catalog/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent domain catalog',
+    );
+    return (await response.json()) as AgentDomainCatalogResponse;
+  }
+
+  async getAgentRecommendedToolPack(
+    payload: AgentRecommendedToolPackRequest = {},
+  ): Promise<AgentRecommendedToolPackResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/recommended-toolpack/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent recommended toolpack',
+    );
+    return (await response.json()) as AgentRecommendedToolPackResponse;
+  }
+
+  async getAgentPrepare(
+    payload: AgentPrepareRequest = {},
+  ): Promise<AgentPrepareResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/prepare/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent prepare',
+    );
+    return (await response.json()) as AgentPrepareResponse;
+  }
+
+  async searchAgentContext(
+    payload: AgentSearchContextRequest = {},
+  ): Promise<AgentSearchContextResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/search-context/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent search context',
+      'harness',
+    );
+    return (await response.json()) as AgentSearchContextResponse;
+  }
+
+  async hydrateAgentContext(
+    payload: AgentHydrateContextRequest = {},
+  ): Promise<AgentHydrateContextResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/hydrate-context/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent hydrate context',
+      'harness',
+    );
+    return (await response.json()) as AgentHydrateContextResponse;
+  }
+
+  async recordAgentStep(
+    payload: AgentRecordStepRequest = {},
+  ): Promise<AgentRecordStepResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/record-step/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent record step',
+      'harness',
+    );
+    return (await response.json()) as AgentRecordStepResponse;
+  }
+
+  async recordAgentOutcome(
+    payload: AgentRecordOutcomeRequest = {},
+  ): Promise<AgentRecordOutcomeResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/record-outcome/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent record outcome',
+      'harness',
+    );
+    return (await response.json()) as AgentRecordOutcomeResponse;
+  }
+
+  async getAgentExplainContext(
+    payload: AgentExplainContextRequest = {},
+  ): Promise<AgentExplainContextResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/explain-context/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent explain context',
+    );
+    return (await response.json()) as AgentExplainContextResponse;
+  }
+
+  async exportAgentArtifact(
+    payload: AgentExportArtifactRequest = {},
+  ): Promise<AgentExportArtifactResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/export-artifact/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent export artifact',
+      'harness',
+    );
+    return (await response.json()) as AgentExportArtifactResponse;
+  }
+
+  async reviewAgentMemory(
+    payload: AgentReviewMemoryRequest = {},
+  ): Promise<AgentReviewMemoryResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/agent/review-memory/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(payload),
+      },
+      'agent review memory',
+      'harness',
+    );
+    return (await response.json()) as AgentReviewMemoryResponse;
+  }
+
+  async getAgentHarnessRunConsole(
+    runId: string,
+  ): Promise<AgentGraphqlResponse<Record<string, unknown>>> {
+    return this.requestAgentGraphql('harnessRunConsole', { runId });
+  }
+
+  async getAgentMemoryRecallPreview(
+    runId: string,
+  ): Promise<AgentGraphqlResponse<Record<string, unknown>>> {
+    return this.requestAgentGraphql('memoryRecallPreview', { runId });
+  }
+
+  async getAgentActionRail(
+    runId: string,
+  ): Promise<AgentGraphqlResponse<Record<string, unknown>>> {
+    return this.requestAgentGraphql('actionRail', { runId });
+  }
+
+  private async requestAgentGraphql<T extends Record<string, unknown> = Record<string, unknown>>(
+    operationName: string,
+    variables: Record<string, unknown>,
+  ): Promise<AgentGraphqlResponse<T>> {
+    const response = await this.request(
+      `${this.baseUrl}/graphql/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify({ operationName, variables }),
+      },
+      `agent graphql ${operationName}`,
+      'harness',
+    );
+    const body = (await response.json()) as AgentGraphqlResponse<T>;
+    return body;
+  }
+
   async installLearningProfile(
     profileId: string,
     payload: LearningProfileInstallRequest = {},
@@ -1365,6 +2419,113 @@ export class TheoremContextClient {
       'inference solver context capsule',
     );
     return (await response.json()) as SolverResult;
+  }
+
+  async getEncodePlan(planId = 'mcp_protocol_v1'): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/encode/plans/${planId}/`,
+      { method: 'GET', headers: this.headers() },
+      'encode plan get',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async runEncodePlan(
+    request: EncodePlanRunRequest,
+  ): Promise<EncodePlanRunResult> {
+    const response = await this.request(
+      `${this.baseUrl}/encode/plan/run/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'encode plan run',
+    );
+    return (await response.json()) as EncodePlanRunResult;
+  }
+
+  async getEncodeRun(runId: string): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/encode/runs/${runId}/`,
+      { method: 'GET', headers: this.headers() },
+      'encode run get',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async getEncodeRunCandidates(runId: string): Promise<Array<Record<string, unknown>>> {
+    const response = await this.request(
+      `${this.baseUrl}/encode/runs/${runId}/candidates/`,
+      { method: 'GET', headers: this.headers() },
+      'encode run candidates',
+    );
+    return (await response.json()) as Array<Record<string, unknown>>;
+  }
+
+  async shadowEncodeRun(runId: string): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/encode/runs/${runId}/shadow/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: '{}',
+      },
+      'encode shadow',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async promoteEncodeCandidate(
+    candidateId: string,
+    request: EncodePromotionRequest = {},
+  ): Promise<Record<string, unknown>> {
+    const response = await this.request(
+      `${this.baseUrl}/encode/proposals/${candidateId}/promote/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'encode promote',
+    );
+    return (await response.json()) as Record<string, unknown>;
+  }
+
+  async searchEncodeOperators(
+    filters: Record<string, unknown> = {},
+  ): Promise<Array<Record<string, unknown>>> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/encode/operators/search/${suffix}`,
+      { method: 'GET', headers: this.headers() },
+      'encode operators search',
+    );
+    return (await response.json()) as Array<Record<string, unknown>>;
+  }
+
+  async listEncodeSchemas(
+    filters: Record<string, unknown> = {},
+  ): Promise<Array<Record<string, unknown>>> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
+      }
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/encode/schemas/${suffix}`,
+      { method: 'GET', headers: this.headers() },
+      'encode schemas',
+    );
+    return (await response.json()) as Array<Record<string, unknown>>;
   }
 
   async previewDiscoveryRun(
@@ -1994,6 +3155,146 @@ export class TheoremContextClient {
     const body = (await response.json()) as { result: THGResult };
     return body.result;
   }
+
+  // -------------------------------------------------------------------
+  // Continuous Agent Memory Harness — workstream + handoff surface.
+  // Mirrors apps/orchestrate/api/workstream.py routes; see
+  // Index-API/docs/Harness Expansion.md §1, §5, §12.
+  // -------------------------------------------------------------------
+
+  readonly workstream = {
+    resolve: this.resolveWorkstream.bind(this),
+    get: this.getWorkstream.bind(this),
+    handoffs: this.listWorkstreamHandoffs.bind(this),
+    session: {
+      start: this.startAgentSession.bind(this),
+      end: this.endAgentSession.bind(this),
+    },
+    handoff: {
+      current: this.compileCurrentHandoff.bind(this),
+    },
+  };
+
+  readonly handoff = {
+    get: this.getHandoff.bind(this),
+  };
+
+  async resolveWorkstream(
+    request: WorkstreamResolveRequest,
+  ): Promise<Workstream> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/resolve/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'workstream resolve',
+      'harness',
+    );
+    const body = (await response.json()) as Partial<Workstream> & {
+      workstream?: Workstream;
+    };
+    return (body.workstream ?? (body as Workstream));
+  }
+
+  async getWorkstream(workstreamId: string): Promise<Workstream> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${workstreamId}/`,
+      { method: 'GET', headers: this.headers() },
+      'workstream get',
+      'harness',
+    );
+    const body = (await response.json()) as Partial<Workstream> & {
+      workstream?: Workstream;
+    };
+    return (body.workstream ?? (body as Workstream));
+  }
+
+  async startAgentSession(
+    workstreamId: string,
+    request: StartAgentSessionRequest,
+  ): Promise<StartAgentSessionResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${workstreamId}/session/start/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'workstream session start',
+      'harness',
+    );
+    return (await response.json()) as StartAgentSessionResponse;
+  }
+
+  async endAgentSession(
+    workstreamId: string,
+    request: EndAgentSessionRequest,
+  ): Promise<EndAgentSessionResponse> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${workstreamId}/session/end/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'workstream session end',
+      'harness',
+    );
+    return (await response.json()) as EndAgentSessionResponse;
+  }
+
+  async compileCurrentHandoff(
+    workstreamId: string,
+    request: CompileHandoffRequest = {},
+  ): Promise<HandoffArtifact> {
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${workstreamId}/handoff/current/`,
+      {
+        method: 'POST',
+        headers: this.headers(),
+        body: JSON.stringify(request),
+      },
+      'workstream handoff current',
+      'harness',
+    );
+    const body = (await response.json()) as {
+      handoff?: HandoffArtifact;
+    } & HandoffArtifact;
+    return (body.handoff ?? (body as HandoffArtifact));
+  }
+
+  async listWorkstreamHandoffs(
+    workstreamId: string,
+    options: { limit?: number; cursor?: string | null } = {},
+  ): Promise<HandoffListResponse> {
+    const params = new URLSearchParams();
+    params.set('limit', String(options.limit ?? 20));
+    if (options.cursor) {
+      params.set('cursor', options.cursor);
+    }
+    const response = await this.request(
+      `${this.baseUrl}/workstream/${workstreamId}/handoffs/?${params.toString()}`,
+      { method: 'GET', headers: this.headers() },
+      'workstream handoffs',
+      'harness',
+    );
+    return (await response.json()) as HandoffListResponse;
+  }
+
+  async getHandoff(handoffId: string): Promise<HandoffArtifact> {
+    const response = await this.request(
+      `${this.baseUrl}/handoff/${handoffId}/`,
+      { method: 'GET', headers: this.headers() },
+      'handoff get',
+      'harness',
+    );
+    const body = (await response.json()) as {
+      handoff?: HandoffArtifact;
+    } & HandoffArtifact;
+    return (body.handoff ?? (body as HandoffArtifact));
+  }
 }
 
 async function mapHttpError(
@@ -2103,6 +3404,13 @@ function derivePluginsBaseUrl(baseUrl: string): string {
     return `${baseUrl.slice(0, -'/theseus'.length)}/plugins`;
   }
   return `${baseUrl}/plugins`;
+}
+
+function deriveApiRootUrl(baseUrl: string): string {
+  if (baseUrl.endsWith('/theseus')) {
+    return baseUrl.slice(0, -'/theseus'.length);
+  }
+  return baseUrl;
 }
 
 function readEnv(name: string): string | undefined {

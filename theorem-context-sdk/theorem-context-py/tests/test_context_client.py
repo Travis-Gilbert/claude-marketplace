@@ -48,6 +48,149 @@ def test_context_artifacts_export_calls_signed_route() -> None:
     asyncio.run(run())
 
 
+def test_encode_namespace_runs_plan_and_searches_operators() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/encode/plan/run/'):
+            return httpx.Response(
+                200,
+                json={
+                    'plan_version': '0.1.0',
+                    'source_packet_id': 'source:mcp-fixture',
+                    'lowering_receipts': [],
+                    'derived_atoms': [],
+                    'discovery_candidates': [
+                        {
+                            'candidate_id': 'candidate:1',
+                            'metadata': {'candidate_type': 'activation'},
+                        },
+                    ],
+                    'validators_run': [],
+                    'proposals_emitted': [],
+                    'candidates_rejected': [],
+                    'cost_paid': {},
+                    'operator_candidates': [
+                        {'operator_id': 'operator:1'},
+                    ],
+                    'capability_deltas': [{'delta_id': 'delta:1'}],
+                    'use_receipts': [{'receipt_id': 'use:1'}],
+                    'encoding_schemas': [{'schema_id': 'schema:1'}],
+                    'encoding_priors': [],
+                    'schemas_strengthened': ['schema:1'],
+                    'schemas_weakened': [],
+                    'discovery_run': {'run_id': 'encode:1'},
+                },
+            )
+        if request.url.path.endswith('/encode/operators/search/'):
+            return httpx.Response(200, json=[{'operator_id': 'operator:1'}])
+        return httpx.Response(404)
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            result = await client.encode.run_plan(
+                source_packet={'source_packet_id': 'source:mcp-fixture'},
+                task='Prepare MCP context',
+            )
+            operators = await client.encode.search_operators(
+                runtime_surface='context_compile',
+            )
+        finally:
+            await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/encode/plan/run/'
+        assert requests[1].url.path == '/api/v2/theseus/encode/operators/search/'
+        assert requests[1].url.params['runtime_surface'] == 'context_compile'
+        assert result.discovery_run['run_id'] == 'encode:1'
+        assert result.capability_deltas[0]['delta_id'] == 'delta:1'
+        assert operators[0]['operator_id'] == 'operator:1'
+
+    asyncio.run(run())
+
+
+def test_first_class_runtime_namespaces_map_to_shipped_routes() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith('/harness/runs/'):
+            return httpx.Response(
+                200,
+                json={
+                    'run': {
+                        'run_id': 'run-1',
+                        'task': 'Research: pairformer gaps',
+                        'actor': 'agent',
+                        'scope': {},
+                        'status': 'running',
+                        'steps': [],
+                        'search_runs': [],
+                        'artifacts': [],
+                        'memory_patches': [],
+                        'validations': [],
+                    },
+                },
+            )
+        return httpx.Response(200, json={'ok': True, 'path': request.url.path})
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            thg_product_base_url='http://localhost:8380',
+            thg_api_token='thg-token',
+            thg_tenant_id='tenant-a',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            await client.code.search('Pairformer', entity_type='class', limit=5)
+            await client.code.crawl(repo='owner/repo', language='python')
+            await client.instant_kg.status(manifest={'version': 1})
+            await client.instant_kg.reingest('https://example.com/doc')
+            await client.fractal.expand('pairformer gaps')
+            await client.provenance.trace(trace_id='trace-1', object_pk=42)
+            await client.provenance.trace(query='safety', min_confidence=0.5)
+            await client.domains.list(user='me')
+            await client.domains.install(['code'])
+            await client.coordinate(
+                message='@claude-code hello',
+                doc_id='repo:codex-plugins',
+            )
+            await client.coordinate.mentions_wait(
+                actor='codex',
+                consume=True,
+                timeout_seconds=2,
+            )
+        finally:
+            await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/code/symbols/'
+        assert requests[0].url.params['search'] == 'Pairformer'
+        assert requests[0].url.params['entity_type'] == 'class'
+        assert requests[0].url.params['limit'] == '5'
+        assert requests[1].url.path == '/api/v2/theseus/code/ingest/'
+        assert requests[2].url.path == '/v1/tenants/tenant-a/instant-kg/status'
+        assert requests[2].headers['authorization'] == 'Bearer thg-token'
+        assert requests[3].url.path == '/api/v2/theseus/capture/instant-kg/'
+        assert requests[4].url.path == '/api/v2/theseus/harness/runs/'
+        assert requests[5].url.path == '/api/v2/theseus/harness/runs/run-1/fractal-expansion/'
+        assert requests[6].url.path == '/api/v2/theseus/trace/trace-1/explain/42/'
+        assert requests[7].url.path == '/api/v2/theseus/trace/search/'
+        assert requests[7].url.params['query'] == 'safety'
+        assert requests[7].url.params['min_confidence'] == '0.5'
+        assert requests[8].url.path == '/api/v2/packs/'
+        assert requests[8].url.params['user'] == 'me'
+        assert requests[9].url.path == '/api/v2/pack-installs/'
+        assert requests[10].url.path == '/api/v2/theseus/harness/coordinate/'
+        assert requests[11].url.path == '/api/v2/theseus/harness/mentions/wait/'
+
+    asyncio.run(run())
+
+
 def test_context_artifacts_export_wraps_markdown_route_output() -> None:
     requests: list[httpx.Request] = []
 
@@ -976,6 +1119,25 @@ def test_orchestrate_prepare_uses_server_prepare_route() -> None:
                         'selected_bank_count': 1,
                         'hydration_handle_count': 0,
                     },
+                    'grill_me': {
+                        'objective': 'Stress-test the plan before execution.',
+                        'questions': [
+                            {
+                                'question_id': 'grill.scope',
+                                'question': 'What exact outcome proves the task is done?',
+                                'recommended_answer': 'Define one concrete acceptance path before implementation starts.',
+                            },
+                        ],
+                    },
+                    'research_plan': {
+                        'posture': 'targeted_solution_first',
+                        'tracks': [
+                            {
+                                'track_id': 'research.local_codebase_fit',
+                                'title': 'Local codebase fit',
+                            },
+                        ],
+                    },
                 },
             )
         return httpx.Response(404)
@@ -1004,6 +1166,10 @@ def test_orchestrate_prepare_uses_server_prepare_route() -> None:
         assert result.memory_policy_proposals[0].proposal_id == 'proposal:1'
         assert result.memory_recall_trace.selected_bank_count == 1
         assert result.memory_recall_trace.proposed_policy_count == 1
+        assert result.grill_me is not None
+        assert result.grill_me['questions'][0]['question_id'] == 'grill.scope'
+        assert result.research_plan is not None
+        assert result.research_plan['tracks'][0]['track_id'] == 'research.local_codebase_fit'
         assert [request.url.path for request in requests] == [
             '/api/v2/theseus/orchestrate/prepare/',
         ]
@@ -1033,6 +1199,8 @@ def test_harness_context_web_namespace_maps_modes_and_explain_routes() -> None:
                         'token_ledger': {},
                         'provenance': {'mode_semantics': {'folio_id': 'folio-1'}},
                         'spend_plan': {},
+                        'solution_cards': [],
+                        'deferred_ingestion': [],
                         'state_hash': 'pack:web',
                     },
                 },
@@ -1079,9 +1247,75 @@ def test_harness_context_web_namespace_maps_modes_and_explain_routes() -> None:
         assert json.loads(requests[0].content)['folio_id'] == 'folio-1'
         assert pack.mode == 'browser_folio'
         assert pack.provenance['mode_semantics']['folio_id'] == 'folio-1'
+        assert pack.solution_cards == []
         assert requests[1].url.path == '/api/v2/theseus/harness/runs/run:web/context-web/pack:web/explain/'
         assert explanation.included is True
         assert explanation.why_included == 'Selected as the active browser folio anchor.'
+
+
+def test_harness_context_web_research_serializes_external_code_fields() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                'context_web_pack': {
+                    'run_id': 'run:research',
+                    'query': 'find reusable repo patterns',
+                    'mode': 'research',
+                    'budget': {'max_tokens': 4000, 'max_atoms': 24, 'max_edges': 48, 'max_paths': 8, 'max_tools': 5},
+                    'atoms': [],
+                    'edges': [],
+                    'paths': [],
+                    'tools_used': [],
+                    'source_mix': {},
+                    'token_ledger': {},
+                    'provenance': {
+                        'mode_semantics': {
+                            'code_search_profile': {
+                                'external_code_search': {
+                                    'effective_sources': ['github'],
+                                },
+                            },
+                        },
+                    },
+                    'spend_plan': {},
+                    'solution_cards': [],
+                    'deferred_ingestion': [],
+                    'state_hash': 'pack:research',
+                },
+            },
+        )
+
+    async def run() -> None:
+        client = TheoremContextClient(
+            base_url='http://localhost:8000/api/v2/theseus',
+            transport=httpx.MockTransport(handler),
+        )
+        try:
+            pack = await client.harness.context_web_research(
+                'run:research',
+                query='find reusable repo patterns',
+                external_code_sources=['github', 'stackoverflow'],
+                external_code_repositories=['github/spec-kit'],
+                include_external_code_research=True,
+            )
+        finally:
+            await client.aclose()
+
+        assert requests[0].url.path == '/api/v2/theseus/harness/runs/run:research/context-web/research/'
+        payload = json.loads(requests[0].content)
+        assert payload['external_code_sources'] == ['github', 'stackoverflow']
+        assert payload['external_code_repositories'] == ['github/spec-kit']
+        assert payload['include_external_code_research'] is True
+        assert (
+            pack.provenance['mode_semantics']['code_search_profile']['external_code_search']['effective_sources']
+            == ['github']
+        )
+
+    asyncio.run(run())
 
 
 def test_harness_context_web_spend_plan_and_index_update_helpers() -> None:

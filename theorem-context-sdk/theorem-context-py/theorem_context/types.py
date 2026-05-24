@@ -20,6 +20,7 @@ ArtifactStatus = Literal[
 AtomKind = Literal[
     'file', 'postmortem', 'claim', 'webdoc', 'code_symbol', 'test', 'policy',
 ]
+AgentAdapter = Literal['codex', 'claude_code', 'cursor', 'chatgpt', 'custom']
 
 
 class Atom(BaseModel):
@@ -159,6 +160,18 @@ class OrchestrateRequest(BaseModel):
     generate_action_rail: bool = True
     submit_operational_policy_patches: bool = False
     queue_operational_policy_patches: bool = False
+
+
+class AgentCatalogRequest(BaseModel):
+    model_config = ConfigDict(extra='allow')
+
+    actor: str = 'agent'
+    adapter: AgentAdapter = 'custom'
+
+
+class AgentGraphQLRequest(BaseModel):
+    operationName: str
+    variables: dict[str, Any] = Field(default_factory=dict)
 
 
 class OrchestrateRejectedCandidate(BaseModel):
@@ -426,6 +439,41 @@ class DiscoveryRunCreateRequest(BaseModel):
     source_artifact_id: str | None = None
 
 
+class EncodePlanRunRequest(BaseModel):
+    plan_id: str = 'mcp_protocol_v1'
+    source_packet: dict[str, Any]
+    task: str = ''
+    canonical: bool = False
+    persist: bool = True
+    persist_memgraph: bool = False
+    run_id: str | None = None
+
+
+class EncodePlanRunResult(BaseModel):
+    plan_version: str
+    source_packet_id: str
+    lowering_receipts: list[dict[str, Any]] = Field(default_factory=list)
+    derived_atoms: list[dict[str, Any]] = Field(default_factory=list)
+    discovery_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    validators_run: list[dict[str, Any]] = Field(default_factory=list)
+    proposals_emitted: list[dict[str, Any]] = Field(default_factory=list)
+    candidates_rejected: list[dict[str, Any]] = Field(default_factory=list)
+    cost_paid: dict[str, Any] = Field(default_factory=dict)
+    operator_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    capability_deltas: list[dict[str, Any]] = Field(default_factory=list)
+    use_receipts: list[dict[str, Any]] = Field(default_factory=list)
+    encoding_schemas: list[dict[str, Any]] = Field(default_factory=list)
+    encoding_priors: list[dict[str, Any]] = Field(default_factory=list)
+    schemas_strengthened: list[str] = Field(default_factory=list)
+    schemas_weakened: list[str] = Field(default_factory=list)
+    discovery_run: dict[str, Any] = Field(default_factory=dict)
+
+
+class EncodePromotionRequest(BaseModel):
+    plan_id: str = 'mcp_protocol_v1'
+    canonical: bool = False
+
+
 class DiscoveryValidatorReceiptRequest(BaseModel):
     candidate_id: str = ''
     outcome_id: str = ''
@@ -636,6 +684,8 @@ class OrchestrateResult(BaseModel):
     memory_policy_patch_requests: list[dict[str, Any]] = Field(default_factory=list)
     memory_recall: dict[str, Any] | None = None
     memory_recall_trace: dict[str, Any] = Field(default_factory=dict)
+    grill_me: dict[str, Any] | None = None
+    research_plan: dict[str, Any] | None = None
     context_command: dict[str, Any] | None = None
     artifact: ContextArtifact | None = None
     artifact_attachment: ArtifactAttachResponse | None = None
@@ -772,6 +822,8 @@ class OrchestratePrepareResult(BaseModel):
     memory_recall_trace: OrchestrateMemoryRecallTrace = Field(
         default_factory=OrchestrateMemoryRecallTrace,
     )
+    grill_me: dict[str, Any] | None = None
+    research_plan: dict[str, Any] | None = None
 
 
 class HarnessEvent(BaseModel):
@@ -843,6 +895,14 @@ class HarnessContextWebRequest(BaseModel):
     explicit_targets: list[str] = Field(default_factory=list)
     allow_generated_artifacts: bool = False
     folio_id: str | None = None
+    detail_level: str = 'standard'
+    prefer_existing_solutions: bool = True
+    include_codebase_research: bool = True
+    include_external_code_research: bool = True
+    external_code_sources: list[str] = Field(default_factory=list)
+    external_code_repositories: list[str] = Field(default_factory=list)
+    propose_background_ingestion: bool = True
+    code_search_models: list[str] = Field(default_factory=list)
 
 
 class ContextWebBudget(BaseModel):
@@ -985,6 +1045,8 @@ class ContextWebPack(BaseModel):
     validation: ContextWebValidationSummary = Field(default_factory=ContextWebValidationSummary)
     evaluation: ContextWebEvaluation = Field(default_factory=ContextWebEvaluation)
     index: ContextWebIndex = Field(default_factory=ContextWebIndex)
+    solution_cards: list[dict[str, Any]] = Field(default_factory=list)
+    deferred_ingestion: list[dict[str, Any]] = Field(default_factory=list)
     state_hash: str = ''
 
 
@@ -1348,3 +1410,105 @@ class THGCypherRequest(BaseModel):
     query: str
     graph: dict[str, Any] = Field(default_factory=dict)
     params: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Continuous Agent Memory Harness — workstream, agent session, handoff types.
+# See Index-API/docs/Harness Expansion.md §1, §5, §6.3, §8, §10, §12.
+# ---------------------------------------------------------------------------
+
+
+class Workstream(BaseModel):
+    """:Workstream summary as returned by the public CMH API."""
+
+    workstream_id: str
+    tenant_id: str = ''
+    repo: str = ''
+    branch: str = 'main'
+    extra_key: str = ''
+    title: str = ''
+    task_state: str = 'active'
+    agent_hosts_seen: list[str] = Field(default_factory=list)
+    active_branch: str = ''
+    current_handoff_id: str = ''
+    last_state_hash: str = ''
+    created_at: str = ''
+    updated_at: str = ''
+
+
+class AgentSession(BaseModel):
+    """:AgentSession summary as returned by the public CMH API."""
+
+    agent_session_id: str
+    workstream_id: str
+    harness_run_id: str = ''
+    agent_host: str = 'custom'
+    agent_model: str = ''
+    started_at: str = ''
+    ended_at: str = ''
+    outcome: dict[str, Any] = Field(default_factory=dict)
+
+
+class HandoffArtifact(BaseModel):
+    """:HandoffArtifact full §5 shape returned by the public CMH API.
+
+    The 17 spec fields plus ``handoff_id`` and ``created_at``. Lists are
+    optional and default to empty so the SDK survives older server rows.
+    """
+
+    handoff_id: str
+    workstream_id: str
+    previous_agent: str = ''
+    next_agent_target: str = ''
+    task_state: str = 'active'
+    summary: str = ''
+    decisions: list[dict[str, Any]] = Field(default_factory=list)
+    assumptions: list[dict[str, Any]] = Field(default_factory=list)
+    resolved_assumptions: list[dict[str, Any]] = Field(default_factory=list)
+    files_touched: list[str] = Field(default_factory=list)
+    commands_run: list[dict[str, Any]] = Field(default_factory=list)
+    tests_run: list[dict[str, Any]] = Field(default_factory=list)
+    failures: list[dict[str, Any]] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+    next_actions: list[str] = Field(default_factory=list)
+    memory_atoms: list[dict[str, Any]] = Field(default_factory=list)
+    risk_flags: list[str] = Field(default_factory=list)
+    state_hash: str = ''
+    created_at: str = ''
+
+
+class WorkstreamResolveRequest(BaseModel):
+    tenant_id: str | None = None
+    repo: str
+    branch: str = 'main'
+    extra_key: str = ''
+    title: str = ''
+
+
+class StartAgentSessionRequest(BaseModel):
+    agent_host: str = 'custom'
+    agent_model: str = ''
+    harness_run_id: str | None = None
+    task: str = ''
+    scope: dict[str, Any] | None = None
+
+
+class EndAgentSessionRequest(BaseModel):
+    agent_session_id: str
+    outcome: dict[str, Any] | None = None
+
+
+class CompileHandoffRequest(BaseModel):
+    previous_agent: str = ''
+    next_agent_target: str = ''
+    target_tokens: int = 1500
+    hard_cap: int = 3000
+
+
+class HandoffListResponse(BaseModel):
+    """Paged response shape for ``client.workstream.handoffs``."""
+
+    workstream_id: str
+    handoffs: list[HandoffArtifact] = Field(default_factory=list)
+    count: int = 0
+    next_cursor: str | None = None

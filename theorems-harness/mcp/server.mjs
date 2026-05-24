@@ -30,6 +30,7 @@ import { hostname, userInfo } from "node:os";
 const BASE_URL =
   process.env.THEOREM_CONTEXT_BASE_URL ||
   "https://index-api-production-a5f7.up.railway.app/api/v2/theseus";
+const API_ROOT = BASE_URL.replace(/\/theseus\/?$/, "");
 const API_KEY = process.env.THEOREM_CONTEXT_API_KEY || "";
 const THG_BASE_URL =
   process.env.RUSTYRED_THG_BASE_URL ||
@@ -90,8 +91,33 @@ async function theoremPost(path, body, timeoutMs = 25_000) {
   return res.json();
 }
 
+async function apiPost(path, body, timeoutMs = 25_000) {
+  const res = await fetch(`${API_ROOT}${path}`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) {
+    throw new Error(`POST ${path} -> ${res.status}: ${(await res.text()).slice(0, 400)}`);
+  }
+  return res.json();
+}
+
 async function theoremGet(path) {
   const res = await fetch(`${BASE_URL}${path}`, {
+    method: "GET",
+    headers: authHeaders(),
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!res.ok) {
+    throw new Error(`GET ${path} -> ${res.status}: ${(await res.text()).slice(0, 400)}`);
+  }
+  return res.json();
+}
+
+async function apiGet(path) {
+  const res = await fetch(`${API_ROOT}${path}`, {
     method: "GET",
     headers: authHeaders(),
     signal: AbortSignal.timeout(25_000),
@@ -113,6 +139,10 @@ async function theoremPut(path, body) {
     throw new Error(`PUT ${path} -> ${res.status}: ${(await res.text()).slice(0, 400)}`);
   }
   return res.json();
+}
+
+function thgTenantPath(args, path) {
+  return `/v1/tenants/${encodeURIComponent(tenantId(args))}${path}`;
 }
 
 async function theoremDelete(path) {
@@ -289,6 +319,23 @@ const TOOLS = [
     },
   },
   {
+    name: "context_compile",
+    description:
+      "Compile a Context Theorem artifact for a task through the public context compiler route. Use when the hook-prepared context is absent or you need an explicit artifact payload.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: { type: "string" },
+        task_type: { type: "string" },
+        repo: { type: "string" },
+        budget_tokens: { type: "integer", default: 4000 },
+        mode: { type: "string" },
+        metadata: { type: "object" },
+      },
+      required: ["task"],
+    },
+  },
+  {
     name: "code_search",
     description:
       "Search ingested code symbols through the CodeCrawler/code graph surface. Use before code_context when you need to discover the exact symbol name or file.",
@@ -305,6 +352,28 @@ const TOOLS = [
     },
   },
   {
+    name: "code_crawl",
+    description:
+      "Ingest or refresh a repository in the CodeCrawler/code graph surface. Use for operator-approved code graph crawls before Pairformer/code-search work.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repo: {
+          type: "string",
+          description: "Public GitHub URL or owner/repo short form to clone and ingest.",
+        },
+        path: {
+          type: "string",
+          description: "Server-readable local path to ingest when running as an operator.",
+        },
+        paths: { type: "array", items: { type: "string" } },
+        language: { type: "string" },
+        notebook_id: { type: "string" },
+        graph_write_token: { type: "string" },
+      },
+    },
+  },
+  {
     name: "harness_fractal_expansion",
     description:
       "Run Theorem's Harness research mode: gap-frontier/fractal expansion over the graph. Creates a temporary harness run when run_id is omitted.",
@@ -318,6 +387,49 @@ const TOOLS = [
         scope: { type: "object" },
       },
       required: ["query"],
+    },
+  },
+  {
+    name: "fractal_expand",
+    description:
+      "Alias for harness_fractal_expansion with launch-facing naming. Runs gap-frontier/fractal expansion over the graph and returns the active harness run id.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string" },
+        run_id: { type: "string" },
+        top_k: { type: "integer", default: 20, minimum: 1, maximum: 100 },
+        budget: { type: "object" },
+        scope: { type: "object" },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "instant_kg_status",
+    description:
+      "Read Instant KG status from the tenant-scoped THG product service. Use to check Pairformer/Instant KG readiness for a tenant graph.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        manifest: { type: "object" },
+        delta: { type: "object" },
+      },
+    },
+  },
+  {
+    name: "instant_kg_reingest",
+    description:
+      "Enqueue a fresh Instant KG capture/reingest job through Index-API. Use when a URL or document needs to be reprocessed into the graph.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        input: { type: "string" },
+        kind: { type: "string", default: "url" },
+        relation_confidence_floor: { type: "number" },
+      },
+      required: ["input"],
     },
   },
   {
@@ -386,6 +498,60 @@ const TOOLS = [
         actor: { type: "string" },
         limit: { type: "integer", default: 10 },
       },
+    },
+  },
+  {
+    name: "recall",
+    description:
+      "Preview saved context recall for a tenant/project/task. Use before prepare when you need to see which durable memory would be injected.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        task: { type: "string" },
+        project_slug: { type: "string" },
+        mode: { type: "string" },
+        modes: { type: "array", items: { type: "string" } },
+        profile_id: { type: "string" },
+        profile_ids: { type: "array", items: { type: "string" } },
+        permissions: { type: "array", items: { type: "string" } },
+      },
+      required: ["tenant_slug", "task"],
+    },
+  },
+  {
+    name: "remember",
+    description:
+      "Save a durable memory note through the harness memory substrate using launch-facing naming. Prefer encode for lessons/postmortems and remember for reusable context.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        title: { type: "string" },
+        content: { type: "string" },
+        memory_node_type: { type: "string", default: "belief" },
+        tags: { type: "array", items: { type: "string" } },
+        links: { type: "array", items: { type: "string" } },
+        summary: { type: "string" },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "relate",
+    description:
+      "Record a typed relationship between two memory or graph references in the THG mirror, without claiming canonical graph promotion.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        from_id: { type: "string" },
+        to_id: { type: "string" },
+        relation: { type: "string", default: "related_to" },
+        reason: { type: "string" },
+        metadata: { type: "object" },
+      },
+      required: ["from_id", "to_id"],
     },
   },
   {
@@ -495,6 +661,23 @@ const TOOLS = [
         tenant_slug: { type: "string" },
         actor: { type: "string" },
         doc_id: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "provenance_trace",
+    description:
+      "Read reasoning trace provenance. Pass trace_id for a full trace, trace_id plus object_pk for an object-specific explanation, or query to search traces.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trace_id: { type: "string" },
+        object_pk: { type: "integer" },
+        query: { type: "string" },
+        policy_intent: { type: "string" },
+        min_confidence: { type: "number" },
+        max_confidence: { type: "number" },
+        limit: { type: "integer", default: 20, minimum: 1, maximum: 200 },
       },
     },
   },
@@ -655,6 +838,30 @@ const TOOLS = [
       required: ["tenant_slug", "run_id", "patch_id", "review_status"],
     },
   },
+  {
+    name: "domain_list",
+    description:
+      "List available Context Theorem domain packs, optionally including install state for a user.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        user: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "domain_install",
+    description:
+      "Install one to three Context Theorem domain packs for the requested user.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        user: { type: "string", default: "me" },
+        pack_slugs: { type: "array", items: { type: "string" } },
+      },
+      required: ["pack_slugs"],
+    },
+  },
 ];
 
 const server = new Server(
@@ -757,6 +964,16 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return { content: [{ type: "text", text: raw }] };
     }
 
+    if (name === "context_compile") {
+      const body = {
+        ...args,
+        task: requireString(args, "task"),
+        budget_tokens: args?.budget_tokens ?? 4000,
+      };
+      const result = await theoremPost("/context/compile/", body, 60_000);
+      return jsonText(result);
+    }
+
     if (name === "code_search") {
       const query = requireString(args, "query");
       const result = await theoremGet(
@@ -771,7 +988,29 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(result);
     }
 
-    if (name === "harness_fractal_expansion") {
+    if (name === "code_crawl") {
+      if (!args?.repo && !args?.path) {
+        return {
+          content: [{ type: "text", text: "Error: pass either 'repo' or 'path'." }],
+          isError: true,
+        };
+      }
+      const result = await theoremPost(
+        "/code/ingest/",
+        {
+          repo: args?.repo ?? null,
+          path: args?.path ?? null,
+          paths: args?.paths ?? null,
+          language: args?.language ?? null,
+          notebook_id: args?.notebook_id ?? null,
+          graph_write_token: args?.graph_write_token ?? null,
+        },
+        240_000
+      );
+      return jsonText(result);
+    }
+
+    if (name === "harness_fractal_expansion" || name === "fractal_expand") {
       const query = requireString(args, "query");
       let activeRunId = args?.run_id || runId;
       if (!activeRunId) {
@@ -807,6 +1046,26 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         60_000
       );
       return jsonText({ run_id: activeRunId, ...result });
+    }
+
+    if (name === "instant_kg_status") {
+      const result = await thgPost(
+        thgTenantPath(args, "/instant-kg/status"),
+        {
+          manifest: args?.manifest ?? undefined,
+          delta: args?.delta ?? undefined,
+        }
+      );
+      return jsonText(result);
+    }
+
+    if (name === "instant_kg_reingest") {
+      const result = await theoremPost("/capture/instant-kg/", {
+        input: requireString(args, "input"),
+        kind: args?.kind ?? "url",
+        relation_confidence_floor: args?.relation_confidence_floor ?? undefined,
+      });
+      return jsonText(result);
     }
 
     if (name === "self_note") {
@@ -876,6 +1135,61 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         actor: args?.actor ?? null,
         limit: args?.limit ?? 10,
       });
+      return jsonText(result);
+    }
+
+    if (name === "recall") {
+      const tenantSlug = requireString(args, "tenant_slug");
+      const result = await theoremPost(
+        `/product/tenants/${tenantSlug}/saved-contexts/preview-recall/`,
+        {
+          task: requireString(args, "task"),
+          project_slug: args?.project_slug ?? null,
+          mode: args?.mode ?? null,
+          modes: args?.modes ?? [],
+          profile_id: args?.profile_id ?? null,
+          profile_ids: args?.profile_ids ?? [],
+          permissions: args?.permissions ?? [],
+        }
+      );
+      return jsonText(result);
+    }
+
+    if (name === "remember") {
+      const body = {
+        tenant_slug: args?.tenant_slug ?? null,
+        title: args?.title ?? null,
+        content: requireString(args, "content"),
+        kind: "remember",
+        memory_node_type: args?.memory_node_type ?? "belief",
+        tags: args?.tags ?? [],
+        links: args?.links ?? [],
+        summary: args?.summary ?? "",
+      };
+      const mirror = await mirrorHarnessNode(
+        "remember",
+        args,
+        body,
+        ["MemoryAtom", "AgentMemory"]
+      );
+      const result = await theoremPost("/harness/memory/self-note/", body);
+      return jsonText(withThgMirror(result, mirror));
+    }
+
+    if (name === "relate") {
+      const body = {
+        command: "THG.GRAPH.EDGE.UPSERT",
+        payload: {
+          from_id: requireString(args, "from_id"),
+          to_id: requireString(args, "to_id"),
+          type: args?.relation ?? "related_to",
+          properties: {
+            reason: args?.reason ?? "",
+            ...(args?.metadata ?? {}),
+          },
+        },
+      };
+      const result = await theoremPost("/harness/thg/command/", body);
       return jsonText(result);
     }
 
@@ -1016,6 +1330,29 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(withThgMirror(result, mirror));
     }
 
+    if (name === "provenance_trace") {
+      if (args?.trace_id && args?.object_pk !== undefined && args?.object_pk !== null) {
+        const result = await theoremGet(
+          `/trace/${encodeURIComponent(args.trace_id)}/explain/${encodeURIComponent(String(args.object_pk))}/`
+        );
+        return jsonText(result);
+      }
+      if (args?.trace_id) {
+        const result = await theoremGet(`/trace/${encodeURIComponent(args.trace_id)}/`);
+        return jsonText(result);
+      }
+      const result = await theoremGet(
+        `/trace/search/${buildQuery({
+          query: args?.query ?? "",
+          policy_intent: args?.policy_intent,
+          min_confidence: args?.min_confidence,
+          max_confidence: args?.max_confidence,
+          limit: args?.limit ?? 20,
+        })}`
+      );
+      return jsonText(result);
+    }
+
     if (name === "product_bootstrap") {
       const result = await theoremGet("/product/bootstrap/");
       return jsonText(result);
@@ -1144,6 +1481,23 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
           metadata: args?.metadata ?? undefined,
         }
       );
+      return jsonText(result);
+    }
+
+    if (name === "domain_list") {
+      const result = await apiGet(
+        `/packs/${buildQuery({
+          user: args?.user,
+        })}`
+      );
+      return jsonText(result);
+    }
+
+    if (name === "domain_install") {
+      const result = await apiPost("/pack-installs/", {
+        user: args?.user ?? "me",
+        pack_slugs: args?.pack_slugs ?? [],
+      });
       return jsonText(result);
     }
 

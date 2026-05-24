@@ -90,6 +90,25 @@ only an internal/backend word during the route migration.
 | `presence` | Refresh, end, or read short-TTL actor presence |
 | `subscribe` | Register an actor as polling a mention channel |
 
+## Slim MCP launch aliases
+
+The local `theorems-harness` MCP server also exposes launch-facing aliases that
+wrap current shipped SDK/backend routes:
+
+| Tool | Purpose |
+|---|---|
+| `context_compile` | Compile an explicit Context Theorem artifact for a task |
+| `code_crawl` | Ingest or refresh a repository in the CodeCrawler/code graph |
+| `fractal_expand` | Launch-facing alias for `harness_fractal_expansion` |
+| `instant_kg_status` | Check tenant-scoped Instant KG readiness through THG product |
+| `instant_kg_reingest` | Enqueue fresh Instant KG capture/reingest in Index-API |
+| `provenance_trace` | Read reasoning trace provenance or object-specific trace explanations |
+| `recall` | Preview saved-context recall for a task |
+| `remember` | Save reusable context through the harness memory substrate |
+| `relate` | Record a typed THG relation without claiming canonical graph promotion |
+| `domain_list` | List available Context Theorem domain packs |
+| `domain_install` | Install one to three domain packs for a user |
+
 ## Standard run-lifecycle flow
 
 For "drive a harness run for task T":
@@ -109,6 +128,12 @@ For fractal expansion (research / discovery):
 
 For code search:
 - `code_search(query='CodeCrawlerService', limit=20)` — discover symbols before asking for `code_context`, `code_impact`, or `code_explain`.
+- `code_crawl(repo='owner/repo')` — operator-approved crawl/ingest before deeper Pairformer or code-search work.
+
+For Pairformer / graph readiness:
+- `instant_kg_status(tenant_slug='...')` — check the THG-backed Instant KG runtime.
+- `instant_kg_reingest(input='https://...', kind='url')` — enqueue a fresh capture when evidence is stale.
+- `provenance_trace(trace_id='...', object_pk=123)` — explain how a trace used a specific object.
 
 For replay / debugging:
 - `harness_replay(run_id)` — full event timeline.

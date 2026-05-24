@@ -181,6 +181,89 @@ export interface OrchestrateRequest {
   queue_operational_policy_patches?: boolean;
 }
 
+export type AgentAdapter =
+  | 'codex'
+  | 'claude_code'
+  | 'cursor'
+  | 'chatgpt'
+  | 'custom'
+  | string;
+
+export interface AgentRuntimeRequest {
+  actor?: string;
+  adapter?: AgentAdapter;
+  [key: string]: unknown;
+}
+
+export type AgentToolManifestResponse = Record<string, unknown>;
+export type AgentToolManifestRequest = Record<string, never>;
+export type AgentDomainCatalogRequest = AgentRuntimeRequest;
+export type AgentDomainCatalogResponse = Record<string, unknown>;
+export type AgentRecommendedToolPackRequest = AgentRuntimeRequest & {
+  task_signature?: string;
+};
+export type AgentRecommendedToolPackResponse = Record<string, unknown>;
+export type AgentPrepareRequest = AgentRuntimeRequest & {
+  task_signature?: string;
+};
+export type AgentPrepareResponse = Record<string, unknown>;
+export type AgentSearchContextRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  query?: string;
+};
+export type AgentSearchContextResponse = Record<string, unknown>;
+export type AgentHydrateContextRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  handles?: string[];
+  artifact_id?: string;
+  artifactId?: string;
+};
+export type AgentHydrateContextResponse = Record<string, unknown>;
+export type AgentRecordStepRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  kind?: string;
+  payload?: Record<string, unknown>;
+};
+export type AgentRecordStepResponse = Record<string, unknown>;
+export type AgentRecordOutcomeRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+  accepted?: boolean;
+  tests_passed?: boolean;
+  testsPassed?: boolean;
+  summary?: string;
+};
+export type AgentRecordOutcomeResponse = Record<string, unknown>;
+export type AgentExplainContextRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  artifact_id?: string;
+};
+export type AgentExplainContextResponse = Record<string, unknown>;
+export type AgentExportArtifactRequest = AgentRuntimeRequest & {
+  artifact_id?: string;
+  artifactId?: string;
+  format?: string;
+};
+export type AgentExportArtifactResponse = Record<string, unknown>;
+export type AgentReviewMemoryRequest = AgentRuntimeRequest & {
+  run_id?: string;
+  runId?: string;
+};
+export type AgentReviewMemoryResponse = Record<string, unknown>;
+
+export interface AgentGraphqlRequest {
+  operationName: string;
+  variables: Record<string, unknown>;
+}
+
+export interface AgentGraphqlResponse<T = Record<string, unknown>> {
+  data?: T;
+  errors?: Array<Record<string, unknown>>;
+}
+
 export interface OrchestrateRejectedCandidate {
   id: string;
   kind: string;
@@ -584,6 +667,41 @@ export interface DiscoveryRunCreateRequest {
   expected_value?: number;
   metadata?: Record<string, unknown>;
   source_artifact_id?: string;
+}
+
+export interface EncodePlanRunRequest {
+  plan_id?: string;
+  source_packet: Record<string, unknown>;
+  task?: string;
+  canonical?: boolean;
+  persist?: boolean;
+  persist_memgraph?: boolean;
+  run_id?: string;
+}
+
+export interface EncodePlanRunResult {
+  plan_version: string;
+  source_packet_id: string;
+  lowering_receipts: Array<Record<string, unknown>>;
+  derived_atoms: Array<Record<string, unknown>>;
+  discovery_candidates: Array<Record<string, unknown>>;
+  validators_run: Array<Record<string, unknown>>;
+  proposals_emitted: Array<Record<string, unknown>>;
+  candidates_rejected: Array<Record<string, unknown>>;
+  cost_paid: Record<string, unknown>;
+  operator_candidates: Array<Record<string, unknown>>;
+  capability_deltas: Array<Record<string, unknown>>;
+  use_receipts: Array<Record<string, unknown>>;
+  encoding_schemas: Array<Record<string, unknown>>;
+  encoding_priors: Array<Record<string, unknown>>;
+  schemas_strengthened: string[];
+  schemas_weakened: string[];
+  discovery_run: Record<string, unknown>;
+}
+
+export interface EncodePromotionRequest {
+  plan_id?: string;
+  canonical?: boolean;
 }
 
 export interface DiscoveryValidatorReceiptRequest {
@@ -1500,3 +1618,106 @@ export type CompileEvent =
   | { event: 'ready'; data: { artifact: ContextArtifact } }
   | { event: 'error'; data: { message: string } }
   | { event: 'done'; data: Record<string, never> };
+
+
+// ---------------------------------------------------------------------------
+// Continuous Agent Memory Harness — workstream, agent session, handoff types.
+// See Index-API/docs/Harness Expansion.md §1, §5, §6.3, §8, §10, §12.
+// ---------------------------------------------------------------------------
+
+export interface Workstream {
+  workstream_id: string;
+  tenant_id?: string;
+  repo?: string;
+  branch?: string;
+  extra_key?: string;
+  title?: string;
+  task_state?: string;
+  agent_hosts_seen?: string[];
+  active_branch?: string;
+  current_handoff_id?: string;
+  last_state_hash?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AgentSession {
+  agent_session_id: string;
+  workstream_id: string;
+  harness_run_id?: string;
+  agent_host?: string;
+  agent_model?: string;
+  started_at?: string;
+  ended_at?: string;
+  outcome?: Record<string, unknown>;
+}
+
+export interface HandoffArtifact {
+  handoff_id: string;
+  workstream_id: string;
+  previous_agent?: string;
+  next_agent_target?: string;
+  task_state?: string;
+  summary?: string;
+  decisions?: Array<Record<string, unknown>>;
+  assumptions?: Array<Record<string, unknown>>;
+  resolved_assumptions?: Array<Record<string, unknown>>;
+  files_touched?: string[];
+  commands_run?: Array<Record<string, unknown>>;
+  tests_run?: Array<Record<string, unknown>>;
+  failures?: Array<Record<string, unknown>>;
+  open_questions?: string[];
+  next_actions?: string[];
+  memory_atoms?: Array<Record<string, unknown>>;
+  risk_flags?: string[];
+  state_hash?: string;
+  created_at?: string;
+}
+
+export interface WorkstreamResolveRequest {
+  tenant_id?: string | null;
+  repo: string;
+  branch?: string;
+  extra_key?: string;
+  title?: string;
+}
+
+export interface StartAgentSessionRequest {
+  agent_host?: string;
+  agent_model?: string;
+  harness_run_id?: string | null;
+  task?: string;
+  scope?: Record<string, unknown> | null;
+}
+
+export interface EndAgentSessionRequest {
+  agent_session_id: string;
+  outcome?: Record<string, unknown> | null;
+}
+
+export interface CompileHandoffRequest {
+  previous_agent?: string;
+  next_agent_target?: string;
+  target_tokens?: number;
+  hard_cap?: number;
+}
+
+export interface HandoffListResponse {
+  workstream_id: string;
+  handoffs: HandoffArtifact[];
+  count: number;
+  next_cursor: string | null;
+}
+
+export interface StartAgentSessionResponse {
+  agent_session_id: string;
+  harness_run_id: string;
+  agent_session: AgentSession;
+  run?: Record<string, unknown> | null;
+}
+
+export interface EndAgentSessionResponse {
+  agent_session_id: string;
+  workstream_id: string;
+  agent_session: AgentSession;
+}

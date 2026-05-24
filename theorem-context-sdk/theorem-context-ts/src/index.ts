@@ -3,10 +3,23 @@ export {
   type TheoremContextClientOptions,
 } from './client.js';
 export {
+  Harness,
+  HarnessAction,
+  HarnessDiagnose,
+  HarnessMemory,
+  type HarnessOptions,
+} from './harness.js';
+export {
   detectRepoMetadata,
   prepareCodexBundle,
   writeCodexBundle,
 } from './adapters/codex.js';
+export {
+  currentConversation,
+  current_conversation,
+  type CapturedConversation,
+  type ConversationMessage,
+} from './adapters/claude_ai.js';
 export type {
   CodexBundleResult,
   CodexBundleWriteOptions,
@@ -79,6 +92,9 @@ export type {
   DiscoveryValidatorReceiptRequest,
   DiscoveryWritebackReviewRequest,
   DiscoveryWritebackProposal,
+  EncodePlanRunRequest,
+  EncodePlanRunResult,
+  EncodePromotionRequest,
   ExpressionRenderRequest,
   ExpressionRenderResult,
   GraphFocusEdge,
@@ -180,4 +196,14 @@ export type {
   TaskType,
   TokenLedger,
   ValidatorReceipt,
+  Workstream,
+  AgentSession,
+  HandoffArtifact,
+  WorkstreamResolveRequest,
+  StartAgentSessionRequest,
+  StartAgentSessionResponse,
+  EndAgentSessionRequest,
+  EndAgentSessionResponse,
+  CompileHandoffRequest,
+  HandoffListResponse,
 } from './types.js';

@@ -19,6 +19,13 @@ from .adapters.codex import (  # noqa: F401
     write_codex_bundle,
 )
 from .client import TheoremContextClient  # noqa: F401
+from .harness import (  # noqa: F401
+    Harness,
+    HarnessAction,
+    HarnessDiagnose,
+    HarnessMemory,
+)
+from .adapters.claude_ai import current_conversation  # noqa: F401
 from .errors import (  # noqa: F401
     AuthError,
     CompileError,
@@ -58,6 +65,9 @@ from .types import (  # noqa: F401
     DiscoveryValidatorReceiptRequest,
     DiscoveryWritebackReviewRequest,
     DiscoveryWritebackProposal,
+    EncodePlanRunRequest,
+    EncodePlanRunResult,
+    EncodePromotionRequest,
     ExpressionRenderRequest,
     ExpressionRenderResult,
     ContextWebAtom,
@@ -165,6 +175,14 @@ from .types import (  # noqa: F401
     THGResult,
     TokenLedger,
     ValidatorReceipt,
+    Workstream,
+    AgentSession,
+    HandoffArtifact,
+    WorkstreamResolveRequest,
+    StartAgentSessionRequest,
+    EndAgentSessionRequest,
+    CompileHandoffRequest,
+    HandoffListResponse,
 )
 
 
@@ -201,6 +219,9 @@ __all__ = [
     'DiscoveryValidatorReceiptRequest',
     'DiscoveryWritebackReviewRequest',
     'DiscoveryWritebackProposal',
+    'EncodePlanRunRequest',
+    'EncodePlanRunResult',
+    'EncodePromotionRequest',
     'ExpressionRenderRequest',
     'ExpressionRenderResult',
     'ContextWebAtom',
@@ -313,6 +334,14 @@ __all__ = [
     'TokenLedger',
     'UnsupportedSurfaceError',
     'ValidatorReceipt',
+    'Workstream',
+    'AgentSession',
+    'HandoffArtifact',
+    'WorkstreamResolveRequest',
+    'StartAgentSessionRequest',
+    'EndAgentSessionRequest',
+    'CompileHandoffRequest',
+    'HandoffListResponse',
     'begin_harness_bundle',
     'compile_run_context_bundle',
     'detect_repo_metadata',

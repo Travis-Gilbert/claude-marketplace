@@ -10,9 +10,12 @@ compatibility.
   for the Index-API harness and `TheoremHotGraphClient` for the standalone THG
   product service.
 - `theorem-context-py/` - Python client package with the same surfaces.
-- `claude-code/` - Claude Code host adapter: hook manifest, slim MCP fallback,
-  skills, and shell scripts for out-of-band context compilation, action
-  recording, Pairformer frontier injection, and session graph provenance.
+
+This directory now contains SDK clients only. The Claude Code host adapter
+(hooks, scripts, skills, slim MCP) was consolidated into the unified
+[`theorems-harness/`](../theorems-harness/) plugin alongside the Codex host
+adapter, so SDK releases stay decoupled from host integrations and a single
+plugin shape serves both runtimes.
 
 ## Source
 
@@ -23,8 +26,10 @@ This SDK mirrors:
 Keep this copy in sync when the Index-API SDK contract changes.
 
 The Claude Code adapter previously lived at the repository root as
-`theorem-context-claude/`. Its canonical home is now this SDK root under
-`claude-code/`, so SDK releases and host adapters travel together.
+`theorem-context-claude/`, then briefly at this SDK root as `claude-code/`.
+Its canonical home is now [`../theorems-harness/`](../theorems-harness/) (the
+dual-host plugin with `.claude-plugin/` and `.codex-plugin/` configs at the
+root and shared `scripts/`, `hooks/`, `skills/`, `agents/`, and `mcp/` trees).
 
 ## Verification
 
@@ -32,6 +37,14 @@ The Claude Code adapter previously lived at the repository root as
 npm --prefix theorem-context-ts run build
 npm --prefix theorem-context-ts test
 python3 -m pytest theorem-context-py/tests -q
-node --check claude-code/mcp/server.mjs
-python3 -m py_compile claude-code/scripts/detect_references.py
+```
+
+For the host-adapter side (hooks, scripts, skills, slim MCP) verify against
+`../theorems-harness/`:
+
+```bash
+node --check ../theorems-harness/mcp/server.mjs
+python3 -m py_compile ../theorems-harness/scripts/detect_references.py
+python3 -m json.tool ../theorems-harness/hooks/hooks.json > /dev/null
+python3 -m json.tool ../theorems-harness/hooks/codex-hooks.json > /dev/null
 ```
