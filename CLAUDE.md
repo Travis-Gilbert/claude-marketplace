@@ -57,6 +57,8 @@ After all three: open a NEW Claude Code session (not `--resume`). The orphan sho
 
 **Prevention going forward:** when removing a plugin from `.claude-plugin/marketplace.json`, also `rm -rf` the plugin's source directory in this repo. Plugins exist in this repo as directories AND in marketplace.json as listing entries; both must be removed together.
 
+`theorem-context-claude/` is intentionally not a top-level plugin directory anymore. Its canonical source now lives under `theorem-context-sdk/claude-code/`; do not recreate the top-level directory when syncing Context Theorem SDK or Pairformer hook work.
+
 **Diagnostic to run first when a bare slash command misbehaves:**
 
 ```bash
