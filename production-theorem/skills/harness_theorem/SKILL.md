@@ -39,8 +39,10 @@ Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `documen
 | `self_revise` | Create a revision-tracked memory replacement and supersede the prior atom |
 | `self_archive` | Archive memory out of active recall while preserving audit history |
 | `self_recall_archive` | Recall archived memory on demand |
+| `encode` | Record feedback, solutions, and postmortems with outcome metadata and fitness signals |
 | `coordinate` | Append a coordination message and queue `@actor` mentions |
 | `mentions` | Load or consume pending mentions for an actor |
+| `mentions_wait` | Block briefly until a pending mention arrives or the timeout expires |
 | `presence` | Refresh, end, or read short-TTL actor presence |
 | `subscribe` | Register an actor as polling a mention channel |
 
@@ -71,18 +73,21 @@ For cross-agent coordination:
 - `presence(actor='codex', mode='heartbeat')` — refresh this actor's TTL presence.
 - `coordinate(message='@claude-code please validate TTL', urgency='ask')` — write to the shared coordination document and queue mentions.
 - `mentions(actor='claude-code', consume=true)` — let the target actor load and optionally consume its inbox.
+- `mentions_wait(actor='claude-code', timeout_seconds=30)` — wait briefly for a real ping instead of manually polling.
 
 For typed agent memory:
 - `self_note(content='...', memory_node_type='convention')` — capture a durable agent-scoped memory.
 - `self_revise(doc_id='...', content='...', reason='...')` — preserve immutable supersession history.
 - `self_archive(doc_id='...', reason='...')` and `self_recall_archive(query='...')` — move memory out of active recall and retrieve it explicitly.
+- `encode(kind='solution', outcome='positive', content='...')` — preserve a high-signal solution, feedback item, or postmortem with graph fitness telemetry.
 
 ## Output discipline
 
 - Always pass back the `run_id` to the user after `harness_begin` so they can resume.
 - When a step records a `tool_call`, also record its `observation` — half-records make replays incoherent.
 - Don't `harness_patch` without explicit user approval — patches are belief-state mutations; the human is the reviewer.
-- For agent-to-agent work, heartbeat first, then `coordinate`, then ask the target actor to poll `mentions`. The UI is observational; the queue and presence substrate are enough for headless communication.
+- For agent-to-agent work, heartbeat first, then `coordinate`, then let the target actor call `mentions_wait` when it needs a ping-like wakeup. The UI is observational; the queue and presence substrate are enough for headless communication.
+- Agents may call `encode` without a user slash command when a session produces a durable lesson, but should avoid raw secrets and summarize sensitive evidence.
 
 ## Anti-patterns
 

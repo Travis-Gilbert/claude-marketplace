@@ -8,6 +8,8 @@
 //   - product_*: expose the Context Theorem product boundary for saved-context
 //     and review-queue work so the plugin can operate the backend that now
 //     exists without dropping to raw HTTP
+//   - encode / mentions_wait: high-signal memory capture and ping-like
+//     cross-agent coordination over the shared harness substrate
 //
 // Deliberately bounded surface. The fat Theseus MCP at theseus-mcp-production
 // is registered separately in plugin.json for Mode 3 power-user access.
@@ -51,12 +53,12 @@ function authHeaders() {
   return headers;
 }
 
-async function theoremPost(path, body) {
+async function theoremPost(path, body, timeoutMs = 25_000) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) {
     throw new Error(`POST ${path} -> ${res.status}: ${(await res.text()).slice(0, 400)}`);
@@ -248,6 +250,39 @@ const TOOLS = [
     },
   },
   {
+    name: "encode",
+    description:
+      "Record a feedback item, durable solution, or postmortem in harness memory with outcome metadata and a fitness signal. Use automatically when a session discovers an important good/bad lesson.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        title: { type: "string" },
+        content: { type: "string" },
+        kind: {
+          type: "string",
+          enum: ["encode", "feedback", "solution", "postmortem"],
+          default: "encode",
+        },
+        outcome: {
+          type: "string",
+          enum: ["positive", "negative", "mixed", "neutral"],
+          default: "neutral",
+        },
+        signal: { type: "string" },
+        reason: { type: "string" },
+        event_id: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+        links: { type: "array", items: { type: "string" } },
+        summary: { type: "string" },
+        metadata: { type: "object" },
+        context: { type: "object" },
+        auto_triggered: { type: "boolean", default: false },
+      },
+      required: ["content"],
+    },
+  },
+  {
     name: "coordinate",
     description:
       "Append a cross-agent coordination message and queue @mentions for target agents.",
@@ -275,6 +310,22 @@ const TOOLS = [
         actor: { type: "string" },
         limit: { type: "integer", default: 20 },
         consume: { type: "boolean", default: false },
+      },
+    },
+  },
+  {
+    name: "mentions_wait",
+    description:
+      "Block briefly until pending mentions arrive for the current or requested actor. This is the agent-equivalent of a real ping on top of the shared mention queue.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        limit: { type: "integer", default: 20 },
+        consume: { type: "boolean", default: false },
+        timeout_seconds: { type: "integer", default: 30, minimum: 0, maximum: 120 },
+        interval_seconds: { type: "number", default: 1, minimum: 0.1, maximum: 5 },
       },
     },
   },
@@ -616,6 +667,26 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(result);
     }
 
+    if (name === "encode") {
+      const result = await theoremPost("/harness/encode/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        title: args?.title ?? null,
+        content: requireString(args, "content"),
+        kind: args?.kind ?? "encode",
+        outcome: args?.outcome ?? "neutral",
+        signal: args?.signal ?? null,
+        reason: args?.reason ?? "",
+        event_id: args?.event_id ?? "",
+        tags: args?.tags ?? [],
+        links: args?.links ?? [],
+        summary: args?.summary ?? "",
+        metadata: args?.metadata ?? {},
+        context: args?.context ?? {},
+        auto_triggered: args?.auto_triggered === true,
+      });
+      return jsonText(result);
+    }
+
     if (name === "coordinate") {
       const result = await theoremPost("/harness/coordinate/", {
         tenant_slug: args?.tenant_slug ?? null,
@@ -635,6 +706,24 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         limit: args?.limit ?? 20,
         consume: args?.consume === true,
       });
+      return jsonText(result);
+    }
+
+    if (name === "mentions_wait") {
+      const rawTimeoutSeconds = Number(args?.timeout_seconds ?? 30);
+      const timeoutSeconds = Number.isFinite(rawTimeoutSeconds) ? rawTimeoutSeconds : 30;
+      const result = await theoremPost(
+        "/harness/mentions/wait/",
+        {
+          tenant_slug: args?.tenant_slug ?? null,
+          actor: args?.actor ?? null,
+          limit: args?.limit ?? 20,
+          consume: args?.consume === true,
+          timeout_seconds: args?.timeout_seconds ?? 30,
+          interval_seconds: args?.interval_seconds ?? 1,
+        },
+        Math.max(5_000, Math.min((timeoutSeconds + 5) * 1000, 125_000))
+      );
       return jsonText(result);
     }
 

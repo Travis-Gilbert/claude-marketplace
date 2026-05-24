@@ -4,7 +4,7 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 ## What's shared (both hosts read this)
 
-- `skills/orchestrate/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`
+- `skills/orchestrate/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`
 - All 11 `agents/*.md` (orchestrate-planner, action-rail-specialist, validator-reporter, redis-harness-operator, redis-product-safety, plugin-router, federation-learning-recorder, epistemic-graphrag-specialist, context-artifact-specialist, codex-sdk-harness-product, checklist-manifest)
 - All 11 `references/*.md` (ROUTING, CHECKLIST_MANIFESTO, ORCHESTRATE_REPORTING, PRODUCTION_GATES, UI_VISUAL_PROJECT_GATES, SDK_DATABASE_HARNESS, ARTIFACT_SCHEMAS, EPISTEMIC_PRIMITIVES, HOST_REPO_OPT_IN, PLUGIN_INVENTORY, REPORTING, SETTINGS)
 
@@ -32,7 +32,7 @@ python3 scripts/sync-plugin-manifests.py production-theorem
 | `hooks/hooks.json.disabled` | Claude Code lifecycle hooks kept disabled by default until the Claude hook auto-load path is explicitly re-enabled. Five events: `SessionStart` begins a harness run, `UserPromptSubmit` calls `/orchestrate/prepare/` and injects the Context Brief before the model turn, `PreToolUse` enforces the Action Rail, `PostToolUse` records each tool call as a `step` event, `Stop` records run outcome and state hash. |
 | `hooks/codex-hooks.json` | Codex lifecycle hooks. Same five events, but packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
-| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes context refresh/replay, saved-context product tools, memory-patch review tools, and headless coordination tools (`self_note`, `coordinate`, `mentions`, `presence`, etc.). |
+| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes context refresh/replay, saved-context product tools, memory-patch review tools, headless coordination tools (`self_note`, `coordinate`, `mentions`, `mentions_wait`, `presence`, etc.), and `encode` for feedback/solution/postmortem memory. |
 
 The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
 
@@ -91,8 +91,10 @@ plugin_hooks = true
 - `POST /api/v2/theseus/harness/memory/self-revise/` (revision-tracked memory)
 - `POST /api/v2/theseus/harness/memory/self-archive/` (archive memory out of active recall)
 - `POST /api/v2/theseus/harness/memory/self-recall-archive/` (recall archived memory)
+- `POST /api/v2/theseus/harness/encode/` (record feedback, solutions, and postmortems with fitness telemetry)
 - `POST /api/v2/theseus/harness/coordinate/` (append coordination message and queue mentions)
 - `POST /api/v2/theseus/harness/mentions/` (load or consume pending mentions)
+- `POST /api/v2/theseus/harness/mentions/wait/` (block briefly until mentions arrive)
 - `POST /api/v2/theseus/harness/presence/` (refresh or read actor presence)
 - `POST /api/v2/theseus/harness/subscribe/` (register mention polling channel)
 
