@@ -52,9 +52,9 @@
       "source": "./next-pro"
     },
     {
-      "name": "production-theorem",
-      "version": "0.2.9",
-      "source": "./production-theorem"
+      "name": "theorems-harness",
+      "version": "0.3.0",
+      "source": "./theorems-harness"
     },
     {
       "name": "scipy-pro",

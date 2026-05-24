@@ -29,7 +29,7 @@ Three gates must all be satisfied for a plugin to load:
 | ml-pro | 1.0.0 | `ml-pro/` |
 | django-engine-pro | 1.0.0 | `django-engine-pro/` |
 | next-pro | 1.0.0 | `next-pro/` |
-| production-theorem | 0.2.9 | `production-theorem/` |
+| theorems-harness | 0.3.0 | `theorems-harness/` |
 | app-forge | 1.0.0 | `app-forge/` |
 | swift-pro | 1.0.0 | `swift-pro/` |
 | vie-design | 2.0.0 | `vie-design/` |
@@ -41,7 +41,7 @@ Run `./sync-plugins.sh --status` to check which plugins are linked.
 
 ## Slash Command Resolution and the Orphan Plugin Trap
 
-This bit us hard in May 2026 with `theorem-context-claude`. Recording the failure mode here so we do not waste another session diagnosing the same thing.
+This bit us hard in May 2026 with `theorems-harness`. Recording the failure mode here so we do not waste another session diagnosing the same thing.
 
 **The trap:** when a plugin is "deleted" from the marketplace (removed from `.claude-plugin/marketplace.json`), its directory at `~/.claude/plugins/marketplaces/<marketplace>/<plugin>/` does NOT get cleaned up automatically. The orphan directory persists. Claude Code may still scan it during slash-command resolution, even when the plugin is disabled in `enabledPlugins` or absent from `installed_plugins.json`. If the orphan plugin defines a slash command with the same bare name as a different active plugin (e.g. both define `/orchestrate`), bare slash invocations can resolve to the orphan instead of the intended active plugin.
 
@@ -83,9 +83,9 @@ If those return more than one plugin, the bare resolution is ambiguous. Use the 
 Some Claude Code environments do not expose the `/plugin` slash command. To force-refresh an installed plugin's cache to match the marketplace clone's current state, use `~/.claude/scripts/refresh-plugin.py`. The script materializes the marketplace clone's plugin source into the version-pinned cache and updates `installed_plugins.json`. Backups are timestamped and reversible via the `--rollback` flag.
 
 ```bash
-~/.claude/scripts/refresh-plugin.py production-theorem            # default flow
-~/.claude/scripts/refresh-plugin.py production-theorem --dry-run  # preview
-~/.claude/scripts/refresh-plugin.py production-theorem --force    # overwrite stale cache
+~/.claude/scripts/refresh-plugin.py theorems-harness            # default flow
+~/.claude/scripts/refresh-plugin.py theorems-harness --dry-run  # preview
+~/.claude/scripts/refresh-plugin.py theorems-harness --force    # overwrite stale cache
 ~/.claude/scripts/refresh-plugin.py --list                        # show all installed plugins + versions
 ~/.claude/scripts/refresh-plugin.py --rollback                    # restore previous installed_plugins.json
 ```

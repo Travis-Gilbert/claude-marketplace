@@ -1,0 +1,49 @@
+{
+  "name": "theorems-harness",
+  "version": "0.3.0",
+  "description": "Theorem's Harness: one command for planning, context, coordination, execution, validation, memory, and learning.",
+  "author": {
+    "name": "Travis Gilbert"
+  },
+  "keywords": [
+    "planning",
+    "execution",
+    "tdd",
+    "code-review",
+    "production-readiness",
+    "harness-sdk",
+    "workflow-orchestration",
+    "execution-reporting",
+    "research",
+    "fractal-expansion",
+    "code-search",
+    "context-control",
+    "graph-harness",
+    "epistemic-graphrag",
+    "plugin-routing",
+    "action-rail",
+    "federated-learning",
+    "redis-harness",
+    "thg-product",
+    "ui-visual-gates",
+    "do-not-downgrade"
+  ],
+  "mcpServers": {
+    "theorems-harness": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
+      ]
+    },
+    "theseus": {
+      "type": "http",
+      "url": "https://theseus-mcp-production.up.railway.app/mcp",
+      "description": "Theseus knowledge graph (full Mode 3 surface)"
+    },
+    "rustyred-thg": {
+      "type": "http",
+      "url": "https://thg-product-production.up.railway.app/mcp",
+      "description": "RustyRed-THG hot graph: native graph queries (neighbors/query/explain/schema), algorithms (PPR/PageRank/components/communities), and search (fulltext/spatial/vector). Read-only. Requires Bearer auth via $RUSTYRED_THG_API_TOKEN in the MCP client config."
+    }
+  }
+}
