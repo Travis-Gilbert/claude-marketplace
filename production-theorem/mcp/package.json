@@ -1,7 +1,7 @@
 {
   "name": "theorem-context-claude-mcp",
   "version": "0.1.0",
-  "description": "Slim MCP server exposing the three Mode 2 fallback tools: orchestrate_refresh, harness_replay, harness_describe_current. Most context arrives via the UserPromptSubmit hook (Mode 1); these tools are for mid-session refresh and audit only.",
+  "description": "Slim MCP server exposing Mode 2 fallback tools for context refresh, harness replay, saved contexts, memory patch review, and headless coordination.",
   "type": "module",
   "main": "server.mjs",
   "engines": {

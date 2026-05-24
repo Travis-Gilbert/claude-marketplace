@@ -1,11 +1,11 @@
 ---
 name: harness_theorem
-description: Drive a Theseus database-harness run end-to-end. Use when the user asks to begin a run, record harness steps, replay a session, fork a run, compare alternatives, fractal-expand search, or work the V3 harness state machine. Triggers on phrases like "begin a harness run", "step the harness", "replay this run", "fork run", "compare runs", "harness toolkit", "fractal expansion".
+description: Drive a Theseus database-harness run end-to-end. Use when the user asks to begin a run, record harness steps, replay a session, fork a run, compare alternatives, fractal-expand search, coordinate with another agent, manage typed agent memory, or work the V3 harness state machine. Triggers on phrases like "begin a harness run", "step the harness", "replay this run", "fork run", "compare runs", "harness toolkit", "fractal expansion", "coordinate with Claude", "check mentions", "agent memory".
 ---
 
 # harness_theorem
 
-Orchestration skill for the Theorem-side `harness_*` cluster on the Theorem MCP. Chains the 10 harness verbs into the canonical run lifecycle so the agent doesn't have to invent the flow.
+Orchestration skill for the Theorem-side harness cluster on the Theorem MCP. Chains the run-lifecycle, typed-memory, and headless coordination verbs into the canonical flow so the agent doesn't have to invent it.
 
 ## When to use
 
@@ -14,6 +14,9 @@ User wants to operate the Theseus database harness directly:
 - "Step the run, then search inside it, then record the outcome."
 - "Replay run R and show me where it diverged from run R'."
 - "Fractal-expand from these seeds."
+- "Coordinate with Claude Code on this repo."
+- "Check whether I have pending mentions."
+- "Save/revise/archive this agent memory."
 
 Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `document_write`), pure Django mutations (use the relevant verb directly).
 
@@ -32,6 +35,14 @@ Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `documen
 | `harness_replay` | Get the full event timeline of a run |
 | `harness_fork` | Fork a run at a given step to explore an alternative path |
 | `harness_compare` | Compare two runs (state-hash diff, evidence overlap, divergence point) |
+| `self_note` | Save typed agent memory (`belief`, `convention`, `standing_intention`, `reasoning_record`, etc.) |
+| `self_revise` | Create a revision-tracked memory replacement and supersede the prior atom |
+| `self_archive` | Archive memory out of active recall while preserving audit history |
+| `self_recall_archive` | Recall archived memory on demand |
+| `coordinate` | Append a coordination message and queue `@actor` mentions |
+| `mentions` | Load or consume pending mentions for an actor |
+| `presence` | Refresh, end, or read short-TTL actor presence |
+| `subscribe` | Register an actor as polling a mention channel |
 
 ## Standard run-lifecycle flow
 
@@ -56,11 +67,22 @@ For replay / debugging:
 For exploration:
 - `harness_fork(run_id, at_step=N)` — open a new run branched from step N of an existing run.
 
+For cross-agent coordination:
+- `presence(actor='codex', mode='heartbeat')` — refresh this actor's TTL presence.
+- `coordinate(message='@claude-code please validate TTL', urgency='ask')` — write to the shared coordination document and queue mentions.
+- `mentions(actor='claude-code', consume=true)` — let the target actor load and optionally consume its inbox.
+
+For typed agent memory:
+- `self_note(content='...', memory_node_type='convention')` — capture a durable agent-scoped memory.
+- `self_revise(doc_id='...', content='...', reason='...')` — preserve immutable supersession history.
+- `self_archive(doc_id='...', reason='...')` and `self_recall_archive(query='...')` — move memory out of active recall and retrieve it explicitly.
+
 ## Output discipline
 
 - Always pass back the `run_id` to the user after `harness_begin` so they can resume.
 - When a step records a `tool_call`, also record its `observation` — half-records make replays incoherent.
 - Don't `harness_patch` without explicit user approval — patches are belief-state mutations; the human is the reviewer.
+- For agent-to-agent work, heartbeat first, then `coordinate`, then ask the target actor to poll `mentions`. The UI is observational; the queue and presence substrate are enough for headless communication.
 
 ## Anti-patterns
 

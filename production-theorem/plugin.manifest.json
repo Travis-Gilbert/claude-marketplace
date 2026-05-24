@@ -2,7 +2,7 @@
   "schema_version": 1,
   "plugin": {
     "name": "production-theorem",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "description": "Orchestrate: one-command planning, context, plugin delegation, execution, validation, UI visual gates, Redis harness awareness, and learning.",
     "author": {
       "name": "Travis Gilbert"
@@ -44,6 +44,11 @@
             "type": "http",
             "url": "https://theseus-mcp-production.up.railway.app/mcp",
             "description": "Theseus knowledge graph (full Mode 3 surface)"
+          },
+          "rustyred-thg": {
+            "type": "http",
+            "url": "https://thg-product-production.up.railway.app/mcp",
+            "description": "RustyRed-THG hot graph: native graph queries (neighbors/query/explain/schema), algorithms (PPR/PageRank/components/communities), and search (fulltext/spatial/vector). Read-only. Requires Bearer auth via $RUSTYRED_THG_API_TOKEN in the MCP client config."
           }
         }
       }

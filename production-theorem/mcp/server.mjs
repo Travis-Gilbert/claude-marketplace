@@ -180,6 +180,135 @@ const TOOLS = [
     },
   },
   {
+    name: "self_note",
+    description:
+      "Save a typed agent-memory note for the current actor using the shared harness memory substrate.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        title: { type: "string" },
+        content: { type: "string" },
+        kind: { type: "string", default: "self_note" },
+        memory_node_type: { type: "string", default: "belief" },
+        tags: { type: "array", items: { type: "string" } },
+        links: { type: "array", items: { type: "string" } },
+        summary: { type: "string" },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "self_revise",
+    description:
+      "Create a revision-tracked replacement for a memory atom and supersede the prior version.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        doc_id: { type: "string" },
+        content: { type: "string" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        reason: { type: "string" },
+        memory_node_type: { type: "string" },
+        cites_doc_ids: { type: "array", items: { type: "string" } },
+        derived_from_doc_ids: { type: "array", items: { type: "string" } },
+      },
+      required: ["doc_id", "content"],
+    },
+  },
+  {
+    name: "self_archive",
+    description:
+      "Archive a memory atom out of active recall while preserving an auditable archive wrapper.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        doc_id: { type: "string" },
+        reason: { type: "string" },
+        title: { type: "string" },
+      },
+      required: ["doc_id"],
+    },
+  },
+  {
+    name: "self_recall_archive",
+    description:
+      "Recall archived memory atoms on demand without returning them in default active recall.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        query: { type: "string" },
+        actor: { type: "string" },
+        limit: { type: "integer", default: 10 },
+      },
+    },
+  },
+  {
+    name: "coordinate",
+    description:
+      "Append a cross-agent coordination message and queue @mentions for target agents.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        doc_id: { type: "string" },
+        message: { type: "string" },
+        urgency: { type: "string", enum: ["info", "ask", "block"], default: "info" },
+        title: { type: "string" },
+        metadata: { type: "object" },
+      },
+      required: ["message"],
+    },
+  },
+  {
+    name: "mentions",
+    description:
+      "Load or consume pending mentions for the current or requested actor.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        limit: { type: "integer", default: 20 },
+        consume: { type: "boolean", default: false },
+      },
+    },
+  },
+  {
+    name: "presence",
+    description:
+      "Refresh or read short-TTL actor presence for headless agent coordination.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        session_id: { type: "string" },
+        surface: { type: "string" },
+        ttl_seconds: { type: "integer", default: 60 },
+        status: { type: "string", default: "active" },
+        mode: { type: "string", enum: ["heartbeat", "get"], default: "heartbeat" },
+      },
+    },
+  },
+  {
+    name: "subscribe",
+    description:
+      "Register the current or requested actor as polling a mention channel.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        doc_id: { type: "string" },
+      },
+    },
+  },
+  {
     name: "product_bootstrap",
     description:
       "Return the Context Theorem product bootstrap state for the authenticated account: tenants, role, write access, and available projects/keys summary.",
@@ -436,6 +565,99 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       }
       const raw = readFileSync(artifactPath, "utf8");
       return { content: [{ type: "text", text: raw }] };
+    }
+
+    if (name === "self_note") {
+      const result = await theoremPost("/harness/memory/self-note/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        title: args?.title ?? null,
+        content: requireString(args, "content"),
+        kind: args?.kind ?? "self_note",
+        memory_node_type: args?.memory_node_type ?? "belief",
+        tags: args?.tags ?? [],
+        links: args?.links ?? [],
+        summary: args?.summary ?? "",
+      });
+      return jsonText(result);
+    }
+
+    if (name === "self_revise") {
+      const result = await theoremPost("/harness/memory/self-revise/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        doc_id: requireString(args, "doc_id"),
+        content: requireString(args, "content"),
+        title: args?.title ?? null,
+        summary: args?.summary ?? "",
+        reason: args?.reason ?? "",
+        memory_node_type: args?.memory_node_type ?? null,
+        cites_doc_ids: args?.cites_doc_ids ?? [],
+        derived_from_doc_ids: args?.derived_from_doc_ids ?? [],
+      });
+      return jsonText(result);
+    }
+
+    if (name === "self_archive") {
+      const result = await theoremPost("/harness/memory/self-archive/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        doc_id: requireString(args, "doc_id"),
+        reason: args?.reason ?? "",
+        title: args?.title ?? null,
+      });
+      return jsonText(result);
+    }
+
+    if (name === "self_recall_archive") {
+      const result = await theoremPost("/harness/memory/self-recall-archive/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        query: args?.query ?? "",
+        actor: args?.actor ?? null,
+        limit: args?.limit ?? 10,
+      });
+      return jsonText(result);
+    }
+
+    if (name === "coordinate") {
+      const result = await theoremPost("/harness/coordinate/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        doc_id: args?.doc_id ?? null,
+        message: requireString(args, "message"),
+        urgency: args?.urgency ?? "info",
+        title: args?.title ?? null,
+        metadata: args?.metadata ?? {},
+      });
+      return jsonText(result);
+    }
+
+    if (name === "mentions") {
+      const result = await theoremPost("/harness/mentions/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        actor: args?.actor ?? null,
+        limit: args?.limit ?? 20,
+        consume: args?.consume === true,
+      });
+      return jsonText(result);
+    }
+
+    if (name === "presence") {
+      const result = await theoremPost("/harness/presence/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        actor: args?.actor ?? null,
+        session_id: args?.session_id ?? null,
+        surface: args?.surface ?? null,
+        ttl_seconds: args?.ttl_seconds ?? 60,
+        status: args?.status ?? "active",
+        mode: args?.mode ?? "heartbeat",
+      });
+      return jsonText(result);
+    }
+
+    if (name === "subscribe") {
+      const result = await theoremPost("/harness/subscribe/", {
+        tenant_slug: args?.tenant_slug ?? null,
+        actor: args?.actor ?? null,
+        doc_id: args?.doc_id ?? null,
+      });
+      return jsonText(result);
     }
 
     if (name === "product_bootstrap") {
