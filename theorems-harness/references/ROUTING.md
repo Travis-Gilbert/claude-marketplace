@@ -9,6 +9,7 @@ code compute:
 | `theorems-harness` | the user wants planning, implementation, debugging, review, context preparation, validation, reporting, coordination, memory, or routed specialist work |
 | `context-refresh` | the current context artifact is stale and the agent only needs a fresh compile |
 | `harness-coordinate` | another agent is active and the task needs presence, @mentions, wait, or handoff protocol |
+| `peer-review` | multi-agent work is finishing, a commit/PR is near, or one frontier model should review another model's diff |
 | `research` | the user wants direct fractal expansion, gap-frontier discovery, or code-symbol discovery |
 | `encode` | a durable feedback item, solution, or postmortem should be saved |
 | `compute_code` | a code-search question benefits from graph-structural ranking |
@@ -65,29 +66,31 @@ or verbose narration.
 2. If the user asks only to refresh context, route to `context-refresh`.
 3. If the user asks only to message, ping, or coordinate with another agent,
    route to `harness-coordinate`.
-4. If the user asks only for fractal expansion, gap-frontier discovery, or
+4. If the user asks only for peer review, cross-model review, or another agent
+   to inspect a diff, route to `peer-review`.
+5. If the user asks only for fractal expansion, gap-frontier discovery, or
    code-symbol discovery, route to `research`.
-5. If the user asks only to encode feedback, a solution, or a postmortem,
+6. If the user asks only to encode feedback, a solution, or a postmortem,
    route to `encode`.
-6. If the user asks only for structural code search over an adjacency, route to
+7. If the user asks only for structural code search over an adjacency, route to
    `compute_code`.
-7. If the user asks for exploration before commitment, run internal
+8. If the user asks for exploration before commitment, run internal
    `theorize` mode.
-8. If the user asks for a plan, checklist, spec, migration plan, or retrofit
+9. If the user asks for a plan, checklist, spec, migration plan, or retrofit
    artifact, run internal `plan` mode.
-9. If the user asks to modify files, run checks, fix a bug, simplify code, or
+10. If the user asks to modify files, run checks, fix a bug, simplify code, or
    ship, run internal `execute` mode.
-10. If execution reveals unresolved ambiguity, route briefly through internal
+11. If execution reveals unresolved ambiguity, route briefly through internal
    `theorize` mode, then return to the checklist.
-11. Consult `checklist-manifest` before multi-step execution when the parent
+12. Consult `checklist-manifest` before multi-step execution when the parent
    needs the compact table of user intent, current codebase state, additions or
    removals, and exact locations. Consult it again at report time when the
    parent needs the same checklist updated with done, partial, blocked, failed,
    skipped, or not-run reasons.
-12. If work touches the paired harness SDK product or product graph client,
+13. If work touches the paired harness SDK product or product graph client,
    consult `codex-sdk-harness-product` for a read-only context pass before
    locking decisions or editing.
-13. If work touches Redis-backed harness state, THG product service, RESP/Valkey,
+14. If work touches Redis-backed harness state, THG product service, RESP/Valkey,
    tenant Redis keyspaces, or product deployment gates, consult
    `redis-harness-operator` or `redis-product-safety` for guardrails and
    validators. Do not treat those agents as implementation owners unless the

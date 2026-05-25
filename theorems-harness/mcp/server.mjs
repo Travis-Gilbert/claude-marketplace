@@ -583,6 +583,12 @@ const TOOLS = [
         metadata: { type: "object" },
         context: { type: "object" },
         auto_triggered: { type: "boolean", default: false },
+        training_weight: { type: "number", minimum: 0, default: 1.0 },
+        training_target: {
+          type: "string",
+          enum: ["personal_b", "cohort_a", "none"],
+          default: "none",
+        },
       },
       required: ["content"],
     },
@@ -865,7 +871,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.3.0" },
+  { name: "theorems-harness", version: "0.3.1" },
   { capabilities: { tools: {} } }
 );
 
@@ -1209,6 +1215,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         metadata: args?.metadata ?? {},
         context: args?.context ?? {},
         auto_triggered: args?.auto_triggered === true,
+        training_weight: args?.training_weight ?? 1.0,
+        training_target: args?.training_target ?? "none",
       };
       const mirror = await mirrorHarnessNode(
         "encode",

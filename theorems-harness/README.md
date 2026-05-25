@@ -4,9 +4,9 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 ## What's shared (both hosts read this)
 
-- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`
+- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/curiosity/`, `skills/session-offload/`
 - All 11 `agents/*.md` (orchestrate-planner, action-rail-specialist, validator-reporter, redis-harness-operator, redis-product-safety, plugin-router, federation-learning-recorder, epistemic-graphrag-specialist, context-artifact-specialist, codex-sdk-harness-product, checklist-manifest)
-- All 11 `references/*.md` (ROUTING, CHECKLIST_MANIFESTO, ORCHESTRATE_REPORTING, PRODUCTION_GATES, UI_VISUAL_PROJECT_GATES, SDK_DATABASE_HARNESS, ARTIFACT_SCHEMAS, EPISTEMIC_PRIMITIVES, HOST_REPO_OPT_IN, PLUGIN_INVENTORY, REPORTING, SETTINGS)
+- All 18 `references/*.md`: `ARTIFACT_SCHEMAS.md`, `CHECKLIST_MANIFESTO.md`, `CONCISE_ACTION.md`, `ENGINEERS_MINDSET.md`, `EPISTEMIC_PRIMITIVES.md`, `HOST_REPO_OPT_IN.md`, `LEARNINGS.md`, `ORCHESTRATE_REPORTING.md`, `PLUGIN_INVENTORY.md`, `PRODUCTION_GATES.md`, `PROFILES.md`, `REFS_AUDIT.md`, `REFS_MANIFEST.md`, `REPORTING.md`, `ROUTING.md`, `SDK_DATABASE_HARNESS.md`, `SETTINGS.md`, `UI_VISUAL_PROJECT_GATES.md`
 
 A change to any of these flows to both hosts on next install / sync. There is no port to keep up to date.
 
@@ -18,7 +18,7 @@ underneath it.
 
 | Layer | Role |
 |---|---|
-| Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/research`, `/encode`, and `/compute_code` |
+| Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, and `/compute_code` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
 | Slim MCP | Local tool bus for refresh, replay, memory, encode, and coordination |
 | Remote MCPs | Theseus for ML/search/control-plane work; RustyRed-THG for hot graph reads and algorithms |
@@ -50,6 +50,7 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 | `hooks/hooks.json.disabled` | Claude Code lifecycle hooks kept disabled by default until the Claude hook auto-load path is explicitly re-enabled. Five events: `SessionStart` begins a harness run, `UserPromptSubmit` calls the internal prepare route and injects the Context Brief before the model turn, `PreToolUse` enforces the Action Rail, `PostToolUse` records each tool call as a `step` event, `Stop` records run outcome and state hash. |
 | `hooks/codex-hooks.json` | Codex lifecycle hooks. Same five events, but packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
+| `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
 | `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
 
 The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
@@ -84,6 +85,9 @@ Some hosts look for `hooks/hooks.json` by convention when hook support is enable
 | `THEOREM_BUDGET_TOKENS` | `4000` | Default Context Artifact budget |
 | `THEOREM_ACTION_RAIL` | `record` | One of `off`, `record`, `enforce` |
 | `THEOREM_DEBUG` | `0` | Set to `1` to log hook activity to stderr |
+| `THEOREM_PEER_REVIEW_BASE` | empty | Optional base ref/commit used by `scripts/peer-review-request.sh` when preparing a peer-review packet. Defaults to upstream merge-base or `HEAD`. |
+| `THEOREM_PEER_REVIEW_ACTOR` | host actor | Optional actor override for peer-review packets. |
+| `THEOREM_PEER_REVIEW_TARGET` | other main agent | Optional target override for peer-review packets. |
 
 ## Install (Claude Code)
 

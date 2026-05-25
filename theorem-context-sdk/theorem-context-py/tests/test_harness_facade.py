@@ -167,8 +167,12 @@ def test_harness_memory_remember_delegates_to_context_remember() -> None:
 def test_harness_memory_v2_methods_hit_backing_routes() -> None:
     captured_paths: list[str] = []
 
+    captured_payloads: list[dict] = []
+
     async def handler(request: httpx.Request) -> httpx.Response:
         captured_paths.append(request.url.path)
+        if request.url.path.endswith('/harness/encode/'):
+            captured_payloads.append(json.loads(request.content.decode()))
         return httpx.Response(200, json={'document': {'doc_id': 'doc-1'}})
 
     async def run() -> None:
@@ -186,6 +190,8 @@ def test_harness_memory_v2_methods_hit_backing_routes() -> None:
                 content='The TTL failure produced a durable postmortem.',
                 kind='postmortem',
                 outcome='negative',
+                training_weight=2.0,
+                training_target='personal_b',
             )
         finally:
             await client.aclose()
@@ -199,6 +205,8 @@ def test_harness_memory_v2_methods_hit_backing_routes() -> None:
         '/api/v2/theseus/harness/memory/self-recall-archive/',
         '/api/v2/theseus/harness/encode/',
     ]
+    assert captured_payloads[0]['training_weight'] == 2.0
+    assert captured_payloads[0]['training_target'] == 'personal_b'
 
 
 def test_harness_action_handoff_delegates_to_workstream_handoff_current() -> None:

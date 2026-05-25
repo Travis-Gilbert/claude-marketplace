@@ -40,6 +40,10 @@ stable unless the user gives a more specific actor id.
 
 ## Protocol
 
+For implementation handoffs, prefer a shared goal plus negotiated ownership over
+strict lane assignments. Claim the next files or subsystem you are actively
+touching, then use peer review before commit to catch cross-agent mistakes.
+
 1. Heartbeat yourself:
 
 ```json

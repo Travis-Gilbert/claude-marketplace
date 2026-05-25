@@ -1,5 +1,6 @@
 export {
   TheoremContextClient,
+  type CreditCostForecastOptions,
   type TheoremContextClientOptions,
 } from './client.js';
 export {
@@ -66,6 +67,8 @@ export type {
   ContextCommandPreview,
   ContextCommandResolveResponse,
   ContextCommandState,
+  CreditCostForecastOperation,
+  CreditCostForecastResponse,
   ContextWebAtom,
   ContextWebBudget,
   ContextWebCitation,

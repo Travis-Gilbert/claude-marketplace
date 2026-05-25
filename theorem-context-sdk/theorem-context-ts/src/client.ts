@@ -44,6 +44,7 @@ import type {
   EncodePromotionRequest,
   ExpressionRenderRequest,
   ExpressionRenderResult,
+  CreditCostForecastResponse,
   ContextWebIndex,
   ContextWebIndexUpdateRequest,
   ContextWebExplainResponse,
@@ -209,6 +210,17 @@ export interface FractalExpandOptions {
   top_k?: number;
   budget?: Record<string, unknown>;
   scope?: Record<string, unknown>;
+}
+
+export interface HarnessListOptions {
+  limit?: number;
+  status?: string;
+}
+
+export interface CreditCostForecastOptions {
+  days?: number;
+  minEvents?: number;
+  min_events?: number;
 }
 
 export interface ProvenanceTraceOptions {
@@ -420,6 +432,8 @@ export class TheoremContextClient {
   };
 
   readonly harness = {
+    list: this.listHarnessRuns.bind(this),
+    creditCosts: this.creditCostForecasts.bind(this),
     begin: this.beginHarness.bind(this),
     get: this.getHarnessRun.bind(this),
     step: this.recordHarnessStep.bind(this),
@@ -1433,6 +1447,8 @@ export class TheoremContextClient {
     metadata?: Record<string, unknown>;
     context?: Record<string, unknown>;
     autoTriggered?: boolean;
+    trainingWeight?: number;
+    trainingTarget?: 'personal_b' | 'cohort_a' | 'none' | string;
   }): Promise<Record<string, unknown>> {
     const response = await this.request(
       `${this.baseUrl}/harness/encode/`,
@@ -1454,6 +1470,8 @@ export class TheoremContextClient {
           metadata: input.metadata ?? {},
           context: input.context ?? {},
           auto_triggered: input.autoTriggered ?? false,
+          training_weight: input.trainingWeight ?? 1.0,
+          training_target: input.trainingTarget ?? 'none',
         }),
       },
       'encode memory',
@@ -2709,6 +2727,49 @@ export class TheoremContextClient {
       'inference kernel receipt append',
     );
     return (await response.json()) as KernelRun;
+  }
+
+  async creditCostForecasts(
+    request: CreditCostForecastOptions = {},
+  ): Promise<CreditCostForecastResponse> {
+    const query = new URLSearchParams();
+    if (request.days !== undefined) {
+      query.set('days', String(request.days));
+    }
+    const minEvents = request.minEvents ?? request.min_events;
+    if (minEvents !== undefined) {
+      query.set('min_events', String(minEvents));
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/harness/pricing/credit-costs/${suffix}`,
+      { method: 'GET', headers: this.headers() },
+      'harness credit cost forecasts',
+      'harness',
+    );
+    return (await response.json()) as CreditCostForecastResponse;
+  }
+
+  async listHarnessRuns(
+    request: HarnessListOptions = {},
+  ): Promise<HarnessRun[]> {
+    const query = new URLSearchParams();
+    if (request.limit !== undefined) {
+      query.set('limit', String(request.limit));
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await this.request(
+      `${this.baseUrl}/harness/runs/${suffix}`,
+      { method: 'GET', headers: this.headers() },
+      'harness runs list',
+      'harness',
+    );
+    const body = (await response.json()) as { runs: HarnessRun[] };
+    const runs = body.runs ?? [];
+    if (!request.status) {
+      return runs;
+    }
+    return runs.filter((run) => run.status === request.status);
   }
 
   async beginHarness(request: HarnessBeginRequest): Promise<HarnessRun> {

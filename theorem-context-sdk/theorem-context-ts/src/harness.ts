@@ -135,6 +135,8 @@ export class HarnessMemory {
     metadata?: Record<string, unknown>;
     context?: Record<string, unknown>;
     autoTriggered?: boolean;
+    trainingWeight?: number;
+    trainingTarget?: 'personal_b' | 'cohort_a' | 'none' | string;
   }): Promise<Record<string, unknown>> {
     return this.client.encodeMemory(input);
   }

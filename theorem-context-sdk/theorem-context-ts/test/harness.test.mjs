@@ -150,6 +150,8 @@ test('harness.memory exposes self memory v2 methods', async () => {
     content: 'The TTL failure produced a durable postmortem.',
     kind: 'postmortem',
     outcome: 'negative',
+    trainingWeight: 2,
+    trainingTarget: 'personal_b',
   });
 
   assert.equal(client.calls.selfNote.content, 'Use shared presence keys.');
@@ -158,6 +160,8 @@ test('harness.memory exposes self memory v2 methods', async () => {
   assert.equal(client.calls.selfRecallArchive.query, 'presence');
   assert.equal(client.calls.encodeMemory.kind, 'postmortem');
   assert.equal(client.calls.encodeMemory.outcome, 'negative');
+  assert.equal(client.calls.encodeMemory.trainingWeight, 2);
+  assert.equal(client.calls.encodeMemory.trainingTarget, 'personal_b');
 });
 
 test('harness.action.handoff delegates to client.workstream.handoff.current', async () => {

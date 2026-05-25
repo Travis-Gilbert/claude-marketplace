@@ -30,6 +30,8 @@ Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `documen
 - Utility commands:
   - `/context-refresh` for narrow context refresh only.
   - `/coordinate` for cross-agent presence, @mentions, and waits only.
+  - `/peer-review` for cross-frontier-model diff review before commit, PR, or
+    launch-ready reporting.
   - `/encode` for feedback, solution, or postmortem memory only.
   - `/research` for direct fractal expansion / gap-frontier discovery only.
   - `/compute_code` for graph-structural code ranking only.
@@ -60,9 +62,11 @@ only an internal/backend word during the route migration.
    larger than the current prompt.
 5. Coordinate before overlapping with another active agent.
 6. Execute with focused edits, tests, and validation.
-7. Reconcile the checklist and report what is done, partial, blocked, skipped,
+7. For multi-agent work, run peer review before commit, PR, or launch-ready
+   reporting.
+8. Reconcile the checklist and report what is done, partial, blocked, skipped,
    or failed.
-8. Encode high-signal lessons or postmortems when they will help a future run.
+9. Encode high-signal lessons or postmortems when they will help a future run.
 
 ## Tools owned (Theorem MCP, Form-B short names)
 
@@ -162,6 +166,9 @@ For typed agent memory:
 - Don't `harness_patch` without explicit user approval — patches are belief-state mutations; the human is the reviewer.
 - Don't use `document_write(kind='draft')`; drafts should be `self_note` or a supported document kind such as `scratch`, `markdown`, `insight`, `handoff`, `solution`, or `postmortem`.
 - For agent-to-agent work, heartbeat first, then `coordinate`, then let the target actor call `mentions_wait` when it needs a ping-like wakeup. The UI is observational; the queue and presence substrate are enough for headless communication.
+- For multi-agent implementation, prefer shared goals and negotiated ownership
+  through coordination messages. Use `peer-review` before commit to make this
+  fast style safer.
 - `mentions_wait` is a short long-poll in one MCP request thread, not a permanent listener. Use the 30 second default at checkpoints; the service caps waits at 120 seconds.
 - Agents may call `encode` without a user slash command when a session produces a durable lesson, but should avoid raw secrets and summarize sensitive evidence.
 

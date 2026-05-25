@@ -1027,6 +1027,37 @@ export interface HarnessRun {
   updated_at?: string | null;
 }
 
+export interface CreditCostForecastOperation {
+  operation: string;
+  label: string;
+  meter: string;
+  display_credits: string;
+  forecast_credits_min: number;
+  forecast_credits_max: number;
+  median_credits: number | null;
+  median_cogs_dollars: string | null;
+  fallback_cogs_dollars_min: string;
+  fallback_cogs_dollars_max: string;
+  sample_count: number;
+  sample_window_days: number;
+  min_observed_events: number;
+  always_free: boolean;
+  source: 'observed' | 'fallback' | string;
+}
+
+export interface CreditCostForecastResponse {
+  credit_definition: string;
+  credit_unit_cogs_dollars: string;
+  rounding: 'ceil' | string;
+  source: 'observed' | 'fallback' | string;
+  generated_at: string;
+  sample_window_days: number;
+  min_observed_events: number;
+  total_observed_events: number;
+  operations: CreditCostForecastOperation[];
+  error?: string;
+}
+
 export interface HarnessEvent {
   event_id: string;
   run_id: string;

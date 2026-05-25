@@ -2887,6 +2887,8 @@ class TheoremContextClient:
         metadata: dict[str, Any] | None = None,
         context: dict[str, Any] | None = None,
         auto_triggered: bool = False,
+        training_weight: float = 1.0,
+        training_target: str = 'none',
     ) -> dict:
         response = await self._request(
             'POST',
@@ -2909,6 +2911,8 @@ class TheoremContextClient:
                 'metadata': metadata or {},
                 'context': context or {},
                 'auto_triggered': auto_triggered,
+                'training_weight': training_weight,
+                'training_target': training_target,
             },
         )
         return response.json()
