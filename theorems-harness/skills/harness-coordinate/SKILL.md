@@ -38,6 +38,21 @@ If multiple sessions of the same actor are active, disambiguate in metadata with
 `session_id`, `repo`, `branch`, `task`, and `files`, but keep the mention target
 stable unless the user gives a more specific actor id.
 
+## Worktree Targeting
+
+Actor name is the channel, not ownership proof. For unpushed local work, target
+the durable checkout identity instead: `target_session_id`, `target_worktree`,
+`target_branch`, `target_head`, and `target_changed_files`. A targeted mention
+is delivered only when the receiver polls with matching `session_id`,
+`worktree`, `branch`, `head`, and a changed-file set that covers the target
+files.
+
+Use this when two sessions share an actor name or when you need the agent
+holding a particular dirty worktree. Current plugin clients auto-advertise
+their local `worktree` / `branch` / `head` / `changed_files` in presence,
+mentions, and coordinate metadata; pass target fields explicitly when sending
+to a specific unpushed checkout.
+
 ## Protocol
 
 For implementation handoffs, prefer a shared goal plus negotiated ownership over
@@ -80,6 +95,9 @@ touching, then use peer review before commit to catch cross-agent mistakes.
 {
   "message": "@claude-code I am taking the plugin docs and MCP wrapper; please keep TTL work isolated to RustyRed.",
   "urgency": "ask",
+  "target_worktree": "/Users/travisgilbert/Tech Dev Local/Creative/Website/Index-API",
+  "target_branch": "claude/worktree-targeting",
+  "target_changed_files": ["theorems-harness/skills/harness-coordinate/SKILL.md"],
   "metadata": {
     "repo": "flint-civic-atlas",
     "files": ["theorems-harness/skills/harness-coordinate/SKILL.md"]

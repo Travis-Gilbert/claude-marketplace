@@ -22,6 +22,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -142,7 +143,7 @@ async function theoremPut(path, body) {
 }
 
 function thgTenantPath(args, path) {
-  return `/v1/tenants/${encodeURIComponent(tenantId(args))}${path}`;
+  return `/v1/tenants/${encodeURIComponent(requiredTenantId(args))}${path}`;
 }
 
 async function theoremDelete(path) {
@@ -180,13 +181,87 @@ function jsonText(value) {
 }
 
 function tenantId(args) {
-  return String(
+  const value = String(
     args?.tenant_slug ||
     process.env.THEOREMS_HARNESS_TENANT ||
     process.env.RUSTYRED_THG_TENANT ||
     process.env.THEOREM_TENANT_SLUG ||
-    "default"
-  ).trim() || "default";
+    ""
+  ).trim();
+  return value || null;
+}
+
+function requiredTenantId(args) {
+  const tenant = tenantId(args);
+  if (!tenant) {
+    throw new Error(
+      "tenant_slug is required for direct RustyRed tenant calls; no tenant env fallback is configured."
+    );
+  }
+  return tenant;
+}
+
+function gitOutput(args) {
+  try {
+    return execFileSync("git", ["-C", PROJECT_DIR, ...args], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 2000,
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function parseChangedFiles(statusText) {
+  const files = [];
+  const seen = new Set();
+  for (const line of String(statusText || "").split("\n")) {
+    const path = line.slice(3).trim();
+    if (!path) continue;
+    const normalized = path.includes(" -> ") ? path.split(" -> ").pop().trim() : path;
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    files.push(normalized);
+  }
+  return files;
+}
+
+function localWorktreeIdentity() {
+  const worktree = gitOutput(["rev-parse", "--show-toplevel"]) || PROJECT_DIR;
+  const branch =
+    gitOutput(["branch", "--show-current"]) ||
+    gitOutput(["rev-parse", "--abbrev-ref", "HEAD"]);
+  return {
+    session_id: sessionKey(),
+    worktree,
+    branch,
+    head: gitOutput(["rev-parse", "HEAD"]),
+    changed_files: parseChangedFiles(gitOutput(["status", "--short"])),
+  };
+}
+
+function withSourceIdentity(metadata = {}) {
+  const identity = localWorktreeIdentity();
+  return {
+    ...metadata,
+    source_session_id: identity.session_id,
+    source_worktree: identity.worktree,
+    source_branch: identity.branch,
+    source_head: identity.head,
+    source_changed_files: identity.changed_files,
+  };
+}
+
+function requestIdentity(args = {}) {
+  const identity = localWorktreeIdentity();
+  return {
+    session_id: args?.session_id ?? identity.session_id,
+    worktree: args?.worktree ?? identity.worktree,
+    branch: args?.branch ?? identity.branch,
+    head: args?.head ?? identity.head,
+    changed_files: args?.changed_files ?? identity.changed_files,
+  };
 }
 
 function stableNodeId(kind, tenant, seed) {
@@ -218,6 +293,13 @@ async function mirrorHarnessNode(kind, args, properties, labels = []) {
     return null;
   }
   const tenant = tenantId(args);
+  if (!tenant) {
+    return {
+      ok: false,
+      skipped: true,
+      error: "tenant_unresolved_for_direct_thg_mirror",
+    };
+  }
   const node = {
     id: stableNodeId(kind, tenant, properties),
     labels: ["TheoremsHarness", ...labels],
@@ -606,6 +688,11 @@ const TOOLS = [
         urgency: { type: "string", enum: ["info", "ask", "block"], default: "info" },
         title: { type: "string" },
         metadata: { type: "object" },
+        target_session_id: { type: "string" },
+        target_worktree: { type: "string" },
+        target_branch: { type: "string" },
+        target_head: { type: "string" },
+        target_changed_files: { type: "array", items: { type: "string" } },
       },
       required: ["message"],
     },
@@ -621,6 +708,11 @@ const TOOLS = [
         actor: { type: "string" },
         limit: { type: "integer", default: 20 },
         consume: { type: "boolean", default: false },
+        session_id: { type: "string" },
+        worktree: { type: "string" },
+        branch: { type: "string" },
+        head: { type: "string" },
+        changed_files: { type: "array", items: { type: "string" } },
       },
     },
   },
@@ -637,6 +729,11 @@ const TOOLS = [
         consume: { type: "boolean", default: false },
         timeout_seconds: { type: "integer", default: 30, minimum: 0, maximum: 120 },
         interval_seconds: { type: "number", default: 1, minimum: 0.1, maximum: 5 },
+        session_id: { type: "string" },
+        worktree: { type: "string" },
+        branch: { type: "string" },
+        head: { type: "string" },
+        changed_files: { type: "array", items: { type: "string" } },
       },
     },
   },
@@ -651,6 +748,10 @@ const TOOLS = [
         actor: { type: "string" },
         session_id: { type: "string" },
         surface: { type: "string" },
+        worktree: { type: "string" },
+        branch: { type: "string" },
+        head: { type: "string" },
+        changed_files: { type: "array", items: { type: "string" } },
         ttl_seconds: { type: "integer", default: 60 },
         status: { type: "string", default: "active" },
         mode: { type: "string", enum: ["heartbeat", "get", "end"], default: "heartbeat" },
@@ -1235,7 +1336,12 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         message: requireString(args, "message"),
         urgency: args?.urgency ?? "info",
         title: args?.title ?? null,
-        metadata: args?.metadata ?? {},
+        metadata: withSourceIdentity(args?.metadata ?? {}),
+        target_session_id: args?.target_session_id ?? null,
+        target_worktree: args?.target_worktree ?? null,
+        target_branch: args?.target_branch ?? null,
+        target_head: args?.target_head ?? null,
+        target_changed_files: args?.target_changed_files ?? [],
       };
       const mirror = await mirrorHarnessNode(
         "coordinate",
@@ -1248,11 +1354,13 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     }
 
     if (name === "mentions") {
+      const identity = requestIdentity(args);
       const result = await theoremPost("/harness/mentions/", {
         tenant_slug: args?.tenant_slug ?? null,
         actor: args?.actor ?? null,
         limit: args?.limit ?? 20,
         consume: args?.consume === true,
+        ...identity,
       });
       return jsonText(result);
     }
@@ -1260,6 +1368,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     if (name === "mentions_wait") {
       const rawTimeoutSeconds = Number(args?.timeout_seconds ?? 30);
       const timeoutSeconds = Number.isFinite(rawTimeoutSeconds) ? rawTimeoutSeconds : 30;
+      const identity = requestIdentity(args);
       const result = await theoremPost(
         "/harness/mentions/wait/",
         {
@@ -1269,6 +1378,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
           consume: args?.consume === true,
           timeout_seconds: args?.timeout_seconds ?? 30,
           interval_seconds: args?.interval_seconds ?? 1,
+          ...identity,
         },
         Math.max(5_000, Math.min((timeoutSeconds + 5) * 1000, 125_000))
       );
@@ -1276,17 +1386,22 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     }
 
     if (name === "presence") {
+      const identity = requestIdentity(args);
       if (args?.mode === "end") {
         const body = {
           tenant_slug: args?.tenant_slug ?? null,
           actor: args?.actor ?? null,
-          session_id: args?.session_id ?? null,
+          session_id: identity.session_id,
           surface: args?.surface ?? null,
-          task: "agent session",
-          summary: "",
-          scope: {},
+          worktree: identity.worktree,
+          branch: identity.branch,
+          head: identity.head,
+          changed_files: identity.changed_files,
+          ttl_seconds: args?.ttl_seconds ?? 60,
+          status: "inactive",
+          mode: "end",
         };
-        const result = await theoremPost("/harness/session/end/", body);
+        const result = await theoremPost("/harness/presence/", body);
         const mirror = await mirrorHarnessNode(
           "presence",
           args,
@@ -1298,8 +1413,12 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       const result = await theoremPost("/harness/presence/", {
         tenant_slug: args?.tenant_slug ?? null,
         actor: args?.actor ?? null,
-        session_id: args?.session_id ?? null,
+        session_id: identity.session_id,
         surface: args?.surface ?? null,
+        worktree: identity.worktree,
+        branch: identity.branch,
+        head: identity.head,
+        changed_files: identity.changed_files,
         ttl_seconds: args?.ttl_seconds ?? 60,
         status: args?.status ?? "active",
         mode: args?.mode ?? "heartbeat",
@@ -1310,8 +1429,12 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         {
           tenant_slug: args?.tenant_slug ?? null,
           actor: args?.actor ?? null,
-          session_id: args?.session_id ?? null,
+          session_id: identity.session_id,
           surface: args?.surface ?? null,
+          worktree: identity.worktree,
+          branch: identity.branch,
+          head: identity.head,
+          changed_files: identity.changed_files,
           ttl_seconds: args?.ttl_seconds ?? 60,
           status: args?.status ?? "active",
           mode: args?.mode ?? "heartbeat",
