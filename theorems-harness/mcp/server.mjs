@@ -683,6 +683,7 @@ const TOOLS = [
       type: "object",
       properties: {
         tenant_slug: { type: "string" },
+        actor: { type: "string" },
         doc_id: { type: "string" },
         message: { type: "string" },
         urgency: { type: "string", enum: ["info", "ask", "block"], default: "info" },
@@ -1332,6 +1333,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     if (name === "coordinate") {
       const body = {
         tenant_slug: args?.tenant_slug ?? null,
+        actor: args?.actor ?? null,
         doc_id: args?.doc_id ?? null,
         message: requireString(args, "message"),
         urgency: args?.urgency ?? "info",
