@@ -140,18 +140,34 @@ if [[ -n "$session_response" ]]; then
     def fmt_peer_reflection:
       "- " + (.actor_id // "?") + ": " +
       ((.summary // "") | gsub("\n"; " ") | .[0:240]);
+    def fmt_salient_node:
+      "- " + (((.title // .id // "?") | tostring) | gsub("\n"; " ") | .[0:160]) +
+      (if (.kind // "") != "" then " [" + .kind + "]" else "" end) +
+      (if (.why_relevant // "") != "" then
+        "\n    why: " + ((.why_relevant // "") | gsub("\n"; " ") | .[0:220])
+      else "" end) +
+      (if (.hydration_handle // "") != "" then
+        "\n    hydrate: `" + ((.hydration_handle // "") | gsub("\n"; " ") | .[0:160]) + "`"
+      else "" end);
+    def fmt_validation_receipt:
+      "- " + ((.kind // "validation") | tostring) +
+      (if (.status // "") != "" then " (" + .status + ")" else "" end) +
+      ": " + ((.summary // "") | gsub("\n"; " ") | .[0:220]);
 
     (.coordination_room // {}) as $room
     | (.pending_mentions // {}) as $inbox
     | (($inbox.count // 0) | tonumber) as $mention_count
     | (.coordination_digest // {}) as $digest
+    | (.continuity_pack // {}) as $continuity
     | (($digest.events // []) | length) as $event_count
     | (($digest.decisions // []) | length) as $decision_count
     | (($digest.open_tensions // []) | length) as $tension_count
     | (($digest.peer_intents // []) | length) as $intent_count
     | (($digest.peer_reflections // []) | length) as $reflection_count
     | ($event_count + $decision_count + $tension_count + $intent_count + $reflection_count) as $digest_total
-    | if (($room | length) == 0) and ($mention_count == 0) and ($digest_total == 0) then
+    | (($continuity.salient_nodes // []) | length) as $continuity_node_count
+    | (($continuity.validation_receipts // []) | length) as $continuity_receipt_count
+    | if (($room | length) == 0) and ($mention_count == 0) and ($digest_total == 0) and (($continuity.pack_id // "") == "") then
         ""
       else
         "## Coordination room\n"
@@ -167,6 +183,41 @@ if [[ -n "$session_response" ]]; then
             "\n## Pending mentions (" + ($mention_count | tostring) + ")\n"
             + (($inbox.mentions // []) | map(fmt_mention) | join("\n"))
             + "\n\nConsume via the mentions tool when you have read them.\n"
+          else "" end)
+        + (if (($continuity.pack_id // "") != "") then
+            "\n## Continuity pack\n"
+            + "**Pack:** `" + ($continuity.pack_id // "") + "`"
+            + (if ($continuity.trigger // "") != "" then " · " + $continuity.trigger else "" end)
+            + (if ($continuity.created_at // "") != "" then " · " + $continuity.created_at else "" end)
+            + "\n"
+            + (if ($continuity.objective // "") != "" then
+                "**Objective:** " + (($continuity.objective // "") | gsub("\n"; " ") | .[0:260]) + "\n"
+              else "" end)
+            + (if ($continuity.summary // "") != "" then
+                "**Summary:** " + (($continuity.summary // "") | gsub("\n"; " ") | .[0:360]) + "\n"
+              else "" end)
+            + (if ($continuity.next_action // "") != "" then
+                "**Next action:** " + (($continuity.next_action // "") | gsub("\n"; " ") | .[0:260]) + "\n"
+              else "" end)
+            + (if $continuity_node_count > 0 then
+                "\n**Salient nodes:**\n"
+                + (($continuity.salient_nodes // []) | map(fmt_salient_node) | join("\n"))
+                + "\n"
+              else "" end)
+            + (if $continuity_receipt_count > 0 then
+                "\n**Validation receipts:**\n"
+                + (($continuity.validation_receipts // []) | map(fmt_validation_receipt) | join("\n"))
+                + "\n"
+              else "" end)
+            + (if (($continuity.storage // "") == "disk-mirror") then
+                "\n**Source:** disk mirror (graph was unavailable or empty; see file for full pack)\n"
+              else "" end)
+            + (if (($continuity.disk_path // "") != "") then
+                "**Pack file:** `" + ($continuity.disk_path // "") + "`\n"
+              else "" end)
+            + (if (($continuity.graph_outcome // "") | startswith("failed_open")) then
+                "**Note:** graph write failed open at compaction time: `" + ($continuity.graph_outcome // "") + "`\n"
+              else "" end)
           else "" end)
         + (if $intent_count > 0 then
             "\n## Peer intents (" + ($intent_count | tostring) + ")\n"

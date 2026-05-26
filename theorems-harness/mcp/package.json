@@ -1,6 +1,6 @@
 {
   "name": "theorems-harness-mcp",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Slim MCP server exposing Theorem's Harness fallback tools for context refresh, research, code search, memory, and headless coordination.",
   "type": "module",
   "main": "server.mjs",
