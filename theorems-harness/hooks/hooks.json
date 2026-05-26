@@ -80,6 +80,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-context.sh",
             "timeout": 10,
             "statusMessage": "Recording post-tool context"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-event.sh",
+            "timeout": 10,
+            "statusMessage": "Recording coordination event"
           }
         ]
       }
