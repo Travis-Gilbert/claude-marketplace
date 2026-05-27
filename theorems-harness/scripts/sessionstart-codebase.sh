@@ -11,6 +11,7 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
 tenant_id="${THEOREM_TENANT_ID:-public}"
+actor="${THEOREM_ACTOR:-$(theorem_host)}"
 cwd=$(theorem_jq "$input" '.cwd')
 [[ -z "$cwd" ]] && cwd="${CLAUDE_PROJECT_DIR:-$PWD}"
 repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$cwd")
@@ -78,8 +79,8 @@ fi
 
 session_start_body=$(jq -n \
   --arg session_id "$sid" \
-  --arg actor "${THEOREM_ACTOR}" \
-  --arg surface "${THEOREM_ACTOR}" \
+  --arg actor "$actor" \
+  --arg surface "$actor" \
   --arg repo "$repo_label" \
   --arg branch "$branch" \
   --arg worktree "$repo_root" \

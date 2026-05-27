@@ -1,7 +1,7 @@
 {
   "name": "theorems-harness",
-  "version": "0.3.5",
-  "description": "Theorem's Harness: one command for planning, context, coordination, execution, validation, memory, and learning.",
+  "version": "0.3.6",
+  "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
   },
@@ -33,7 +33,8 @@
     "curiosity-driven-research",
     "codebase-context",
     "subagent-suggestions",
-    "peer-review"
+    "peer-review",
+    "adaptive-routing"
   ],
   "mcpServers": "./.mcp.json",
   "skills": "./skills/",
@@ -41,8 +42,8 @@
   "hooks": "./hooks/codex-hooks.json",
   "interface": {
     "displayName": "Theorem's Harness",
-    "shortDescription": "One command for checklist-driven planning, context, coordination, execution, memory, and reporting.",
-    "longDescription": "Theorem's Harness is the plugin surface for grounded agent work. It turns ambiguity into grounded decisions, plans into auditable checklists, hidden plugin and harness work into delegated phases, cross-agent work into explicit coordination, and execution into validated reports with explicit reconciliation and learning.",
+    "shortDescription": "Adaptive session routing for grounded planning, context, coordination, execution, memory, and reporting.",
+    "longDescription": "Theorem's Harness is the plugin surface for grounded agent work. /harness is opt-in to adaptive harness behavior: the agent observes, chooses the right capability mix, coordinates when peers may overlap, executes bounded slices, validates claims, and preserves high-signal learning without forcing every task through one narrow mode.",
     "developerName": "Travis Gilbert",
     "category": "Developer Tools",
     "capabilities": [
@@ -52,14 +53,16 @@
     ],
     "defaultPrompt": [
       "Use Theorem's Harness as the default command for planning, implementation, debugging, review, context preparation, validation, coordination, memory, and execution reporting.",
+      "Treat /harness as session/task opt-in, not as a forced narrow mode. Choose the best capability mix, reroute at checkpoints, and keep moving unless a real blocker requires user input.",
+      "When available, use harness_route to inspect the recommended capability mix before or during a run.",
       "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /harness mode=plan handoff=spark and keep the planner in-thread to review what was built.",
       "For multi-agent work, prefer shared goals with negotiated ownership through coordinate messages over strict lane preassignment unless the repo or human explicitly needs file lanes.",
-      "The Harness delegates internally to theorize, planning-theorem, execute, SDK harness product awareness, Redis harness agents, and other installed specialists.",
-      "Use stable checklist IDs from plan through report; do not claim done unless the checklist reconciliation supports it.",
+      "The Harness delegates internally to observe, theorize, plan, execute, diagnose, coordinate, context refresh, research, validation, peer review, memory, SDK harness product awareness, Redis harness agents, and other installed specialists.",
+      "Use stable checklist IDs when they reduce risk or preserve acceptance criteria; do not claim done unless validation supports it.",
       "For UI visual projects, add the UI Visual Milestone: split Runtime complete, Product complete, and Vision complete; capture before/after/target screenshots; run the Do Not Downgrade gate; and keep a reversible product boundary until the new surface is equal-or-better.",
       "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing.",
       "If a host repository opts in through AGENTS.md or CLAUDE.md, prefer harness-backed prepare, preview, and run surfaces for multi-file, high-risk, or long-running work, but do not force harness orchestration for trivial requests.",
-      "For cross-agent work, use the harness-coordinate protocol: heartbeat presence, subscribe to the shared channel, send @mentions with coordinate, and check or wait on mentions at natural checkpoints.",
+      "For cross-agent work, use the harness-coordinate protocol: join the durable coordination room when shared work is active, heartbeat presence, subscribe to the mention channel, send @mentions with coordinate, check or wait on mentions at natural checkpoints, and write continuity_pack before compaction or handoff.",
       "At the end of multi-agent work, run peer-review before commit, PR, or launch-ready reporting: create a review packet, ask the other frontier model to inspect the diff, reconcile findings, then validate.",
       "Use encode for high-signal feedback, solutions, and postmortems. Agents may auto-trigger encode when a durable lesson emerges, while keeping secrets out of stored memory."
     ]

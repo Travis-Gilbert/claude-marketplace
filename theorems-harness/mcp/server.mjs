@@ -354,7 +354,180 @@ function buildQuery(params) {
   return query ? `?${query}` : "";
 }
 
+const ROUTE_KEYWORDS = Object.freeze({
+  coordinate: [
+    "coordinate",
+    "claude",
+    "codex",
+    "same time",
+    "parallel",
+    "mention",
+    "ping",
+    "handoff",
+    "other agent",
+  ],
+  plan: ["plan", "spec", "design", "roadmap", "migration", "checklist"],
+  execute: ["implement", "fix", "ship", "build", "edit", "write", "test", "run"],
+  diagnose: ["debug", "failure", "broken", "error", "regression", "trace"],
+  research: ["research", "search", "evidence", "discover", "investigate", "compare"],
+  review: ["review", "pr", "pull request", "diff", "audit"],
+  remember: ["remember", "encode", "postmortem", "lesson", "learning"],
+  context: ["context", "refresh", "artifact", "brief", "stale"],
+});
+
+function includesAny(text, terms) {
+  return terms.some((term) => text.includes(term));
+}
+
+function pushUnique(target, value) {
+  if (!target.includes(value)) target.push(value);
+}
+
+function routeModeFromCapabilities(capabilities, requestedMode) {
+  if (requestedMode) return requestedMode;
+  if (capabilities.includes("execute")) return "execute";
+  if (capabilities.includes("diagnose")) return "diagnose";
+  if (capabilities.includes("plan")) return "plan";
+  if (capabilities.includes("research")) return "research";
+  if (capabilities.includes("peer_review")) return "review";
+  if (capabilities.includes("coordinate")) return "coordinate";
+  if (capabilities.includes("remember")) return "remember";
+  return "observe";
+}
+
+function selectHarnessRoute(args = {}) {
+  const task = String(args?.task || args?.intent || args?.prompt || "").trim();
+  const text = task.toLowerCase();
+  const modeFromTask = task.match(/(?:^|\s)mode=([a-z0-9_-]+)/i)?.[1] || "";
+  const requestedMode =
+    String(args?.mode || modeFromTask).trim().toLowerCase() || null;
+  const signals = args?.signals && typeof args.signals === "object" ? args.signals : {};
+  const capabilities = ["observe"];
+  const reasons = [];
+
+  const addCapability = (capability, reason) => {
+    pushUnique(capabilities, capability);
+    if (reason) reasons.push(reason);
+  };
+
+  if (!task) {
+    return {
+      task: null,
+      selected_mode: requestedMode || "observe",
+      capabilities,
+      route_reason: ["No task text supplied; ask for the goal or infer it from the active user turn."],
+      first_actions: ["Resolve the current user intent before choosing plan, execute, research, or coordinate."],
+      checkpoints: ["Route again after the task is concrete."],
+      report_style: "one-line clarification",
+      worktree_identity: localWorktreeIdentity(),
+    };
+  }
+
+  if (requestedMode) addCapability(requestedMode, `Explicit mode requested: ${requestedMode}.`);
+  if (signals.multi_agent === true || includesAny(text, ROUTE_KEYWORDS.coordinate)) {
+    addCapability("coordinate", "Another agent or shared workstream is part of the task.");
+  }
+  if (signals.context_stale === true || includesAny(text, ROUTE_KEYWORDS.context)) {
+    addCapability("compile_context", "The task asks for context refresh or may need a fresh artifact.");
+  }
+  if (includesAny(text, ROUTE_KEYWORDS.research)) {
+    addCapability("research", "The task asks for discovery or evidence before commitment.");
+  }
+  if (includesAny(text, ROUTE_KEYWORDS.plan)) {
+    addCapability("plan", "The task asks for a plan, design, spec, or checklist.");
+  }
+  if (includesAny(text, ROUTE_KEYWORDS.diagnose)) {
+    addCapability("diagnose", "The task contains a failure or regression signal.");
+  }
+  if (includesAny(text, ROUTE_KEYWORDS.execute)) {
+    addCapability("execute", "The task asks for implementation, tests, or file changes.");
+  }
+  if (includesAny(text, ROUTE_KEYWORDS.review)) {
+    addCapability("peer_review", "The task asks for review or diff inspection.");
+  }
+  if (includesAny(text, ROUTE_KEYWORDS.remember)) {
+    addCapability("remember", "The task asks to preserve a lesson or memory.");
+  }
+
+  if (capabilities.length === 1) {
+    addCapability("theorize", "Intent is broad; start with a short option pass before acting.");
+  }
+
+  if (capabilities.includes("execute")) {
+    pushUnique(capabilities, "validate");
+  }
+  if (capabilities.includes("execute") || capabilities.includes("plan")) {
+    pushUnique(capabilities, "report");
+  }
+
+  const selectedMode = routeModeFromCapabilities(capabilities, requestedMode);
+  const firstActions = [];
+  if (capabilities.includes("coordinate")) {
+    firstActions.push("Join or inspect the coordination room, heartbeat presence, subscribe to the mention channel, and consume mentions before overlapping edits.");
+  }
+  if (capabilities.includes("compile_context")) {
+    firstActions.push("Refresh or inspect the Context Artifact before relying on older run state.");
+  }
+  if (capabilities.includes("plan")) {
+    firstActions.push("Create the smallest useful checklist only after reading the live repo surface.");
+  }
+  if (capabilities.includes("execute")) {
+    firstActions.push("Take the next bounded edit, validate it, then re-route if new ambiguity appears.");
+  }
+  if (capabilities.includes("theorize")) {
+    firstActions.push("Name the viable approaches and choose a default before implementation.");
+  }
+  if (firstActions.length === 0) {
+    firstActions.push("Observe the current repo/tool state, then choose the next capability at the first checkpoint.");
+  }
+
+  return {
+    task,
+    selected_mode: selectedMode,
+    capabilities,
+    route_reason: reasons.length ? reasons : ["Defaulted from task text and current harness policy."],
+    first_actions: firstActions,
+    checkpoints: [
+      "Route again after the first material discovery.",
+      "Route again before editing files that another agent may touch.",
+      "Before closeout, choose validate, peer_review, encode, or concise report based on actual risk.",
+    ],
+    report_style:
+      capabilities.includes("execute") || capabilities.includes("plan")
+        ? "focused checklist reconciliation"
+        : "concise action/finding/next summary",
+    worktree_identity: localWorktreeIdentity(),
+  };
+}
+
 const TOOLS = [
+  {
+    name: "harness_route",
+    description:
+      "Choose the next Theorem's Harness capability mix for a task. Use when /harness is invoked as session opt-in, or when a run should pivot instead of staying locked in plan/execute/research.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: {
+          type: "string",
+          description: "The user's current intent or task.",
+        },
+        intent: { type: "string" },
+        prompt: { type: "string" },
+        mode: {
+          type: "string",
+          description:
+            "Optional explicit mode from the user. The router honors this but may add supporting capabilities.",
+        },
+        signals: {
+          type: "object",
+          description:
+            "Optional booleans such as multi_agent=true, context_stale=true, high_risk=true, or ui_visual=true.",
+        },
+      },
+      required: ["task"],
+    },
+  },
   {
     name: "orchestrate_refresh",
     description:
@@ -760,6 +933,33 @@ const TOOLS = [
     },
   },
   {
+    name: "coordination_room",
+    description:
+      "Join, inspect, pause, resume, or stop durable coordination-room membership. Prefer this for shared task membership; subscribe remains the mention-polling channel.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        action: {
+          type: "string",
+          enum: ["join", "start", "status", "pause", "resume", "stop", "lane"],
+          default: "join",
+        },
+        room_id: { type: "string" },
+        session_id: { type: "string" },
+        surface: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        worktree: { type: "string" },
+        head: { type: "string" },
+        changed_files: { type: "array", items: { type: "string" } },
+        lane: { type: "string" },
+      },
+    },
+  },
+  {
     name: "subscribe",
     description:
       "Register the current or requested actor as polling a mention channel.",
@@ -770,6 +970,42 @@ const TOOLS = [
         actor: { type: "string" },
         doc_id: { type: "string" },
       },
+    },
+  },
+  {
+    name: "continuity_pack",
+    description:
+      "Write a graph-backed and disk-mirrored coordination continuity pack before compaction, handoff, or a long pause.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        room_id: { type: "string" },
+        session_id: { type: "string" },
+        surface: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        worktree: { type: "string" },
+        head: { type: "string" },
+        changed_files: { type: "array", items: { type: "string" } },
+        objective: { type: "string" },
+        summary: { type: "string" },
+        next_action: { type: "string" },
+        trigger: {
+          type: "string",
+          enum: ["manual", "precompact", "handoff", "pause", "session_end"],
+          default: "manual",
+        },
+        salient_nodes: { type: "array", items: { type: "object" } },
+        validation_receipts: { type: "array", items: { type: "object" } },
+        context_web_run_id: { type: "string" },
+        context_web_query: { type: "string" },
+        context_web_mode: { type: "string", default: "mini" },
+        context_web_budget_tokens: { type: "integer", default: 1200 },
+      },
+      required: ["summary", "next_action"],
     },
   },
   {
@@ -973,7 +1209,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.3.1" },
+  { name: "theorems-harness", version: "0.3.6" },
   { capabilities: { tools: {} } }
 );
 
@@ -984,6 +1220,10 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
   const runId = currentRunId();
 
   try {
+    if (name === "harness_route") {
+      return jsonText(selectHarnessRoute(args));
+    }
+
     if (name === "orchestrate_refresh") {
       if (!args?.task) {
         return {
@@ -1447,6 +1687,33 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(withThgMirror(result, mirror));
     }
 
+    if (name === "coordination_room") {
+      const identity = requestIdentity(args);
+      const body = {
+        tenant_slug: args?.tenant_slug ?? null,
+        actor: args?.actor ?? null,
+        action: args?.action ?? "join",
+        room_id: args?.room_id ?? null,
+        session_id: identity.session_id,
+        surface: args?.surface ?? null,
+        repo: args?.repo ?? PROJECT_DIR,
+        branch: identity.branch,
+        task: args?.task ?? null,
+        worktree: identity.worktree,
+        head: identity.head,
+        changed_files: identity.changed_files,
+        lane: args?.lane ?? "",
+      };
+      const result = await theoremPost("/harness/coordination/room/", body);
+      const mirror = await mirrorHarnessNode(
+        "coordination_room",
+        args,
+        body,
+        ["CoordinationRoom"]
+      );
+      return jsonText(withThgMirror(result, mirror));
+    }
+
     if (name === "subscribe") {
       const body = {
         tenant_slug: args?.tenant_slug ?? null,
@@ -1460,6 +1727,41 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         ["Subscription"]
       );
       const result = await theoremPost("/harness/subscribe/", body);
+      return jsonText(withThgMirror(result, mirror));
+    }
+
+    if (name === "continuity_pack") {
+      const identity = requestIdentity(args);
+      const body = {
+        tenant_slug: args?.tenant_slug ?? null,
+        actor: args?.actor ?? null,
+        room_id: args?.room_id ?? null,
+        session_id: identity.session_id,
+        surface: args?.surface ?? null,
+        repo: args?.repo ?? PROJECT_DIR,
+        branch: identity.branch,
+        task: args?.task ?? "continuity compaction",
+        worktree: identity.worktree,
+        head: identity.head,
+        changed_files: identity.changed_files,
+        objective: args?.objective ?? args?.task ?? "",
+        summary: requireString(args, "summary"),
+        next_action: requireString(args, "next_action"),
+        trigger: args?.trigger ?? "manual",
+        salient_nodes: args?.salient_nodes ?? [],
+        validation_receipts: args?.validation_receipts ?? [],
+        context_web_run_id: args?.context_web_run_id ?? null,
+        context_web_query: args?.context_web_query ?? null,
+        context_web_mode: args?.context_web_mode ?? "mini",
+        context_web_budget_tokens: args?.context_web_budget_tokens ?? 1200,
+      };
+      const result = await theoremPost("/harness/session/continuity-pack/", body);
+      const mirror = await mirrorHarnessNode(
+        "continuity_pack",
+        args,
+        body,
+        ["ContinuityPack"]
+      );
       return jsonText(withThgMirror(result, mirror));
     }
 

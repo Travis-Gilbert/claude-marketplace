@@ -13,6 +13,8 @@ input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
 tenant_id="${THEOREM_TENANT_ID:-public}"
 workstream_id="${THEOREM_WORKSTREAM_ID:-}"
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 tool_name=$(echo "$input" | jq -r '
   if (.tool | type) == "object" then (.tool.name // "")
   elif (.tool | type) == "string" then .tool

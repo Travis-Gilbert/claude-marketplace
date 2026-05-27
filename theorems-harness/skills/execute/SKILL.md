@@ -1,231 +1,174 @@
 ---
 name: execute
-description: This skill should be used when the user asks to "execute the plan", "implement this", "fix the bug", "ship this", "run the tests", "reconcile the checklist", "simplify this code", or wants production-grade implementation with testing, review, and final execution reporting.
+description: Use when the user asks to implement, fix, ship, simplify, run tests, reconcile a checklist, or carry a bounded task through code changes and validation. This is an internal execution capability of Theorem's Harness, not a tunnel that prevents planning, diagnosis, coordination, or context refresh when needed.
 ---
 
 # Execute
 
-Compatibility note: this skill is now an internal execution mode of Orchestrate.
-Prefer `/harness mode=execute` for new workflows.
+Execute is the Harness capability for changing reality: files, tests, runtime
+state, docs, packaging, or deployment. It should feel decisive, but not blind.
+The loop is simple: take a bounded action, validate it, simplify it, and reroute
+if new evidence changes the task.
 
-Implement like the change is heading toward production. Reconcile every action against a checklist, validate behavior through public interfaces, and produce a report that makes gaps impossible to hide.
+Prefer `/harness` for new workflows. `/execute` remains a compatibility command
+for users who explicitly want implementation.
 
-## User-Facing Role
+## Operating Posture
 
-- Primary command: `/execute`
-- Deliverable: `Execute-Theorem Report`
+- Start from source code and current repo state, not from the plan alone.
+- Infer the smallest useful checklist when none exists.
+- Keep the checklist alive, but right-size it. One tiny fix does not need a
+  ceremony-heavy report; risky or multi-step work does.
+- Validate the behavior through the most public practical seam.
+- Pivot deliberately: pause for `diagnose`, `theorize`, `coordinate`,
+  `compile_context`, or `peer_review` when execution evidence calls for it.
+- Never hide failed validation or incomplete work.
 
-## Acceptable Inputs
+## Inputs
 
-- Planning-Theorem Artifact
-- explicit checklist
-- bug report
-- failing test
-- partial implementation
-- diff that needs simplification or review
-- clear user task that supports a minimal inferred plan
+Accept any of these:
 
-If no plan exists, create a minimal execution checklist first, then execute it.
+- a planning artifact or SPEC file
+- an explicit checklist
+- a bug report, failing test, runtime trace, or deploy failure
+- a partial implementation or diff
+- a clear user task that supports an inferred plan
 
-## UI Visual Execution Rule
+If the input is ambiguous but still actionable, make a short working assumption
+and proceed. Ask only when the missing answer is a real product preference,
+unsafe operation, access blocker, or destructive choice.
 
-For work that changes visible UI, visual design, renderer architecture,
-graph/canvas surfaces, dashboards, diagrams, animation, or screenshot-sensitive
-flows, load `../../references/UI_VISUAL_PROJECT_GATES.md` before editing. Treat
-the UI Visual Milestone as part of the execution checklist, not as optional
-polish. Runtime complete, Product complete, and Vision complete must be reported
-separately.
+## Execution Shapes
 
-## Execution Flow
+Choose the shape that fits the risk:
 
-### 1. Preflight
+| Shape | Use when | Output |
+|---|---|---|
+| `direct` | One or two files, obvious behavior, low risk. | Concise summary plus validation. |
+| `checklist` | Multi-step or cross-module work. | Stable checklist reconciliation. |
+| `diagnostic` | Failure cause is unknown. | Reproduction, hypotheses, fix, regression proof. |
+| `production` | Deploy, SDK, data, auth, billing, storage, or public launch impact. | Production gate review plus rollback/risk notes. |
+| `visual` | UI, renderer, graph/canvas, animation, or screenshot-sensitive flow. | UI Visual Milestone and Do Not Downgrade evidence. |
 
-- inspect git status
-- identify touched files and nearby tests
-- read the relevant plan, docs, and code seams
-- record target behavior and main risks
-- if the task touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, or tenant-scoped product graph routes, consult `codex-sdk-harness-product` before editing
-- for UI visual work, capture or identify current baseline screenshots, target
-  reference screenshots, and "do not change" references before editing; if
-  unavailable, record that as a validation gap
+## Preflight
 
-### 2. Checklist Loop
+Before editing:
 
-For each checklist item:
+- inspect git status and avoid unrelated dirty files
+- identify the target behavior, likely files, and nearby tests
+- read the smallest relevant source surface
+- check mentions/presence if another agent may overlap
+- refresh context when the injected brief is missing, stale, or contradicted by
+  source
+- for UI visual work, load `../../references/UI_VISUAL_PROJECT_GATES.md`
+- for SDK/product graph work, consult `codex-sdk-harness-product`
+- for Redis/THG/product-state work, consult the Redis/product safety specialist
 
-1. select one item
-2. define or identify the public behavior
-3. write or identify validation
-4. implement the smallest change that can pass
-5. run validation
-6. simplify and review changed code without altering intended behavior
-7. update status and evidence
+## Implementation Loop
 
-For UI visual items, do not replace the primary visible path until the
-before/after/target review supports an equal-or-better outcome or the report
-marks Product complete as no/partial.
+For each bounded item:
 
-### 3. TDD Discipline
+1. State or infer the expected public behavior.
+2. Identify the proof before or while editing.
+3. Make the smallest coherent change.
+4. Run focused validation.
+5. Simplify the changed code without changing behavior.
+6. Update the checklist or internal status.
+7. Re-route if the evidence changes the mode.
 
-Use red-green-refactor when feasible:
+This loop can pass briefly through planning or diagnosis. That is not failure;
+it is execution staying honest.
 
-- test one behavior at a time
-- prefer public interfaces over internal implementation hooks
-- write the smallest failing test that proves the missing behavior
-- implement only enough to go green
-- refactor only after green
+## TDD and Diagnosis
 
-### 4. Diagnosis Discipline
+Use red-green-refactor when it is cheap and meaningful:
 
-For bug work:
+- write or identify one failing proof
+- make the smallest change that passes
+- refactor after green
 
-- build a feedback loop first
-- reproduce the failure
-- minimize the reproduction
-- generate 3 to 5 falsifiable hypotheses
+For bugs:
+
+- reproduce or explain why reproduction is impossible
+- reduce the failure to the smallest useful signal
+- name 3 to 5 falsifiable hypotheses when the cause is unclear
 - instrument one variable at a time
-- fix the issue
-- add a regression test at the correct seam
+- fix the actual cause
+- add or update a regression test at the right seam
 - remove debug-only clutter
 
-### 5. Simplify / Review Pass
-
-After each meaningful implementation step, review modified code for:
-
-- clarity
-- consistency
-- exact functionality preservation
-- duplicated logic
-- unnecessary abstraction
-- missing error handling
-- security/performance traps
-- missing tests or docs
-
-### 6. Validation
+## Validation
 
 Run the narrowest checks that prove the work:
 
 - focused tests
-- integration tests
-- regression tests
-- lint and type/static checks when available
-- build or smoke checks where relevant
-- migration, data, or runtime checks where relevant
-- for UI visual work, before/after/target screenshot review, populated-data
-  smoke, constrained viewport smoke, and Do Not Downgrade gate review
+- integration or smoke tests
+- lint/type/build checks when relevant
+- browser/screenshot/canvas checks for visible work
+- migration/data/runtime checks where relevant
+- deploy or API smoke when the claim crosses that boundary
 
-If something cannot run, state exactly why and preserve whatever evidence is still available.
+If a check cannot run, say exactly why and keep whatever evidence is still
+available.
 
-## SDK Harness Product Rule
+## Reporting
 
-For SDK harness product work:
+Right-size the report:
 
-- preserve the distinction between typed client contract, reusable artifacts, and backend implementation
-- do not describe product behavior from backend assumptions alone
-- reconcile contract claims against `theorem-context-sdk/README.md`, the TS/Python READMEs, `src/client.ts`, `src/product.ts`, and the Python client modules
-- verify whether a behavior belongs to the default harness SDK client, the harness namespace, or the tenant-scoped product graph client
+- For small direct work: summarize the change and validation in a few lines.
+- For checklist work: reconcile each checklist row as done, partial, blocked,
+  skipped, failed, or not-run.
+- For production or multi-agent work: include validation, residual risk,
+  rollback/recovery notes, and peer-review status.
+- For UI visual work: include Runtime complete, Product complete, Vision
+  complete, baseline/target/after evidence, and Do Not Downgrade status.
 
-## Output Contract
-
-Return this report shape:
+Use this full shape only when the work needs it:
 
 ```md
-# Execute-Theorem Report: <title>
+# Execute Report: <title>
 
-## Executive Summary
+## Summary
 - Final condition:
-- Goal achieved? yes/no/partial
-- Production readiness:
+- Goal achieved:
 - Biggest remaining risk:
-- Recommended next action:
+- Next action:
 
 ## Checklist Reconciliation
-| ID | Original task | Status | Evidence | Tests/results | Notes |
+| ID | Task | Status | Evidence | Validation | Notes |
 |---|---|---|---|---|---|
 
 ## Changes Made
 | Area | Files | Summary | Why |
 |---|---|---|---|
 
-## Tests and Validation
-| Command/check | Result | Notes |
+## Validation
+| Check | Result | Notes |
 |---|---|---|
 
-## UI Visual Milestone
-Include only for UI visual work.
-
-| Gate | Status | Evidence | Notes |
-|---|---|---|---|
-| Runtime complete | yes/no/partial | | |
-| Product complete | yes/no/partial | | |
-| Vision complete | yes/no/partial | | |
-| Baseline screenshots captured | yes/no/partial | | |
-| Target references captured | yes/no/partial | | |
-| Do Not Downgrade gate | pass/fail/not-run | | |
-| Screenshot review | equal-or-better/mixed/worse/not-run | | |
-| Reversible boundary | yes/no/partial | | |
-
-## Incomplete or Blocked Work
-- What was not done:
+## Remaining Work
+- What remains:
 - Why:
-- Evidence:
-- Risk:
-- Next action:
-- Suggested owner/skill:
-
-## New Findings
-- New tensions:
-- New assumptions:
-- New gaps:
-- New refactor opportunities:
-- New research needed:
-- New tests needed:
-
-## Production Gate Review
-- [ ] Tests pass or failure is explained.
-- [ ] Behavior preserved where required.
-- [ ] Rollback/revert path considered.
-- [ ] Docs/ADR updated or explicitly deferred.
-- [ ] No hidden TODOs or silent deferrals.
-- [ ] Security/performance risks considered.
-- [ ] UI visual work has before/after/target evidence or an explicit validation gap.
-- [ ] UI visual work passes the Do Not Downgrade gate before Product complete.
-- [ ] Follow-up plan proposed if needed.
-
-## Compound Engineering Effect
-- Tests added/improved:
-- Docs/ADR/postmortem/context artifacts:
-- Reusable patterns:
-- Graph/writeback candidates:
-- Future plan seeds:
-
-## Suggested Next Steps
-Concrete next actions, ordered by production value.
+- Owner/next step:
 ```
 
 ## Completion Rule
 
-Never report "done" unless the checklist reconciliation supports it.
+Never report "done" unless the evidence supports it.
 
-- If work is partial, say partial.
-- If work is blocked, say blocked.
-- If validation was not run, say not run and explain.
-
-## Required References
-
-Load these when needed:
-
-- `../../references/PRODUCTION_GATES.md`
-- `../../references/UI_VISUAL_PROJECT_GATES.md`
-- `../../references/REPORTING.md`
-- `../../references/ARTIFACT_SCHEMAS.md`
-- `../../references/EPISTEMIC_PRIMITIVES.md`
+- If validation did not run, say not run.
+- If the behavior is only wired, say wired.
+- If runtime proof is missing, say runtime proof is missing.
+- If another agent owns the next step, name the handoff and send the mention.
 
 ## Guardrails
 
-- Do not silently rewrite checklist scope mid-run.
-- Do not bury failed validation in prose.
-- Do not stop at implementation if tests, simplification, or reporting are still undone.
-- Do not claim production readiness when gates remain open.
-- Do not claim a UI visual refactor is Product complete when only nonblank
-  rendering or type/build checks passed.
+- Do not silently rewrite checklist scope; add new rows or mark changed scope.
+- Do not continue applying workarounds after the third same-layer failure; pause
+  and diagnose the layer.
+- Do not treat implementation as complete when tests, simplification, or
+  reporting are still material.
+- Do not claim visual Product complete from typecheck or nonblank rendering
+  alone.
+- Do not let this skill prevent a necessary pivot to coordination, planning, or
+  context refresh.

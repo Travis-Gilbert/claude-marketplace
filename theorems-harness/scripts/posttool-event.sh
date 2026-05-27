@@ -28,8 +28,14 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
+actor="${THEOREM_ACTOR:-$(theorem_host)}"
 
-tool_name=$(theorem_jq "$input" '.tool_name')
+tool_name=$(echo "$input" | jq -r '
+  if (.tool | type) == "object" then (.tool.name // "")
+  elif (.tool | type) == "string" then .tool
+  else (.tool_name // .name // "")
+  end
+' 2>/dev/null || echo "")
 [[ -z "$tool_name" ]] && { printf '{"continue":true}\n'; exit 0; }
 
 # Repo context for room inference (matches SessionStart hook).
@@ -48,21 +54,30 @@ fi
 # hook short-circuit (zero network call) on filtered-out tools.
 event_type=""
 event_payload="{}"
-
+canonical_tool="$tool_name"
 case "$tool_name" in
+  exec_command|functions.exec_command)
+    canonical_tool="Bash"
+    ;;
+  apply_patch|functions.apply_patch)
+    canonical_tool="Patch"
+    ;;
+esac
+
+case "$canonical_tool" in
   Edit)
-    file_path=$(theorem_jq "$input" '.tool_input.file_path')
+    file_path=$(echo "$input" | jq -r '.tool_input.file_path // .input.file_path // .arguments.file_path // empty' 2>/dev/null || echo "")
     if [[ -n "$file_path" ]]; then
       event_type="file.edit"
-      replace_all=$(theorem_jq "$input" '.tool_input.replace_all // false')
+      replace_all=$(echo "$input" | jq -r '.tool_input.replace_all // .input.replace_all // .arguments.replace_all // false' 2>/dev/null || echo "false")
       event_payload=$(jq -n --arg path "$file_path" --argjson replace_all "${replace_all:-false}" '{path: $path, replace_all: $replace_all}')
     fi
     ;;
   Write)
-    file_path=$(theorem_jq "$input" '.tool_input.file_path')
+    file_path=$(echo "$input" | jq -r '.tool_input.file_path // .input.file_path // .arguments.file_path // empty' 2>/dev/null || echo "")
     if [[ -n "$file_path" ]]; then
       event_type="file.write"
-      content=$(theorem_jq "$input" '.tool_input.content')
+      content=$(echo "$input" | jq -r '.tool_input.content // .input.content // .arguments.content // empty' 2>/dev/null || echo "")
       content_bytes=${#content}
       content_lines=$(printf '%s' "$content" | grep -c '' 2>/dev/null || echo 0)
       event_payload=$(jq -n \
@@ -72,8 +87,24 @@ case "$tool_name" in
         '{path: $path, bytes: $bytes, lines: $lines}')
     fi
     ;;
+  Patch)
+    patch_text=$(echo "$input" | jq -r '.tool_input.patch // .input.patch // .arguments.patch // .tool_input // .input // .arguments // empty' 2>/dev/null || echo "")
+    if [[ -n "$patch_text" ]]; then
+      touched_paths=$(
+        printf '%s\n' "$patch_text" \
+          | awk '/^\*\*\* (Update|Add|Delete) File: / { sub(/^\*\*\* (Update|Add|Delete) File: /, ""); print }' \
+          | jq -R . | jq -s '.[0:20]'
+      ) || touched_paths='[]'
+      patch_bytes=${#patch_text}
+      event_type="file.patch"
+      event_payload=$(jq -n \
+        --argjson paths "$touched_paths" \
+        --argjson bytes "$patch_bytes" \
+        '{paths: $paths, bytes: $bytes}')
+    fi
+    ;;
   Bash)
-    command=$(theorem_jq "$input" '.tool_input.command')
+    command=$(echo "$input" | jq -r '.tool_input.command // .tool_input.cmd // .input.command // .input.cmd // .arguments.command // .arguments.cmd // empty' 2>/dev/null || echo "")
     if [[ -n "$command" ]]; then
       # Truncate the command for the payload — we want a receipt, not
       # a transcript. Match the BASH_COMMAND_PREFIXES_ADMITTED allowlist
@@ -130,7 +161,7 @@ if [[ -z "$event_type" ]]; then
 fi
 
 event_body=$(jq -n \
-  --arg actor "${THEOREM_ACTOR}" \
+  --arg actor "$actor" \
   --arg event_type "$event_type" \
   --argjson payload "$event_payload" \
   --arg repo "$repo_label" \

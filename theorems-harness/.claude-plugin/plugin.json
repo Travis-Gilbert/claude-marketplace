@@ -1,7 +1,7 @@
 {
   "name": "theorems-harness",
-  "version": "0.3.5",
-  "description": "Theorem's Harness: one command for planning, context, coordination, execution, validation, memory, and learning.",
+  "version": "0.3.6",
+  "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
   },
@@ -33,8 +33,10 @@
     "curiosity-driven-research",
     "codebase-context",
     "subagent-suggestions",
-    "peer-review"
+    "peer-review",
+    "adaptive-routing"
   ],
+  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "theorems-harness": {
       "command": "node",

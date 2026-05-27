@@ -1,15 +1,26 @@
 ---
-description: The default Theorem's Harness command. One pass that turns intent into grounded work: plan, compile context, coordinate, delegate, expose action rail, validate, peer-review, encode learning, and report.
-argument-hint: <intent-or-task-or-mode=plan|execute|theorize>
+description: The default Theorem's Harness command. Treats the user's intent as permission to use the best harness capability mix for the session: observe, route, plan, coordinate, execute, validate, peer-review, encode, and report as the work demands.
+argument-hint: <intent-or-task> [mode=plan|execute|theorize|research|coordinate]
 allowed-tools: Read, Write, Edit, Grep, Glob, LS, Bash, Agent, Skill
 ---
 
-Run Theorem's Harness on the user's intent or task.
+Run Theorem's Harness on the user's current intent.
 
-1. Parse the user's argument. Recognize `mode=plan`, `mode=execute`, or `mode=theorize` as optional prefixes. Everything else is the task description.
-2. Confirm the parsed (mode, task) pair back to the user in one line before doing any work.
-3. Invoke the `theorems-harness:theorems-harness` skill via the Skill tool, passing the full argument string. The skill body (`skills/theorems-harness/SKILL.md`) is the authoritative spec for planning, context compilation, coordination, delegation, action rail, peer review, validation, memory, and reporting.
-4. The harness skill delegates internally to planning-theorem, theorize, execute, peer-review, Redis harness agents, coordination, memory, and specialist agents as needed. Stream phase boundaries to the user as they happen.
-5. At the end, surface the path to the produced report so the user can review it.
+1. Treat the invocation as opt-in to Harness behavior, not as a forced narrow
+   mode. If the user supplied `mode=...`, honor it as a starting preference and
+   add supporting capabilities when needed.
+2. Resolve the active task from the argument and the latest user turn. If there
+   is no recoverable task, ask one short question.
+3. If the local MCP exposes `harness_route`, use it to inspect the recommended
+   capability mix. Otherwise apply `skills/theorems-harness/SKILL.md` directly.
+4. Invoke the `theorems-harness:theorems-harness` skill with the full argument
+   and the resolved task. The skill body is the authoritative behavior contract.
+5. Stream only useful phase boundaries: coordination claim, plan/checklist
+   locked, first edit, validation result, peer-review handoff, memory write, or
+   final report.
+6. At the end, report the actual outcome and validation. Surface artifact paths
+   only when a report, plan, peer-review packet, or memory record was produced.
 
-If the user supplied no argument, ask them what they want the Harness to do before proceeding.
+The command should make the agent more capable for the rest of the task, not
+more ceremonial. Prefer action with route checkpoints over asking the user to
+pick internal modes.

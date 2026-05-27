@@ -1,42 +1,50 @@
 ---
 name: encode
-description: Use when the user runs /encode, marks a session result especially good or bad, wants to record a solution or postmortem, or when the agent should automatically preserve a durable learning in the harness memory substrate.
+description: The Harness memory-write capability. Use when the user runs /encode, when a session produces a durable lesson, or when an agent should preserve a feedback signal, solution, postmortem, decision, preference, or continuity pack into the shared harness memory substrate.
 ---
 
 # Encode
 
-Encode records feedback, solutions, preferences, and postmortems into the
-shared Theorem harness memory substrate. It is both a user command and an
-agent-owned memory primitive: the human can run `/encode`, and an agent may
-trigger it when the session produces a durable lesson worth ranking later.
+Encode writes feedback, solutions, postmortems, decisions, preferences, and
+continuity packs into the shared Theorem harness memory substrate. It is both
+a user command (`/encode`) and an agent-owned primitive: an agent may trigger
+it without prompting when the session produces a durable lesson worth ranking
+later.
 
-## What To Record
+Related capabilities that also write memory but with different shapes:
+`/surface-idea` for non-blocking idea atoms; `/peer-review` for review
+findings; `self_note` for typed agent memory; `session_offload` for evicting
+verbose intermediate context.
+
+## When To Encode
 
 Use Encode for:
 
-- user feedback that something was especially good, especially bad, or strongly
-  calibrating
-- explicit preference statements that should become training examples over time
-- a solved bug or implementation pattern that had been in flux for a while
-- a failed or successful training run that deserves a postmortem
+- user feedback that something was especially good or bad
+- explicit preference statements that should become training examples over
+  time ("you're training your own assistant")
+- a solved bug or implementation pattern that had been in flux
+- a failed or successful run that deserves a postmortem
 - a root-cause discovery after repeated false starts
-- a reusable coordination lesson between Claude Code, Codex, or another agent
-- an explicit "remember this as a solution" or "record this as a postmortem"
+- a coordination lesson between Claude Code, Codex, or Claude.ai
+- a decision worth preserving across sessions
+- a continuity pack: the compact handoff a future session needs to resume
 
-Do not encode raw secrets, credentials, private tokens, or long copied logs.
+Do not encode raw secrets, credentials, tokens, or long copied logs.
 Summarize sensitive evidence and link to local artifacts when appropriate.
+
+Do not encode in-scope work that belongs in the plan tree, vague hand-waves
+without a "why," or bug-shaped findings that should flow through peer review.
 
 ## Tool Preference
 
-Prefer the `encode` MCP tool when available.
-
-Recommended shape:
+Prefer the `encode` MCP verb. Shape:
 
 ```json
 {
-  "kind": "solution | postmortem | feedback | encode",
+  "kind": "solution | postmortem | feedback | decision | continuity_pack | preference | encode",
   "outcome": "positive | negative | mixed | neutral",
-  "content": "Self-contained lesson or postmortem.",
+  "content": "Self-contained lesson, postmortem, or continuity pack.",
   "reason": "Why this should shape future behavior.",
   "tags": ["repo-or-domain", "short-topic"],
   "auto_triggered": true,
@@ -45,7 +53,7 @@ Recommended shape:
 }
 ```
 
-Frame user-facing preference capture plainly: "you're training your own assistant." Parse these shorthands:
+Parse user-facing shortcuts:
 
 | User input | Meaning |
 |---|---|
@@ -54,45 +62,52 @@ Frame user-facing preference capture plainly: "you're training your own assistan
 | `/encode preference "..."` | Preference memory, default `training_target=personal_b`. |
 
 Use `training_target=none` when the note should be recallable but should not
-feed LoRA/federated training. Use `training_target=cohort_a` only when the user
-clearly wants the signal to participate in cohort-level aggregation.
+feed LoRA / federated training. Use `training_target=cohort_a` only when the
+user clearly wants the signal to participate in cohort-level aggregation.
 
-If `encode` is unavailable, fall back to:
+Fallbacks if `encode` is unavailable:
 
 1. `self_note` with `memory_node_type="reflection"` or `"reasoning_record"`.
-2. A memory fitness signal if available:
-   - `pinned` for high-confidence positive lessons.
-   - `reused` for verified solutions.
-   - `contradicted` for harmful or incorrect prior behavior.
-   - `cited` for neutral postmortems that should remain findable.
+2. Memory-fitness signals: `pinned` for high-confidence positive lessons;
+   `reused` for verified solutions; `contradicted` for harmful prior
+   behavior; `cited` for neutral postmortems that should remain findable.
 
 ## Outcome And Signal
 
-Keep outcome separate from memory quality:
+Outcome describes the session result. Signal describes the memory's
+usefulness. They are independent.
 
-| Field | Meaning |
+| Outcome | Default signal | Use when |
+|---|---|---|
+| `positive` | `pinned` | The session behavior or result was good. |
+| `negative` | `contradicted` | The session revealed a failure or harmful pattern. |
+| `mixed` | `cited` | Useful learning with tradeoffs or incomplete validation. |
+| `neutral` | `cited` | Durable factual note without strong valence. |
+
+Override `signal` when the memory's usefulness differs from the outcome. A
+failed training run can be `outcome=negative` + `signal=cited` if the
+postmortem itself should remain easy to recall.
+
+## Kinds
+
+| Kind | When |
 |---|---|
-| `outcome=positive` | The session behavior or result was good. |
-| `outcome=negative` | The session revealed a failure, bad answer, broken run, or harmful pattern. |
-| `outcome=mixed` | Useful learning with tradeoffs or incomplete validation. |
-| `outcome=neutral` | Durable factual note without strong valence. |
+| `solution` | A verified fix or implementation pattern. |
+| `postmortem` | An investigation of what went wrong and why. |
+| `feedback` | A user signal that calibrates future behavior. |
+| `preference` | A user-stated preference worth training future behavior on. |
+| `decision` | A choice with rationale worth preserving. |
+| `continuity_pack` | A compact handoff a future session needs to resume. |
+| `encode` | General-purpose; use only when none of the above fit. |
 
-Default signal mapping in the harness:
+`continuity_pack` is the first-class kind for SessionStart injection. Write
+it when a long session is about to compact or a multi-agent task is about to
+sleep. It carries the goal, current state, blockers, and next action in a
+shape the next session can boot from.
 
-| Outcome | Default signal |
-|---|---|
-| `positive` | `pinned` |
-| `negative` | `contradicted` |
-| `mixed` | `cited` |
-| `neutral` | `cited` |
+## Auto-Trigger Rules
 
-Override `signal` when the memory's usefulness differs from the outcome. For
-example, a failed training run can be `outcome=negative` but `signal=cited` if
-the postmortem itself should remain easy to recall.
-
-## Auto Trigger Rules
-
-Agents may encode automatically when all are true:
+Agents may encode without prompting when all are true:
 
 - the lesson is specific enough to help a future session
 - the content is self-contained without requiring hidden chat context
@@ -100,11 +115,25 @@ Agents may encode automatically when all are true:
 - no secrets or private data are included verbatim
 
 When auto-triggering, keep the content concise and include why it matters. If
-the user is actively waiting for code or a test result, do not interrupt with a
-long memory report; encode quietly and mention it in the final summary.
+the user is actively waiting on a result, do not interrupt with a long memory
+report; encode quietly and mention it in the final summary.
 
 ## Output
 
-Report the saved document id, kind, outcome, signal, and whether it was
-auto-triggered. Include training target and weight when they are not the
-defaults. If the tool is unavailable, report the fallback path used.
+Report the saved `doc_id`, `kind`, `outcome`, `signal`, and whether the write
+was auto-triggered. Include `training_target` and `training_weight` when they
+differ from defaults. If the tool was unavailable, report the fallback path
+used. Keep it to a single line in normal reports; a full encode block belongs
+only in postmortem reports.
+
+## Anti-Patterns
+
+- Encoding everything. Memory only stays useful when the bar for entry is
+  high.
+- Encoding bug-shaped findings as solutions. Route those through
+  `/peer-review`.
+- Encoding restatements of in-scope plan items.
+- Encoding secrets, tokens, or raw API responses.
+- Forgetting to set `kind=continuity_pack` when the memory's job is to boot
+  the next session.
+- Setting `training_target=cohort_a` without explicit user blessing.

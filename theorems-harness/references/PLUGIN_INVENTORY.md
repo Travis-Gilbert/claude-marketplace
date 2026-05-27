@@ -2,11 +2,15 @@
 
 Inventory generated for the Theorem's Harness upgrade.
 
+The public model is now adaptive: `/harness` is the session/task opt-in and the
+agent selects capability mixes as the work evolves. Utility commands remain for
+narrow entrypoints, but they are not separate products.
+
 ## Skills
 
 | Skill | Public role | Orchestrate role | Compatibility |
 |---|---|---|---|
-| `theorems-harness` | Default public command | Owns observe, plan, coordinate, delegate, execute, validate, report, learn | Canonical |
+| `theorems-harness` | Default adaptive command | Owns observe, route, plan, coordinate, delegate, execute, validate, report, learn | Canonical |
 | `context-refresh` | Public utility command | Calls `orchestrate_refresh` when an injected artifact is stale | Keep available |
 | `harness-coordinate` | Public utility command | Teaches heartbeat, @mentions, wait, and handoff protocol | Keep available |
 | `peer-review` | Public and agent-triggerable command | Requests cross-frontier-model review before commit, PR, or launch-ready reporting | Keep available |
@@ -14,7 +18,7 @@ Inventory generated for the Theorem's Harness upgrade.
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
 | `theorize` | Internal phase skill | Internal `theorize` mode | Keep available |
 | `planning-theorem` | Internal phase skill | Internal `plan` mode | Keep available |
-| `execute` | Internal phase skill | Internal `execute` mode | Keep available |
+| `execute` | Compatibility command / internal capability | Bounded implementation loop with validation and rerouting | Keep available |
 
 ## Companion plugins (routing targets)
 
@@ -53,7 +57,7 @@ listed here.
 | `checklist-manifest` | Builds the codebase-grounded checklist manifest before work and reconciles the same checklist at completion. |
 | `codex-sdk-harness-product` | Grounds SDK/database harness and product-client claims in shipped code; read-only context, not implementation ownership. |
 | `orchestrate-planner` | Builds production plans and stable checklists. |
-| `plugin-router` | Selects hidden plugins/skills, profiles, validators, and exposure recommendations. |
+| `plugin-router` | Selects capability mixes, hidden plugins/skills, profiles, validators, and exposure recommendations. |
 | `context-artifact-specialist` | Defines Context Artifact, Capsule, Brief, and trust-boundary requirements. |
 | `action-rail-specialist` | Produces safe next actions with validators and approval gates. |
 | `validator-reporter` | Chooses checks and reconciles validation evidence. |
@@ -64,7 +68,7 @@ listed here.
 
 ## Commands Exposed
 
-Default product command:
+Default adaptive product command:
 
 - `/harness`
 
@@ -77,7 +81,7 @@ Utility commands:
 - `/encode`
 - `/compute_code`
 
-Internal phase language:
+Internal capability language:
 
 - `theorize` -> `/harness mode=theorize`
 - `planning-theorem` -> `/harness mode=plan`
@@ -86,6 +90,7 @@ Internal phase language:
 ## Internal Modes
 
 - observe
+- route
 - theorize
 - plan
 - delegate
@@ -100,17 +105,24 @@ Internal phase language:
 ## References
 
 - `ARTIFACT_SCHEMAS.md`
+- `BRIEF_TEMPLATE.md`
 - `CHECKLIST_MANIFESTO.md`
 - `CONCISE_ACTION.md`
 - `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`
+- `HOST_REPO_OPT_IN.md`
+- `LEARNINGS.md`
 - `ORCHESTRATE_REPORTING.md`
+- `PLAN_TEMPLATE.md`
 - `PRODUCTION_GATES.md`
 - `PROFILES.md`
+- `REFS_AUDIT.md`
+- `REFS_MANIFEST.md`
 - `REPORTING.md`
 - `ROUTING.md`
 - `SDK_DATABASE_HARNESS.md`
 - `SETTINGS.md`
+- `UI_VISUAL_PROJECT_GATES.md`
 
 ## Compatibility Risks
 

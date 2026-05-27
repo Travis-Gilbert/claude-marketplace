@@ -1,236 +1,105 @@
 ---
 name: planning-theorem
-description: This skill should be used when the user asks to "make a plan", "write an implementation plan", "spec this", "plan a migration", "retrofit this", "create a checklist", "research before implementing", or wants work routed across skills and agents before execution.
+description: The Harness planning capability. Use when the task needs stable acceptance criteria, a multi-session checklist, a migration shape, or a plan worth handing to another agent. Reachable as /harness mode=plan or, for users who explicitly want planning, the /planning-theorem compatibility command.
 ---
 
 # Planning-Theorem
 
-Compatibility note: this skill is now an internal planning mode of Orchestrate.
-Prefer `/harness mode=plan` for new workflows.
+Planning is the Harness capability for turning a fuzzy ask into a checklist
+another agent could execute against. It is not a license to defer real work; it
+is the discipline of making acceptance criteria honest before code runs.
 
-Create a production-grade planning artifact that can be executed directly. Ground every task in the live codebase. Do not hide deferred work behind elegant prose.
+Prefer `/harness` (which routes to planning when the task signals warrant it).
+`/planning-theorem` remains a compatibility entrypoint for users who explicitly
+want a plan as the deliverable.
 
-## User-Facing Role
+## When To Plan
 
-- Primary command: `/planning-theorem`
-- Compatibility alias to document and honor in prose: `/plan`
-- Deliverable: `Planning-Theorem Artifact`
+Use this capability when at least one is true:
 
-When the user requests a handoff workflow, support:
+- the task spans more than one bounded slice
+- acceptance criteria are not yet locked
+- the work crosses multiple files, modules, or systems and a checklist will
+  reduce risk
+- a future session will pick up where this one stops
+- a UI visual surface needs Vision Delta + Do Not Downgrade gating before code
+- the user asked for a plan, spec, migration, retrofit, or handoff artifact
 
-- `/planning-theorem handoff=spark`
-- `/harness mode=plan handoff=spark`
+Do not plan when the work is a clear one-file fix, a typo, a renamed variable,
+or anything the user obviously meant to be executed now. Right-size: a small
+plan is a few lines; a launch plan is a stable-ID checklist with validation.
 
-## Mission
+## Inputs
 
-- Establish the current condition from source code, tests, docs, and runtime seams.
-- Translate user intent into a production definition of done.
-- Build an auditable checklist with stable IDs.
-- Route ambiguous or specialized work to the right skill or agent.
-- Make validation, rollback, observability, and migration risk explicit.
-- Leave no silent deferrals.
+Any of these are valid inputs:
 
-## UI Visual Project Rule
+- a user task in plain language
+- an existing SPEC, ADR, or design doc
+- a prior planning artifact that needs revision
+- a failed execution that needs a re-plan
+- a research brief or theorem brief that resolved the open questions
 
-For plans that touch visible UI, renderer architecture, graph/canvas surfaces,
-dashboards, diagrams, animation, visual design, or screenshot-sensitive flows,
-load `../../references/UI_VISUAL_PROJECT_GATES.md` and include a UI Visual
-Milestone. The plan must split Runtime complete, Product complete, and Vision
-complete; capture or identify before/after/target screenshot evidence; define
-the Vision Delta; require a Do Not Downgrade gate; and preserve a reversible
-product boundary until the new visible surface is equal-or-better.
+## Operating Posture
 
-## Internal Modes
+- Ground every checklist row in a real file path, test seam, or runtime
+  surface. No abstract verbs.
+- Prefer vertical slices over horizontal staging. One real path beats a buffet
+  of maybe-paths.
+- Make validation, rollback, observability, and migration risk explicit per
+  row.
+- Surface unresolved decisions instead of smoothing them over.
+- Never produce wall-clock, compute, or cost estimates ("~2 hours", "~$5",
+  "Effort: S/M/L"). Predictions about future work are not part of a plan.
+- If the user said "MVP," honor it. Do NOT introduce "MVP" framing yourself.
+- If a spec is the source, every spec section must have at least one checklist
+  row pointing at it. Zero coverage of a spec section is a planning bug, not a
+  scope decision.
+- Deferrals require explicit user consent. Surface candidate deferrals one at a
+  time with a one-sentence justification; do not batch them into a quiet
+  "non-goals" table at the end.
 
-Treat these as internal phases, not separate commands:
+## Workflow
 
-- research
-- retrofit
-- review-plan
-- spec-to-checklist
-- context compilation
-- docs update planning
-- SDK harness product context pass
+1. Reconcile the request against the live repo: read the smallest relevant
+   source surface, not a pile of historical specs.
+2. Define the production goal in user-visible, system, data, and operational
+   terms.
+3. For UI visual work, define visual baseline, target references, Vision
+   Delta, and Do Not Downgrade criteria before locking the checklist.
+4. Build a codebase-grounded checklist with stable IDs (`PT-001`, etc.).
+5. Attach acceptance criteria, validation, risk, and route per row.
+6. Record explicit non-goals and deferrals only with surfaced consent.
+7. Define how `/harness mode=execute` reconciles against the plan.
+8. If `handoff=spark` is requested, select the first bounded slice, define
+   write/validation scope, delegate it, and stay in-thread to review.
 
-## Planning Flow
+## Output
 
-1. Reconcile specs or user instructions against the live repo.
-2. Read the smallest set of files that makes the plan real.
-3. If the work touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, tenant-scoped product graph routes, or TypeScript/Python SDK parity, consult `codex-sdk-harness-product` before finalizing checklist items.
-4. Define the production goal in user-visible, system, data, and operational terms.
-5. For UI visual work, define the visual baseline, target references, Vision
-   Delta, and Do Not Downgrade criteria before the checklist is locked.
-6. Build a codebase-grounded checklist with stable IDs like `PT-001`.
-7. Attach acceptance criteria, validation, risk, and ownership/route for every item.
-8. Record explicit non-goals and deferrals.
-9. Define how `/execute` must reconcile against the plan.
-10. If `handoff=spark` is requested, select the first bounded checklist items,
-   define write scope and validation scope, delegate the slice, and remain in
-   the parent thread to review the result against the artifact.
+Right-size the deliverable:
 
-## Checklist Rules
+- Small plans: a checklist table + an Executive Summary line, nothing more.
+- Production plans: use the full template in
+  `../../references/PLAN_TEMPLATE.md`.
+- UI visual plans: include the UI Visual Milestone gates from
+  `../../references/UI_VISUAL_PROJECT_GATES.md`.
 
-Every checklist item must include:
+The template is a tool, not a contract. Use only the sections the work needs.
 
-- stable ID
-- concrete task
-- codebase grounding
-- owner, agent, or skill route
-- acceptance criteria
-- validation method
-- risk
-- status
+## Routing
 
-Every item must be independently auditable. If an item matters but is not being done now, place it in `Explicit Non-Goals and Deferrals`.
+- Ambiguity or option pressure → `/harness mode=theorize` briefly, then back.
+- SDK harness product questions → `codex-sdk-harness-product`.
+- Redis/THG/product-state questions → `redis-harness-operator` /
+  `redis-product-safety`.
+- Implementation → `/harness mode=execute`, with the plan as input.
 
-## Orchestration Rules
+## Anti-Patterns
 
-Use these routes by default:
-
-- ambiguity or option pressure -> `/theorize`
-- SDK harness product questions -> `codex-sdk-harness-product`
-- implementation and TDD -> `/execute`
-- docs or ADR persistence -> local docs update step inside the plan
-- review, simplification, diagnosis, and test hardening -> phases inside `/execute`
-
-## Host Repo Opt-In
-
-If `AGENTS.md` or `CLAUDE.md` contains a repository opt-in note preferring
-Orchestrate or harness usage, treat it as a host policy for complex work.
-
-Honor the opt-in for:
-
-- multi-file implementation
-- architecture or migration work
-- runs that benefit from harness-backed context preparation
-- delegated plan-plus-worker execution
-
-Do not over-apply the opt-in to trivial asks.
-
-Load `../../references/HOST_REPO_OPT_IN.md` when the user wants a copyable repo
-snippet.
-
-## SDK Harness Product Rule
-
-For SDK harness product plans:
-
-- preserve the framing as a Codex-facing database/SDK harness product, not a generic backend implementation task
-- distinguish client contract from server/runtime implementation
-- treat harness patch validation as a proposal/review flow, not automatic promotion
-- treat the tenant-scoped product graph client as a distinct surface from the default harness SDK client
-- require explicit evidence for claims about replay, fork, compare, patch, SDK parity, or product-route behavior
-
-## Output Contract
-
-Return the plan in this shape:
-
-```md
-# Planning-Theorem Artifact: <title>
-
-## Executive Summary
-- Goal:
-- Intent:
-- Summary of work:
-
-## Current Condition
-Describe what exists now, with file/test/doc/runtime grounding.
-
-## Intent
-Explain what the user is trying to make true.
-
-## Goal
-- User-visible outcome:
-- System behavior:
-- Data/model changes:
-- Operational impact:
-- What must not regress:
-
-## UI Visual Milestone
-Include only for UI visual work.
-
-| Gate | Requirement | Evidence/validator | Status |
-|---|---|---|---|
-| Runtime complete | Code path works. | Tests/smoke/build. | planned |
-| Product complete | Enabled surface is equal-or-better than baseline. | Before/after/target review. | planned |
-| Vision complete | Stated ambition is reached or delta is named. | Vision Delta. | planned |
-| Baseline capture | Current and target visuals are captured or unavailable with reason. | Screenshots/references. | planned |
-| Do Not Downgrade | Mature surface is preserved or replaced only by equal-or-better UX. | Visual gate review. | planned |
-| Reversible boundary | Rollback/baseline path exists. | Route/mode/commit boundary. | planned |
-
-## Vision Delta
-Include only for UI visual work.
-
-- Target vision:
-- Current visual condition:
-- This plan makes true:
-- This plan does not make true:
-- Visual downgrade risks:
-- Remaining renderer/data/interaction/design gaps:
-
-## Codebase Grounding
-| Area | Evidence | Notes |
-|---|---|---|
-
-## Orchestration Map
-| Work type | Route to | Why |
-|---|---|---|
-
-## Checklist
-| ID | Task | Codebase grounding | Agent/skill route | Acceptance criteria | Validation | Risk | Status |
-|---|---|---|---|---|---|---|---|
-
-## Test Strategy
-- Preflight checks:
-- Focused tests:
-- Integration tests:
-- Regression tests:
-- Type/lint/static checks:
-- Manual smoke checks:
-- Performance/security checks:
-
-## Production Gates
-- [ ] Tests pass or failures are explained.
-- [ ] No unchecked migration or data risk.
-- [ ] No secrets or destructive commands introduced.
-- [ ] Error paths considered.
-- [ ] Observability/logging considered.
-- [ ] Rollback/revert path exists.
-- [ ] Docs/ADR updated or explicitly deferred.
-- [ ] UI visual work has before/after/target evidence or an explicit validation gap.
-- [ ] UI visual work passes the Do Not Downgrade gate before Product complete.
-- [ ] Execution report can reconcile every checklist item.
-
-## Epistemic Ledger
-| Primitive | Entry | Evidence | Confidence | Action |
-|---|---|---|---|---|
-
-## Explicit Non-Goals and Deferrals
-| Item | Why deferred | Risk of deferral | Follow-up |
-|---|---|---|---|
-
-## Execution Instructions
-- Start with checklist item:
-- Preserve these invariants:
-- Run these commands:
-- Report using the Execute-Theorem Report format.
-```
-
-## Required References
-
-Load these on demand:
-
-- `../../references/ROUTING.md`
-- `../../references/PRODUCTION_GATES.md`
-- `../../references/UI_VISUAL_PROJECT_GATES.md`
-- `../../references/ARTIFACT_SCHEMAS.md`
-- `../../references/EPISTEMIC_PRIMITIVES.md`
-- `../../references/REPORTING.md`
-
-## Guardrails
-
-- Prefer vertical slices over horizontal staging.
-- Prefer one real path over a buffet of maybe-paths.
-- Do not leave validation as "to be figured out later".
-- Do not let the executive summary become fluff; keep it concise.
-- Do not claim SDK harness or product graph behavior without code evidence.
-- Do not call a UI visual plan complete when only the runtime slice is defined.
+- Pre-writing a 13-section plan template for a one-file fix.
+- Hiding deferred work behind elegant prose.
+- Calling validation "TBD" or "to be determined later."
+- Producing a plan that the executing agent cannot reconcile row-by-row.
+- Treating `handoff=spark` as permission to disappear: stay in-thread to
+  review what the executor built.
+- Adding time/compute/cost estimates to a row. Plans describe what; observed
+  runtimes describe how long.

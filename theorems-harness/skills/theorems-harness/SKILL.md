@@ -1,183 +1,190 @@
 ---
 name: theorems-harness
-description: Theorem's Harness default plugin skill. Use for planning, implementation, debugging, review, context preparation, validation, reporting, cross-agent coordination, typed memory, encode, run lifecycle, replay, fork/compare, fractal search, code search, or V3 harness state-machine work. Triggers on /harness, "Theorem's Harness", "begin a harness run", "coordinate with Claude", "check mentions", "agent memory", and "plan/execute through the harness".
+description: Theorem's Harness default plugin skill. Use when the user invokes /harness or asks for grounded planning, implementation, debugging, review, context preparation, validation, reporting, cross-agent coordination, typed memory, encode, run lifecycle, replay, fork/compare, fractal search, code search, or harness-backed agent work.
 ---
 
 # Theorem's Harness
 
-Theorem's Harness is the plugin and public product surface. It owns the full
-workflow: observe, plan, compile context, coordinate, delegate, execute,
-validate, report, and learn. The SDK is plumbing, MCP is the tool bus, and slash
-commands/skills are the product layer.
+Theorem's Harness is the public product layer for grounded agent work. The SDK
+is plumbing, MCP is the tool bus, hooks provide ambient session support, and
+skills/commands are the behavior contract that agents actually inhabit.
 
-## When to use
+The core change: `/harness` is not a request to force one narrow mode. It is the
+operator saying "use the harness for this session or task." After that, the
+agent chooses the most useful capability mix, revisits that choice at
+checkpoints, and keeps moving unless a real blocker requires user input.
 
-Use this by default when the user wants Theorem's Harness to do grounded work:
+## Session Contract
 
-- plan, implement, debug, review, research, validate, or produce a report
-- compile context or refresh working context as part of a larger task
-- coordinate with Claude Code, Codex, Claude.ai, or another agent
-- begin, step, replay, fork, or compare a harness run
-- fractal-expand search or gather evidence into a run
-- save/revise/archive typed agent memory or encode a durable lesson
-- route across plugins, agents, Redis harness specialists, or code/context tools
+When the user invokes `/harness`, "Theorem's Harness", or an equivalent phrase:
 
-Not for: graph reads (use `mcp__rustyred-thg__*`), document writes (use `document_write`), pure Django mutations (use the relevant verb directly).
+1. Treat it as consent to use harness abilities for the active task.
+2. Resolve the current task from the user's words and live repo state.
+3. Select the first capability mix. Use `harness_route` when available; otherwise
+   apply the routing rules below directly.
+4. Work through short cycles: observe, choose, act, check, and decide whether to
+   continue, pivot, coordinate, validate, remember, or report.
+5. Keep the harness visible only where it helps the user trust the work. Do not
+   narrate every internal switch.
 
-## Public command role
+The command may accept `mode=plan`, `mode=execute`, or similar hints, but hints
+are not handcuffs. Honor the user's explicit intent, then add supporting
+capabilities when the work needs them.
+
+## Capability Palette
+
+Use these as abilities inside one run, not as competing products:
+
+| Capability | Use it when |
+|---|---|
+| `observe` | Ground the task in repo state, tool state, runtime state, and current context. |
+| `theorize` | Several real approaches exist and a short option pass will avoid churn. |
+| `plan` | The task needs stable acceptance criteria, a checklist, or multi-session memory. |
+| `execute` | Files must change, tests must run, bugs must be fixed, or a slice must ship. |
+| `diagnose` | A failure, regression, flaky test, deploy issue, or runtime surprise appears. |
+| `coordinate` | Claude Code, Codex, Claude.ai, or another agent may overlap the work. |
+| `compile_context` | The prompt/context is stale, broad, or missing the source surface. |
+| `research` | Evidence, graph search, code search, or external/current reality is needed. |
+| `validate` | A claim needs tests, screenshots, deploy proof, replay, or runtime evidence. |
+| `peer_review` | A risky diff, multi-agent edit, commit, PR, or launch-ready claim is near. |
+| `remember` | The session produced a reusable lesson, decision, postmortem, or correction. |
+| `report` | The user needs a concise, truthful closeout with done/partial/blocked state. |
+
+## Routing Heuristics
+
+- If the user asks to coordinate, message, ping, hand off, or work with another
+  agent, start with `coordinate`, then return to the main work.
+- If the user asks to implement, fix, ship, simplify, or run tests, start with
+  `execute`; add `diagnose` when a failure is not yet understood.
+- If the user asks for a plan, spec, migration, checklist, or multi-session
+  strategy, start with `plan`; allow a bounded execution handoff only when the
+  first slice is obvious or requested.
+- If the user asks for research, evidence, graph search, code discovery, or
+  current external facts, start with `research` or `compile_context`.
+- If the user asks for review or a second model's view, start with
+  `peer_review`; do not convert that into implementation unless asked.
+- If the task is broad but actionable, use a short `theorize` pass, choose a
+  default, and continue. Do not park in brainstorming.
+- If hooks already injected a useful context brief, use it. If it is missing,
+  stale, or contradicted by source code, refresh or inspect before relying on it.
+
+Re-route whenever a material discovery changes the shape of the work, when a
+third workaround appears in the same layer, before overlapping edits, and before
+final claims.
+
+## Adaptive Workflow
+
+1. **Observe.** Check cwd/worktree, user intent, dirty files, relevant source,
+   active context artifact, and pending mentions when another agent is involved.
+2. **Choose.** Pick the next capability mix. A tiny task may be
+   `observe -> execute -> validate -> report`; a complex task may add plan,
+   coordination, peer review, and memory.
+3. **Act.** Take the next bounded action. Prefer source-grounded edits and
+   focused validation over broad theater.
+4. **Check.** Run the narrow proof that matters: tests, build, browser, deploy,
+   replay, screenshot, MCP response, or code inspection.
+5. **Pivot.** If the evidence changes the task, update the checklist or route.
+   If another agent is affected, coordinate before proceeding.
+6. **Close.** Report truthfully. For high-signal lessons, encode or recommend a
+   memory write. For risky multi-agent work, peer review before commit/PR.
+
+## Public Command Role
 
 - Primary command: `/harness`
 - Utility commands:
   - `/context-refresh` for narrow context refresh only.
-  - `/coordinate` for cross-agent presence, @mentions, and waits only.
+  - `/coordinate` for cross-agent presence, mentions, waits, and handoffs.
   - `/peer-review` for cross-frontier-model diff review before commit, PR, or
     launch-ready reporting.
-  - `/encode` for feedback, solution, or postmortem memory only.
-  - `/research` for direct fractal expansion / gap-frontier discovery only.
-  - `/compute_code` for graph-structural code ranking only.
+  - `/encode` for feedback, solution, or postmortem memory.
+  - `/research` for direct fractal expansion / gap-frontier discovery.
+  - `/compute_code` for graph-structural code ranking.
 
-## Internal modes
+Compatibility commands such as `/execute` may remain installed, but new work
+should prefer `/harness` plus adaptive routing.
 
-Use modes as phases inside the Harness, not separate products:
-
-- `observe`: understand the task, repo, and current run state.
-- `theorize`: explore options before commitment.
-- `plan`: produce checklist-first implementation plans.
-- `execute`: modify files, run checks, and reconcile the checklist.
-- `coordinate`: heartbeat, send/receive mentions, and avoid overlap.
-- `compile_context`: refresh or build the Context Artifact.
-- `validate`: run focused checks, visual gates, and production gates.
-- `remember`: encode lessons, postmortems, and memory candidates.
-
-Do not present `orchestrate` as the product name in user-facing output. It is
-only an internal/backend word during the route migration.
-
-## Workflow
-
-1. Observe the live repo/tool state and identify the smallest real surface.
-2. Choose a Harness mode: theorize, plan, execute, coordinate, compile_context,
-   validate, or remember.
-3. Build stable checklist IDs before multi-step execution.
-4. Compile or refresh context when the task has drifted or the repo surface is
-   larger than the current prompt.
-5. Coordinate before overlapping with another active agent.
-6. Execute with focused edits, tests, and validation.
-7. For multi-agent work, run peer review before commit, PR, or launch-ready
-   reporting.
-8. Reconcile the checklist and report what is done, partial, blocked, skipped,
-   or failed.
-9. Encode high-signal lessons or postmortems when they will help a future run.
-
-## Tools owned (Theorem MCP, Form-B short names)
+## Tools Owned (Theorem MCP, Form-B Short Names)
 
 | Verb | Purpose |
 |---|---|
-| `harness_toolkit` | Compile or inspect the task toolkit from `task_type`, `permissions`, and `scope` before a run |
-| `harness_begin` | Open a new harness run (task, actor, scope) |
-| `harness_step` | Record a step inside an open run (tool_call / observation / decision) |
-| `harness_search` | Native search inside the run, recording tool_call + observation steps |
-| `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run |
-| `code_search` | Search ingested code symbols through the CodeCrawler service / code graph |
-| `harness_context` | Compile the context artifact for the current run |
-| `harness_patch` | Propose a patch to the harness's belief state (review-gated) |
-| `harness_replay` | Get the full event timeline of a run |
-| `harness_fork` | Fork a run at a given step to explore an alternative path |
-| `harness_compare` | Compare two runs (state-hash diff, evidence overlap, divergence point) |
-| `self_note` | Save typed agent memory (`belief`, `convention`, `standing_intention`, `reasoning_record`, etc.) |
-| `self_revise` | Create a revision-tracked memory replacement and supersede the prior atom |
-| `self_archive` | Archive memory out of active recall while preserving audit history |
-| `self_recall_archive` | Recall archived memory on demand |
-| `encode` | Record feedback, solutions, and postmortems with outcome metadata and fitness signals |
-| `coordinate` | Append a coordination message and queue `@actor` mentions |
-| `mentions` | Load or consume pending mentions for an actor |
-| `mentions_wait` | Block briefly until a pending mention arrives or the timeout expires |
-| `presence` | Refresh, end, or read short-TTL actor presence |
-| `subscribe` | Register an actor as polling a mention channel |
+| `harness_route` | Choose the next capability mix for a task or checkpoint. |
+| `harness_toolkit` | Compile or inspect the task toolkit from task type, permissions, and scope before a run. |
+| `harness_begin` | Open a new harness run. |
+| `harness_step` | Record a step inside an open run. |
+| `harness_search` | Search inside the run, recording tool-call and observation steps. |
+| `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
+| `code_search` | Search ingested code symbols through CodeCrawler / code graph. |
+| `harness_context` | Compile the context artifact for the current run. |
+| `harness_patch` | Propose a patch to the harness belief state. |
+| `harness_replay` | Get the full event timeline of a run. |
+| `harness_fork` | Fork a run at a given step to explore an alternative. |
+| `harness_compare` | Compare two runs. |
+| `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
+| `encode` | Record feedback, solutions, and postmortems with outcome metadata. |
+| `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
+| `coordinate` | Append a coordination message and queue actor mentions. |
+| `mentions` / `mentions_wait` | Load, consume, or briefly wait for pending mentions. |
+| `presence` | Refresh, end, or read short-TTL actor presence. |
+| `subscribe` | Register an actor as polling a mention channel. |
+| `continuity_pack` | Persist graph-backed and disk-mirrored continuity before compaction or handoff. |
 
-## Slim MCP launch aliases
+## Slim MCP Launch Aliases
 
-The local `theorems-harness` MCP server also exposes launch-facing aliases that
-wrap current shipped SDK/backend routes:
+The local `theorems-harness` MCP server also exposes launch-facing aliases:
 
 | Tool | Purpose |
 |---|---|
-| `context_compile` | Compile an explicit Context Theorem artifact for a task |
-| `code_crawl` | Ingest or refresh a repository in the CodeCrawler/code graph |
-| `fractal_expand` | Launch-facing alias for `harness_fractal_expansion` |
-| `instant_kg_status` | Check tenant-scoped Instant KG readiness through THG product |
-| `instant_kg_reingest` | Enqueue fresh Instant KG capture/reingest in Index-API |
-| `provenance_trace` | Read reasoning trace provenance or object-specific trace explanations |
-| `recall` | Preview saved-context recall for a task |
-| `remember` | Save reusable context through the harness memory substrate |
-| `relate` | Record a typed THG relation without claiming canonical graph promotion |
-| `domain_list` | List available Context Theorem domain packs |
-| `domain_install` | Install one to three domain packs for a user |
+| `context_compile` | Compile an explicit Context Theorem artifact for a task. |
+| `code_crawl` | Ingest or refresh a repository in the CodeCrawler/code graph. |
+| `fractal_expand` | Launch-facing alias for `harness_fractal_expansion`. |
+| `instant_kg_status` | Check tenant-scoped Instant KG readiness through THG product. |
+| `instant_kg_reingest` | Enqueue fresh Instant KG capture/reingest. |
+| `provenance_trace` | Read reasoning trace provenance. |
+| `recall` / `remember` / `relate` | Preview, save, and connect reusable context. |
+| `domain_list` / `domain_install` | List and install Context Theorem domain packs. |
 
-## Standard run-lifecycle flow
+## Coordination Rule
 
-For "drive a harness run for task T":
+For multi-agent work, coordination is a lightweight safety layer:
 
-1. `harness_begin(task=T, actor='agent')` — opens the run; returns `run_id`.
-2. `harness_toolkit(task_type='research', permissions=[...], scope={...})` — confirm permissions and selected tools when you need a preflight.
-3. Loop:
-   a. `harness_step(run_id=run_id, kind='tool_call', payload=...)` for each tool the harness invokes.
-   b. `harness_step(run_id=run_id, kind='observation', payload=...)` after each call.
-   c. `harness_search(run_id=run_id, query=..., budget=...)` when the harness needs evidence.
-4. `harness_context(run_id, budget_tokens=...)` — compile the final context artifact.
-5. `harness_replay(run_id)` — read back the final event timeline when auditability matters.
+- Heartbeat presence.
+- Join or inspect the durable coordination room when a shared task has more than
+  a one-off packet.
+- Subscribe to the shared repo/task channel.
+- Consume mentions before overlapping edits.
+- Send `coordinate` messages with stable `@actor` mentions and file/worktree
+  metadata.
+- Wait briefly only when a response is useful now.
+- Prefer shared goals and file-level claims over rigid global lane ownership.
 
-For fractal expansion (research / discovery):
-- `harness_fractal_expansion(query='...', run_id=run_id, top_k=20, budget={...}, scope={...})` — query-driven gap-frontier search. `run_id` is optional; when supplied, the search is recorded inside the harness run.
-- For raw seed-PK PPR, use `ppr_neighborhood` on the Theorem MCP or `mcp__rustyred-thg__algorithm.ppr` directly.
+The durable model is membership plus liveness plus inbox plus continuity:
+coordination rooms and continuity packs survive agent sleep; pending mentions
+survive missed turns; short-TTL presence only says who is fresh.
 
-For code search:
-- `code_search(query='CodeCrawlerService', limit=20)` — discover symbols before asking for `code_context`, `code_impact`, or `code_explain`.
-- `code_crawl(repo='owner/repo')` — operator-approved crawl/ingest before deeper Pairformer or code-search work.
+## Output Discipline
 
-For Pairformer / graph readiness:
-- `instant_kg_status(tenant_slug='...')` — check the THG-backed Instant KG runtime.
-- `instant_kg_reingest(input='https://...', kind='url')` — enqueue a fresh capture when evidence is stale.
-- `provenance_trace(trace_id='...', object_pk=123)` — explain how a trace used a specific object.
+- Do not ask the user to choose internal modes unless it is genuinely a product
+  preference or unsafe to infer.
+- Keep checklists as small as the work requires. A one-file fix may need only a
+  two-line internal checklist; a launch or migration needs stable row IDs.
+- Do not claim "done" unless validation supports it. Say partial, blocked,
+  skipped, failed, or not-run when that is the truth.
+- For UI visual work, include the UI Visual Milestone and the Do Not Downgrade
+  gate from `../../references/UI_VISUAL_PROJECT_GATES.md`.
+- For high-risk product, SDK, Redis, THG, deployment, or multi-agent work, use
+  the relevant specialist agent or peer review before final claims.
+- Encode only high-signal lessons. Keep secrets out of stored memory.
+- Write a continuity pack before compaction, handoff, or a long pause when the
+  next agent needs exact resume state.
 
-For replay / debugging:
-- `harness_replay(run_id)` — full event timeline.
-- `harness_compare(before_run_id=run_a, after_run_id=run_b)` — divergence analysis.
+## Anti-Patterns
 
-For exploration:
-- `harness_fork(run_id=run_id, through_step_id=step_id)` — open a new run branched through a specific step id.
-
-For cross-agent coordination:
-- `presence(actor='codex', mode='heartbeat')` — refresh this actor's TTL presence.
-- `subscribe(actor='codex', doc_id='repo-or-task-channel')` — announce that this actor is polling a shared channel.
-- `coordinate(message='@claude-code please validate TTL', urgency='ask')` — write to the shared coordination document and queue mentions.
-- `mentions(actor='claude-code', consume=true)` — let the target actor load and optionally consume its inbox.
-- `mentions_wait(actor='claude-code', timeout_seconds=30)` — wait briefly for a real ping instead of manually polling.
-
-For typed agent memory:
-- `self_note(content='...', memory_node_type='convention')` — capture a durable agent-scoped memory.
-- `self_revise(doc_id='...', content='...', reason='...')` — preserve immutable supersession history.
-- `self_archive(doc_id='...', reason='...')` and `self_recall_archive(query='...')` — move memory out of active recall and retrieve it explicitly.
-- `encode(kind='solution', outcome='positive', content='...')` — preserve a high-signal solution, feedback item, or postmortem with graph fitness telemetry.
-
-## Output discipline
-
-- Always pass back the `run_id` to the user after `harness_begin` so they can resume.
-- When a step records a `tool_call`, also record its `observation` — half-records make replays incoherent.
-- Don't `harness_patch` without explicit user approval — patches are belief-state mutations; the human is the reviewer.
-- Don't use `document_write(kind='draft')`; drafts should be `self_note` or a supported document kind such as `scratch`, `markdown`, `insight`, `handoff`, `solution`, or `postmortem`.
-- For agent-to-agent work, heartbeat first, then `coordinate`, then let the target actor call `mentions_wait` when it needs a ping-like wakeup. The UI is observational; the queue and presence substrate are enough for headless communication.
-- For multi-agent implementation, prefer shared goals and negotiated ownership
-  through coordination messages. Use `peer-review` before commit to make this
-  fast style safer.
-- `mentions_wait` is a short long-poll in one MCP request thread, not a permanent listener. Use the 30 second default at checkpoints; the service caps waits at 120 seconds.
-- Agents may call `encode` without a user slash command when a session produces a durable lesson, but should avoid raw secrets and summarize sensitive evidence.
-
-## Anti-patterns
-
-- Don't call `harness_step` without first calling `harness_begin` — there's no run to step.
-- Don't fork without comparing — `harness_fork` followed by `harness_compare` is the canonical exploration loop.
-- Don't use `harness_search` as a general-purpose search; it's bound to a run. For untethered search, use `mcp__rustyred-thg__fulltext.search`.
-
-## Native dispatch
-
-`harness_fractal_expansion` is a Lane-B hybrid tool: handler runs in the Python MCP process but invokes `theseus_native.push_ppr` (Rust via PyO3) for the actual graph compute. If you see the deploy log `WARNING apps.notebook.native_dispatch FALLBACK: Python push_ppr running...`, the wheel isn't installed in the runtime container and PPR is hitting the slow Python path. Surface this to the operator; the fix is the Dockerfile wheel-install pattern from Dockerfile.web / Dockerfile.worker.
+- Freezing the whole session in `execute` after the evidence says to diagnose,
+  coordinate, or refresh context.
+- Treating `/harness mode=plan` as permission to avoid implementing an obvious
+  bounded first slice when the user asked to ship.
+- Treating `/harness mode=execute` as permission to skip design when a third
+  workaround appears.
+- Reporting hook or route success as product success without runtime evidence.
+- Using strict file lanes where file-level claims and peer review would be safer
+  and faster.

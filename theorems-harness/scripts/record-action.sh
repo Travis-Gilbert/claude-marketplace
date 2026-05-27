@@ -16,9 +16,14 @@ THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 run_id=$(theorem_run_id "$sid")
 [ -z "$run_id" ] && { printf '{"continue":true}\n'; exit 0; }
 
-tool_name=$(theorem_jq "$input" '.tool_name')
-tool_input=$(theorem_jq "$input" '.tool_input')
-tool_response=$(theorem_jq "$input" '.tool_response')
+tool_name=$(echo "$input" | jq -r '
+  if (.tool | type) == "object" then (.tool.name // "")
+  elif (.tool | type) == "string" then .tool
+  else (.tool_name // .name // "")
+  end
+' 2>/dev/null || echo "")
+tool_input=$(echo "$input" | jq -c '.tool_input // .input // .arguments // {}' 2>/dev/null || echo '{}')
+tool_response=$(echo "$input" | jq -c '.tool_response // .response // .result // {}' 2>/dev/null || echo '{}')
 
 step_body=$(jq -n \
   --arg tool "$tool_name" \

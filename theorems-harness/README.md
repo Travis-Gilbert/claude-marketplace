@@ -6,21 +6,26 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 - `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/curiosity/`, `skills/session-offload/`
 - All 11 `agents/*.md` (orchestrate-planner, action-rail-specialist, validator-reporter, redis-harness-operator, redis-product-safety, plugin-router, federation-learning-recorder, epistemic-graphrag-specialist, context-artifact-specialist, codex-sdk-harness-product, checklist-manifest)
-- All 18 `references/*.md`: `ARTIFACT_SCHEMAS.md`, `CHECKLIST_MANIFESTO.md`, `CONCISE_ACTION.md`, `ENGINEERS_MINDSET.md`, `EPISTEMIC_PRIMITIVES.md`, `HOST_REPO_OPT_IN.md`, `LEARNINGS.md`, `ORCHESTRATE_REPORTING.md`, `PLUGIN_INVENTORY.md`, `PRODUCTION_GATES.md`, `PROFILES.md`, `REFS_AUDIT.md`, `REFS_MANIFEST.md`, `REPORTING.md`, `ROUTING.md`, `SDK_DATABASE_HARNESS.md`, `SETTINGS.md`, `UI_VISUAL_PROJECT_GATES.md`
+- All 20 `references/*.md`: `ARTIFACT_SCHEMAS.md`, `BRIEF_TEMPLATE.md`, `CHECKLIST_MANIFESTO.md`, `CONCISE_ACTION.md`, `ENGINEERS_MINDSET.md`, `EPISTEMIC_PRIMITIVES.md`, `HOST_REPO_OPT_IN.md`, `LEARNINGS.md`, `ORCHESTRATE_REPORTING.md`, `PLAN_TEMPLATE.md`, `PLUGIN_INVENTORY.md`, `PRODUCTION_GATES.md`, `PROFILES.md`, `REFS_AUDIT.md`, `REFS_MANIFEST.md`, `REPORTING.md`, `ROUTING.md`, `SDK_DATABASE_HARNESS.md`, `SETTINGS.md`, `UI_VISUAL_PROJECT_GATES.md`
 
 A change to any of these flows to both hosts on next install / sync. There is no port to keep up to date.
 
-## Unified slash/skill surface
+## Adaptive slash/skill surface
 
 `theorems-harness` packages Theorem's Harness, which is the user-visible
 product layer. Slash commands and skills live here; the SDK and MCP surfaces sit
 underneath it.
 
+`/harness` is an opt-in to harness behavior for the active task, not a narrow
+mode selector. The agent should pick the best capability mix, reroute at
+checkpoints, coordinate when another agent may overlap, validate claims, and
+encode durable lessons only when they are high signal.
+
 | Layer | Role |
 |---|---|
 | Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, and `/compute_code` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
-| Slim MCP | Local tool bus for refresh, replay, memory, encode, and coordination |
+| Slim MCP | Local tool bus for adaptive routing, refresh, replay, memory, encode, and coordination |
 | Remote MCPs | Theseus for ML/search/control-plane work; RustyRed-THG for hot graph reads and algorithms |
 | SDK | Typed client library used by hooks, scripts, and MCP wrappers; not a separate user-facing command layer |
 
@@ -47,20 +52,20 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 
 | Path | Purpose |
 |---|---|
-| `hooks/hooks.json.disabled` | Claude Code lifecycle hooks kept disabled by default until the Claude hook auto-load path is explicitly re-enabled. Five events: `SessionStart` begins a harness run, `UserPromptSubmit` calls the internal prepare route and injects the Context Brief before the model turn, `PreToolUse` enforces the Action Rail, `PostToolUse` records each tool call as a `step` event, `Stop` records run outcome and state hash. |
-| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same five events, but packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. |
+| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run and loads codebase/coordination context; UserPromptSubmit prepares context and suggests subagents; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
+| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
-| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
+| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes adaptive route selection (`harness_route`), context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordination_room`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
 
 The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
 
 The slim MCP advertises these launch-facing tools through `listTools`:
 
-- Context and runs: `context_compile`, `orchestrate_refresh`, `harness_replay`, `harness_describe_current`
+- Context and runs: `harness_route`, `context_compile`, `orchestrate_refresh`, `harness_replay`, `harness_describe_current`
 - Code and research: `code_search`, `code_crawl`, `harness_fractal_expansion`, `fractal_expand`
 - Pairformer/graph readiness: `instant_kg_status`, `instant_kg_reingest`, `provenance_trace`
-- Coordination: `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`
+- Coordination: `coordination_room`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
 - Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 - Product/domain operations: `product_bootstrap`, `saved_contexts_list`, `saved_context_create`, `saved_context_update`, `saved_context_mute`, `saved_context_activate`, `saved_context_delete`, `saved_context_preview_recall`, `memory_patch_review_queue`, `memory_patch_review_update`, `domain_list`, `domain_install`
 
@@ -73,7 +78,7 @@ Codex plugin hooks are off unless the host config enables them:
 plugin_hooks = true
 ```
 
-Some hosts look for `hooks/hooks.json` by convention when hook support is enabled. This plugin keeps the Claude-specific manifest disabled and sets an explicit `hooks` path in `.codex-plugin/plugin.json` so Codex uses `hooks/codex-hooks.json`.
+Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.codex-plugin/plugin.json` so it loads `hooks/codex-hooks.json`.
 
 | Env var | Default | Purpose |
 |---|---|---|
@@ -111,7 +116,7 @@ plugin_hooks = true
 
 3. Restart the session so Codex reviews and trusts the bundled hook commands.
 
-## Backend routes (Claude hooks exercise these)
+## Backend routes (hooks exercise these)
 
 - `POST /api/v2/theseus/harness/runs/` (begin run)
 - `POST /api/v2/theseus/orchestrate/prepare/` (internal prepare route; public command is `/context-refresh`)
@@ -132,9 +137,11 @@ plugin_hooks = true
 - `POST /api/v2/theseus/harness/memory/self-recall-archive/` (recall archived memory)
 - `POST /api/v2/theseus/harness/encode/` (record feedback, solutions, and postmortems with fitness telemetry)
 - `POST /api/v2/theseus/harness/coordinate/` (append coordination message and queue mentions)
+- `POST /api/v2/theseus/harness/coordination/room/` (join/read/control durable coordination room membership)
 - `POST /api/v2/theseus/harness/mentions/` (load or consume pending mentions)
 - `POST /api/v2/theseus/harness/mentions/wait/` (block briefly until mentions arrive)
 - `POST /api/v2/theseus/harness/presence/` (refresh or read actor presence)
 - `POST /api/v2/theseus/harness/subscribe/` (register mention polling channel)
+- `POST /api/v2/theseus/harness/session/continuity-pack/` (write graph-backed and disk-mirrored continuity before compaction or handoff)
 
 Failure semantics: every hook fails open. Backend 500, missing jq, malformed responses all result in `{"continue": true}` so the user's session never breaks because the plugin had a bad day.

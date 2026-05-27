@@ -11,6 +11,8 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
 tenant_id="${THEOREM_TENANT_ID:-public}"
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 seq_file="$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}.seq"
 mkdir -p "$(dirname "$seq_file")"
 previous_seq=$(cat "$seq_file" 2>/dev/null || printf '0')

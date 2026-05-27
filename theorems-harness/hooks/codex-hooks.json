@@ -1,5 +1,5 @@
 {
-  "description": "Theorem Context lifecycle hooks for Codex. Out-of-band orchestration before each model turn; action recording after each tool use; run finalization at session end.",
+  "description": "Theorem Context lifecycle hooks for Codex. Out-of-band orchestration before each model turn; context/frontier capture around tool use; run finalization at session end.",
   "hooks": {
     "SessionStart": [
       {
@@ -10,6 +10,12 @@
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/begin-run.sh\"",
             "timeout": 15,
             "statusMessage": "Starting theorem harness run"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/sessionstart-codebase.sh\"",
+            "timeout": 10,
+            "statusMessage": "Loading codebase context"
           }
         ]
       }
@@ -22,32 +28,56 @@
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/prepare-context.sh\"",
             "timeout": 30,
             "statusMessage": "Preparing theorem context"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/subagent-suggest.sh\"",
+            "timeout": 10,
+            "statusMessage": "Suggesting subagents"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|apply_patch|Edit|Write",
+        "matcher": "Bash|exec_command|functions.exec_command|apply_patch|functions.apply_patch|Edit|Write",
         "hooks": [
           {
             "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/enforce-action-rail.sh\"",
             "timeout": 5,
             "statusMessage": "Checking theorem action rail"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/pretool-context.sh\"",
+            "timeout": 10,
+            "statusMessage": "Loading pre-tool context"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash|apply_patch|Edit|Write",
+        "matcher": "Bash|exec_command|functions.exec_command|apply_patch|functions.apply_patch|Edit|Write",
         "hooks": [
           {
             "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/record-action.sh\"",
             "timeout": 10,
             "statusMessage": "Recording theorem action"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/posttool-context.sh\"",
+            "timeout": 10,
+            "statusMessage": "Recording post-tool context"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/posttool-event.sh\"",
+            "timeout": 10,
+            "statusMessage": "Recording coordination event"
           }
         ]
       }
@@ -55,6 +85,12 @@
     "Stop": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/sessionend-context.sh\"",
+            "timeout": 10,
+            "statusMessage": "Flushing session-end context"
+          },
           {
             "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/finalize-run.sh\"",

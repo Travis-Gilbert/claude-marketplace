@@ -13,6 +13,7 @@ risk_mode: balanced
 default_budget_tokens: 6000
 redis_harness_mode: auto
 harness_writeback_mode: best_effort_reported
+harness_route_mode: adaptive
 plan_handoff_mode: manual
 honor_repo_opt_in: true
 repo_opt_in_files:
@@ -86,3 +87,15 @@ profile defaults.
 Advanced settings may expose direct commands, but Theorem's Harness remains the
 default product surface. Do not change default exposure to direct plugin
 marketplaces without a deliberate product decision.
+
+## Harness Route Modes
+
+| Mode | Meaning |
+|---|---|
+| `adaptive` | Default. `/harness` is session/task opt-in; the agent chooses and revisits capability mixes. |
+| `explicit_only` | Honor user-supplied `mode=...` without adding supporting capabilities unless required for safety. |
+| `report_only` | Preserve route decisions in the report without tool writeback. |
+
+Use `adaptive` unless a host needs deterministic command demos. Adaptive mode
+does not remove checklists or validation; it decides when those are worth the
+attention they consume.

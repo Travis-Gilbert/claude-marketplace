@@ -1,137 +1,98 @@
 ---
 name: theorize
-description: This skill should be used when the user asks to "theorize", "brainstorm", "stress-test this", "grill me", "explore options", "interrogate a design", or wants a fuzzy implementation idea turned into a grounded problem model before planning or execution.
+description: The Harness exploration capability. Use when the task is fuzzy, multiple real approaches exist, or a short option pass will save churn. Reachable as /harness mode=theorize or, for users who explicitly want exploration, the /theorize compatibility command.
 ---
 
 # Theorize
 
-Compatibility note: this skill is now an internal mode of Orchestrate. Prefer
-`/harness mode=theorize` for new workflows.
+Theorize is the Harness capability for turning fuzzy intent into a
+production-shaped problem model before the wrong implementation begins. It is
+not brainstorming theater. It uses adversarial clarification, repo grounding,
+and explicit decision capture, then converts the result into a planning input
+or a direct execution call.
 
-Turn fuzzy intent into a production-shaped problem model. Do not drift into theatrical ideation. Use adversarial clarification, repo grounding, and explicit decision capture.
+Prefer `/harness` (which routes here when option pressure is present).
+`/theorize` remains a compatibility entrypoint for users who explicitly want a
+theorem brief as the deliverable.
 
-## User-Facing Role
+## When To Theorize
 
-- Primary command: `/theorize`
-- Compatibility alias to document and honor in prose: `/brainstorm`
-- Deliverable: `Theorem Brief`
+Use this capability when at least one is true:
 
-## Mission
+- multiple credible approaches exist and the wrong choice would cause real
+  churn
+- the user used hedged or fuzzy language ("could," "maybe," "I wonder")
+- a key term is overloaded across systems ("harness," "context," "runtime")
+- repo evidence directly contradicts a stated assumption
+- a question would be cheaper to resolve on paper than in code
 
-- Restate the current condition.
-- Identify intent, target outcome, and timing pressure.
-- Find existing code, plans, docs, tests, or runtime seams before asking the user.
-- Challenge fuzzy terms, hidden assumptions, scope leaks, and contradictory domain language.
-- Resolve decisions one branch at a time.
-- Convert resolved choices into planning inputs.
-- Surface unresolved tensions instead of smoothing them over.
+Do not theorize when the user has clearly committed to a path, the task is
+obvious from the repo, or the work is small enough that exploration is more
+expensive than just trying it.
 
-## Decision Flow
+## Operating Posture
 
-1. Reframe the request in production terms.
-2. Inspect the narrowest relevant code/doc surface first.
-3. If the topic touches the paired harness SDK product, `TheoremContextClient`, `TheoremHotGraphClient`, replay, fork, compare, patch validation, or tenant-scoped product graph routes, route a context pass through `codex-sdk-harness-product` before concluding anything.
-4. Separate facts from assumptions.
-5. Build a small option set with concrete tradeoffs.
-6. Recommend one path.
-7. Ask at most one human-judgment question at a time when the repo cannot answer it.
-8. Convert the result into explicit `/planning-theorem` inputs.
-
-## Evidence Policy
-
-- Prefer live code over historical plans.
-- Prefer targeted file inspection over broad speculation.
-- When docs and code disagree, say so plainly.
-- If a claim is unverified, label it as `Assumption` or `Gap`.
-- If a term appears overloaded, define the competing meanings before continuing.
-
-## Repo Grounding Checklist
-
-Check whichever sources match the request:
-
-- Code paths, APIs, tests, and runtime flags
-- Active plans under `docs/plans/`
-- Durable navigation docs such as `docs/codebase-map.md`
-- Existing plugin or skill assets if the request is workflow-related
-- Codex harness product seams:
-  - `theorem-context-sdk/README.md`
-  - `theorem-context-sdk/theorem-context-ts/README.md`
-  - `theorem-context-sdk/theorem-context-ts/src/client.ts`
-  - `theorem-context-sdk/theorem-context-ts/src/product.ts`
-  - `theorem-context-sdk/theorem-context-py/README.md`
-  - `theorem-context-sdk/theorem-context-py/theorem_context/client.py`
-  - `theorem-context-sdk/theorem-context-py/theorem_context/product.py`
-
-## Interrogation Rules
-
-- Ask one question at a time only when the answer cannot be discovered locally.
+- Reframe the request in production terms before evaluating options.
+- Prefer live code over historical plans. When docs and code disagree, say so
+  plainly.
+- Separate facts from assumptions. Label `Assumption`, `Gap`, `Tension`,
+  `Decision` where the distinction matters.
+- Ask at most one human-judgment question at a time, and only when the answer
+  cannot be discovered locally.
 - Include a recommended answer with every user-facing question.
-- Resolve dependency order explicitly. Do not ask downstream questions before upstream decisions are settled.
-- Challenge convenience solutions that hide deferred work, operational risk, or validation gaps.
-- Call out "same words, different system" collisions, especially around "harness", "product", "runtime", "SDK", "context", and "canonical".
+- Resolve dependency order: upstream decisions first.
+- Challenge convenience solutions that hide deferred work or validation gaps.
 
-## Output Contract
+## Inputs
 
-Return a `Theorem Brief` in this shape:
+- a fuzzy user task ("we should probably...", "could we...", "what if...")
+- a contested design decision
+- a partial implementation that needs a frame check
+- a spec that contradicts the live code
+- a multi-option PRD that needs a recommendation
 
-```md
-# Theorem Brief: <title>
+## Workflow
 
-## Executive Summary
-- Current condition:
-- Intent:
-- Goal:
-- Why this matters now:
+1. Restate the current condition from source, tests, docs, and runtime seams.
+2. Identify intent, target outcome, and timing pressure.
+3. Inspect the narrowest relevant code/doc surface first.
+4. Build a small option set with concrete tradeoffs. Two real options is
+   enough; five fake ones is theater.
+5. Recommend one path. Name what would falsify the recommendation.
+6. Convert the result into a planning input (`/harness mode=plan`) or, if the
+   decision unlocks immediate action, a direct execution input
+   (`/harness mode=execute`).
 
-## Problem Shape
-- Known facts:
-- Unknowns:
-- Constraints:
-- Assumptions:
-- Tensions:
-- Failure modes:
+## Output
 
-## Options
-| Option | Description | Upside | Risk | Validation | Recommendation |
-|---|---|---|---|---|---|
+Right-size the deliverable:
 
-## Recommended Direction
-Explain the recommended path and why it dominates the alternatives.
+- Small clarifications: 2-4 sentences inline, no template.
+- Decisions worth preserving: a Theorem Brief using the full template in
+  `../../references/BRIEF_TEMPLATE.md`.
+- Decisions worth keeping forever: also `/encode` as `kind=solution` or
+  `kind=decision` with the rationale.
 
-## Decisions Resolved
-- Decision:
-  - Rationale:
-  - Evidence:
-  - Reversible? yes/no
-  - Should become ADR? yes/no
+The template is a tool, not a contract. Use only the sections the work needs.
 
-## Open Questions
-Only include questions that cannot be answered from code/docs.
+## Routing
 
-## Planning Inputs
-Concrete inputs to feed into `/planning-theorem`.
-```
+- SDK harness product questions → `codex-sdk-harness-product` before
+  concluding.
+- Redis/THG/product-state questions → `redis-harness-operator` /
+  `redis-product-safety` before locking.
+- Once decisions are resolved → `/harness mode=plan` or
+  `/harness mode=execute` with the brief as input.
+- If the topic is "what should I look at" rather than "what should I do" →
+  `/research` for direct fractal expansion.
 
-## Epistemic Labels
+## Anti-Patterns
 
-Use these labels where they add clarity:
-
-- `Claim`
-- `Evidence`
-- `Tension`
-- `Assumption`
-- `Gap`
-- `Decision`
-- `Method`
-- `Outcome`
-- `Revision`
-
-Consult `../../references/EPISTEMIC_PRIMITIVES.md` when the distinction matters.
-
-## Guardrails
-
-- Do not write an implementation plan unless the user asked for planning.
-- Do not present brainstormed options as accepted decisions.
-- Do not invent repo facts.
-- Do not hide unresolved conflict inside "recommended direction".
-- Do not skip SDK harness product grounding when the request touches those surfaces.
+- Producing five options with similar tradeoffs to look thorough. Two real
+  options beats five fake ones.
+- Hiding unresolved conflict inside "recommended direction."
+- Skipping repo grounding when the answer is one file away.
+- Treating theorize as a permanent loop. After the brief, route to plan or
+  execute.
+- Inventing repo facts. If a claim is unverified, label it `Assumption`.
+- Asking the user a question whose answer is in the codebase.
