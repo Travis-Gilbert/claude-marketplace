@@ -11,9 +11,14 @@ set -o pipefail
 # matches the Python and TypeScript SDKs' base_url contract.
 : "${THEOREM_CONTEXT_BASE_URL:=https://index-api-production-a5f7.up.railway.app/api/v2/theseus}"
 : "${THEOREM_CONTEXT_API_KEY:=}"
+: "${THEOREM_API_KEY:=}"
 : "${THEOREM_BUDGET_TOKENS:=4000}"
 : "${THEOREM_ACTION_RAIL:=record}"   # one of: record, enforce, off
 : "${THEOREM_DEBUG:=0}"
+
+if [ -z "${THEOREM_CONTEXT_API_KEY}" ] && [ -n "${THEOREM_API_KEY}" ]; then
+  THEOREM_CONTEXT_API_KEY="${THEOREM_API_KEY}"
+fi
 
 theorem_host() {
   if [ -n "${PLUGIN_ROOT:-}" ]; then
@@ -93,6 +98,40 @@ theorem_resolve_cwd() {
     return
   fi
   printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}"
+}
+
+theorem_repo_root() {
+  local stdin_blob="${1:-}"
+  local cwd
+  cwd=$(theorem_resolve_cwd "$stdin_blob")
+  git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$cwd"
+}
+
+theorem_repo_label() {
+  local repo_root="$1"
+  basename "$repo_root"
+}
+
+theorem_git_branch() {
+  local repo_root="$1"
+  git -C "$repo_root" rev-parse --abbrev-ref HEAD 2>/dev/null || printf ''
+}
+
+theorem_git_head() {
+  local repo_root="$1"
+  git -C "$repo_root" rev-parse HEAD 2>/dev/null || printf ''
+}
+
+theorem_changed_files_json() {
+  local repo_root="$1"
+  if ! git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf '[]'
+    return
+  fi
+  git -C "$repo_root" status --porcelain 2>/dev/null \
+    | awk '{print $NF}' \
+    | jq -R . \
+    | jq -s '.[0:50]' 2>/dev/null || printf '[]'
 }
 
 theorem_state_dir() {

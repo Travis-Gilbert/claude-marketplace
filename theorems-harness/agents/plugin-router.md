@@ -19,7 +19,7 @@ which harness abilities make the next slice safer and more effective.
 - current context artifact or continuity pack
 - task risk and blast radius
 - available plugins, skills, agents, and MCP tools
-- active peer agents, mentions, or overlapping file claims
+- active peer agents, room digest state, mentions, or overlapping file claims
 - prior validation results or failed attempts
 - Redis/THG/product/SDK/deploy impact
 
@@ -60,7 +60,9 @@ Return a concise `Capability Router Brief`:
 ## Routing Rules
 
 - Use `coordinate` when another agent may overlap the repo, branch, task, or
-  files. Prefer file-level claims over broad lane ownership.
+  files. Prefer `coordination_intent` file-level claims and
+  `coordination_reflection` handoff state over broad lane ownership or message
+  handshakes.
 - Use `compile_context` when the context artifact is missing, stale, or too
   narrow for the task.
 - Use `theorize` briefly when multiple viable approaches exist and the wrong

@@ -12,7 +12,7 @@ narrow entrypoints, but they are not separate products.
 |---|---|---|---|
 | `theorems-harness` | Default adaptive command | Owns observe, route, plan, coordinate, delegate, execute, validate, report, learn | Canonical |
 | `context-refresh` | Public utility command | Calls `orchestrate_refresh` when an injected artifact is stale | Keep available |
-| `harness-coordinate` | Public utility command | Teaches heartbeat, @mentions, wait, and handoff protocol | Keep available |
+| `harness-coordinate` | Public utility command | Teaches room digest, intent/reflection writes, presence, @mentions-as-interrupts, waits, and handoff protocol | Keep available |
 | `peer-review` | Public and agent-triggerable command | Requests cross-frontier-model review before commit, PR, or launch-ready reporting | Keep available |
 | `research` | Public utility command | Runs fractal expansion, gap-frontier discovery, and code-symbol discovery | Keep available |
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |

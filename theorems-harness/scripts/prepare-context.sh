@@ -25,7 +25,11 @@ sid=$(theorem_session_id "$input")
 prompt=$(theorem_jq "$input" '.prompt')
 cwd=$(theorem_resolve_cwd "$input")
 THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
-actor=$(theorem_host)
+actor="${THEOREM_ACTOR:-$(theorem_host)}"
+repo_root=$(theorem_repo_root "$input")
+repo_label=$(theorem_repo_label "$repo_root")
+branch=$(theorem_git_branch "$repo_root")
+changed_files_json=$(theorem_changed_files_json "$repo_root")
 
 # Skip preflight on trivial prompts (acks, single-word replies).
 trimmed=$(echo "$prompt" | tr -d '[:space:]')
@@ -34,6 +38,26 @@ if [ "${#trimmed}" -lt 12 ]; then
   printf '{"continue":true}\n'
   exit 0
 fi
+
+# Broadcast current intent into the room substrate. This is deliberately
+# fail-open: prompt handling should not depend on coordination storage.
+intent_body=$(jq -n \
+  --arg actor "$actor" \
+  --arg repo "$repo_label" \
+  --arg branch "$branch" \
+  --arg task "$prompt" \
+  --argjson claimed_files "$changed_files_json" \
+  '{
+    actor: $actor,
+    repo: $repo,
+    branch: $branch,
+    task: $task,
+    summary: $task,
+    status: "working",
+    claimed_files: $claimed_files,
+    expected_completion: "end of current model turn"
+  }')
+theorem_post "/harness/coordination/intent/" "$intent_body" "$sid" >/dev/null 2>&1 || true
 
 # Ensure we have a run id; if SessionStart didn't fire, begin lazily.
 run_id=$(theorem_run_id "$sid")

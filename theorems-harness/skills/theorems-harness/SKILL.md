@@ -122,6 +122,10 @@ should prefer `/harness` plus adaptive routing.
 | `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
 | `encode` | Record feedback, solutions, and postmortems with outcome metadata. |
 | `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
+| `coordination_intent` | Write the live file/subsystem claim peers read at SessionStart. |
+| `coordination_reflection` | Write turn-end working memory for the next agent. |
+| `coordination_decision` | Preserve a room-scoped choice with rationale. |
+| `coordination_tension` | Surface a structural disagreement without blocking peer work. |
 | `coordinate` | Append a coordination message and queue actor mentions. |
 | `mentions` / `mentions_wait` | Load, consume, or briefly wait for pending mentions. |
 | `presence` | Refresh, end, or read short-TTL actor presence. |
@@ -150,16 +154,20 @@ For multi-agent work, coordination is a lightweight safety layer:
 - Heartbeat presence.
 - Join or inspect the durable coordination room when a shared task has more than
   a one-off packet.
-- Subscribe to the shared repo/task channel.
-- Consume mentions before overlapping edits.
-- Send `coordinate` messages with stable `@actor` mentions and file/worktree
-  metadata.
+- Read the SessionStart digest and write `coordination_intent` for the immediate
+  files or subsystem before overlapping edits.
+- Subscribe to the shared repo/task channel and consume pending interrupts.
+- Send `coordinate` messages with stable `@actor` mentions only for interrupts,
+  review requests, or asks that affect the next immediate action.
+- Write `coordination_reflection`, `coordination_decision`, or
+  `coordination_tension` when the next agent should inherit working memory,
+  rationale, or a visible disagreement.
 - Wait briefly only when a response is useful now.
 - Prefer shared goals and file-level claims over rigid global lane ownership.
 
-The durable model is membership plus liveness plus inbox plus continuity:
-coordination rooms and continuity packs survive agent sleep; pending mentions
-survive missed turns; short-TTL presence only says who is fresh.
+The durable model is room digest plus interrupt mailbox: membership, intents,
+reflections, decisions, tensions, events, continuity packs, and pending mentions
+survive agent sleep; short-TTL presence only says who is fresh.
 
 ## Output Discipline
 
@@ -186,5 +194,5 @@ survive missed turns; short-TTL presence only says who is fresh.
 - Treating `/harness mode=execute` as permission to skip design when a third
   workaround appears.
 - Reporting hook or route success as product success without runtime evidence.
-- Using strict file lanes where file-level claims and peer review would be safer
-  and faster.
+- Using strict file lanes or message handshakes where shared intent records,
+  file-level claims, and peer review would be safer and faster.

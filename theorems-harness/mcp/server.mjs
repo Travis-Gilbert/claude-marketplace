@@ -10,8 +10,8 @@
 //     exists without dropping to raw HTTP
 //   - code_search / harness_fractal_expansion: direct code discovery and
 //     research-mode expansion without dropping to raw HTTP
-//   - encode / mentions_wait: high-signal memory capture and ping-like
-//     cross-agent coordination over the shared harness substrate
+//   - coordination_* / mentions_wait: shared room state plus ping-like
+//     interrupts over the harness substrate
 //
 // Deliberately bounded surface. The fat Theseus MCP at theseus-mcp-production
 // is registered separately in plugin.json for Mode 3 power-user access.
@@ -32,7 +32,10 @@ const BASE_URL =
   process.env.THEOREM_CONTEXT_BASE_URL ||
   "https://index-api-production-a5f7.up.railway.app/api/v2/theseus";
 const API_ROOT = BASE_URL.replace(/\/theseus\/?$/, "");
-const API_KEY = process.env.THEOREM_CONTEXT_API_KEY || "";
+const API_KEY =
+  process.env.THEOREM_CONTEXT_API_KEY ||
+  process.env.THEOREM_API_KEY ||
+  "";
 const THG_BASE_URL =
   process.env.RUSTYRED_THG_BASE_URL ||
   process.env.THEOREMS_HARNESS_THG_BASE_URL ||
@@ -49,9 +52,32 @@ const THG_WRITE_MODE = (
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const STATE_DIR = join(PROJECT_DIR, ".theorem");
 
+function hostActor() {
+  const explicit = String(
+    process.env.THEOREM_ACTOR ||
+    process.env.THEOREM_PEER_REVIEW_ACTOR ||
+    ""
+  ).trim();
+  if (explicit) return explicit;
+  if (
+    process.env.PLUGIN_ROOT ||
+    process.env.CODEX_HOME ||
+    process.env.CODEX_SESSION_ID
+  ) {
+    return "codex";
+  }
+  return "claude-code";
+}
+
+function toolActor(args = {}) {
+  return String(args?.actor || hostActor()).trim() || null;
+}
+
 function sessionKey() {
+  const actor = hostActor();
+  const prefix = actor === "codex" ? "codex" : "claude";
   const cwdHash = createHash("sha1").update(PROJECT_DIR).digest("hex").slice(0, 8);
-  return `claude:${userInfo().username}@${hostname().split(".")[0]}:${cwdHash}`;
+  return `${prefix}:${userInfo().username}@${hostname().split(".")[0]}:${cwdHash}`;
 }
 
 function currentRunId() {
@@ -180,25 +206,56 @@ function jsonText(value) {
   };
 }
 
+function normalizeTenantSlug(value) {
+  const tenant = String(value || "").trim();
+  if (!tenant || tenant.toLowerCase() === "public") return null;
+  return tenant;
+}
+
 function tenantId(args) {
-  const value = String(
+  return normalizeTenantSlug(
     args?.tenant_slug ||
     process.env.THEOREMS_HARNESS_TENANT ||
     process.env.RUSTYRED_THG_TENANT ||
+    process.env.THEOREM_CONTEXT_TENANT_SLUG ||
     process.env.THEOREM_TENANT_SLUG ||
     ""
-  ).trim();
-  return value || null;
+  );
 }
 
 function requiredTenantId(args) {
   const tenant = tenantId(args);
   if (!tenant) {
     throw new Error(
-      "tenant_slug is required for direct RustyRed tenant calls; no tenant env fallback is configured."
+      "tenant_slug is required for direct RustyRed tenant calls; no product tenant env fallback is configured."
     );
   }
   return tenant;
+}
+
+let bootstrapTenantPromise = null;
+
+async function defaultTenantSlugFromBootstrap() {
+  if (!API_KEY) return null;
+  if (!bootstrapTenantPromise) {
+    bootstrapTenantPromise = theoremGet("/product/bootstrap/")
+      .then((result) => {
+        const direct = normalizeTenantSlug(result?.default_tenant_slug);
+        if (direct) return direct;
+        const firstTenant = Array.isArray(result?.tenants) ? result.tenants[0] : null;
+        return normalizeTenantSlug(firstTenant?.slug);
+      })
+      .catch(() => null);
+  }
+  return bootstrapTenantPromise;
+}
+
+async function mirrorTenantId(args) {
+  return tenantId(args) || (await defaultTenantSlugFromBootstrap());
+}
+
+async function requestTenantSlug(args) {
+  return tenantId(args) || (await defaultTenantSlugFromBootstrap());
 }
 
 function gitOutput(args) {
@@ -264,6 +321,16 @@ function requestIdentity(args = {}) {
   };
 }
 
+function coordinationScope(args = {}) {
+  const identity = requestIdentity(args);
+  return {
+    room_id: args?.room_id ?? null,
+    repo: args?.repo ?? identity.worktree,
+    branch: identity.branch,
+    task: args?.task ?? null,
+  };
+}
+
 function stableNodeId(kind, tenant, seed) {
   const digest = createHash("sha1")
     .update(JSON.stringify({ kind, tenant, seed }))
@@ -280,7 +347,7 @@ function parseMentions(message) {
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`[^`\n]*`/g, " ");
   for (const match of source.matchAll(re)) {
-    const actor = String(match[1] || "").trim();
+    const actor = String(match[1] || "").trim().replace(/[.,:;!?]+$/g, "");
     if (!actor || seen.has(actor)) continue;
     seen.add(actor);
     mentions.push(actor);
@@ -292,24 +359,32 @@ async function mirrorHarnessNode(kind, args, properties, labels = []) {
   if (THG_WRITE_MODE === "off" || THG_WRITE_MODE === "0" || THG_WRITE_MODE === "false") {
     return null;
   }
-  const tenant = tenantId(args);
+  const tenant = await mirrorTenantId(args);
   if (!tenant) {
     return {
       ok: false,
       skipped: true,
       error: "tenant_unresolved_for_direct_thg_mirror",
+      attempted_sources: [
+        "tenant_slug",
+        "THEOREMS_HARNESS_TENANT",
+        "RUSTYRED_THG_TENANT",
+        "THEOREM_CONTEXT_TENANT_SLUG",
+        "THEOREM_TENANT_SLUG",
+        "product_bootstrap.default_tenant_slug",
+      ],
     };
   }
   const node = {
     id: stableNodeId(kind, tenant, properties),
     labels: ["TheoremsHarness", ...labels],
     properties: {
+      ...properties,
       tenant_slug: tenant,
       harness_kind: kind,
       project_dir: PROJECT_DIR,
       session_key: sessionKey(),
       captured_at: new Date().toISOString(),
-      ...properties,
     },
   };
   try {
@@ -463,7 +538,7 @@ function selectHarnessRoute(args = {}) {
   const selectedMode = routeModeFromCapabilities(capabilities, requestedMode);
   const firstActions = [];
   if (capabilities.includes("coordinate")) {
-    firstActions.push("Join or inspect the coordination room, heartbeat presence, subscribe to the mention channel, and consume mentions before overlapping edits.");
+    firstActions.push("Inspect the room digest, write a coordination_intent for the immediate files, heartbeat presence, then use mentions only for interrupts or review requests.");
   }
   if (capabilities.includes("compile_context")) {
     firstActions.push("Refresh or inspect the Context Artifact before relying on older run state.");
@@ -849,9 +924,111 @@ const TOOLS = [
     },
   },
   {
+    name: "coordination_intent",
+    description:
+      "Write this actor's live room intent. Prefer this over a broad lane claim: it tells peers what files or subsystem you are touching now.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        room_id: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        summary: { type: "string" },
+        status: {
+          type: "string",
+          enum: ["working", "paused", "done"],
+          default: "working",
+        },
+        claimed_files: { type: "array", items: { type: "string" } },
+        expected_completion: { type: "string" },
+      },
+      required: ["summary"],
+    },
+  },
+  {
+    name: "coordination_reflection",
+    description:
+      "Write this actor's working-memory reflection for peers to read at their next SessionStart.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        room_id: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        summary: { type: "string" },
+        assumptions: { type: "array", items: { type: "string" } },
+        open_questions: { type: "array", items: { type: "string" } },
+        pointers: { type: "array", items: { type: "string" } },
+      },
+      required: ["summary"],
+    },
+  },
+  {
+    name: "coordination_decision",
+    description:
+      "Append a room-scoped decision with rationale so future agents inherit the choice without relitigating it.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        room_id: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        title: { type: "string" },
+        choice: { type: "string" },
+        rationale: { type: "string" },
+        alternatives_considered: { type: "array", items: { type: "string" } },
+        caused_by: { type: "array", items: { type: "string" } },
+        supersedes: { type: "array", items: { type: "string" } },
+        decision_id: { type: "string" },
+      },
+      required: ["title", "choice"],
+    },
+  },
+  {
+    name: "coordination_tension",
+    description:
+      "Open, resolve, or escalate a visible disagreement. Tensions surface forks without blocking the other actor's work.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        room_id: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        action: {
+          type: "string",
+          enum: ["open", "resolve", "escalate"],
+          default: "open",
+        },
+        title: { type: "string" },
+        observed: { type: "string" },
+        disagreement: { type: "string" },
+        proposed_alternative: { type: "string" },
+        tension_id: { type: "string" },
+        status: {
+          type: "string",
+          enum: ["resolved", "escalated"],
+          default: "resolved",
+        },
+        resolved_by_decision_id: { type: "string" },
+      },
+    },
+  },
+  {
     name: "coordinate",
     description:
-      "Append a cross-agent coordination message and queue @mentions for target agents.",
+      "Append a cross-agent coordination message and queue @mentions for target agents. Use this for interrupts, review requests, and true asks; use coordination_intent/reflection for normal shared-state handoff.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1418,7 +1595,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "self_note") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
+        tenant_slug: await requestTenantSlug(args),
         title: args?.title ?? null,
         content: requireString(args, "content"),
         kind: args?.kind ?? "self_note",
@@ -1439,7 +1616,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "self_revise") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
+        tenant_slug: await requestTenantSlug(args),
         doc_id: requireString(args, "doc_id"),
         content: requireString(args, "content"),
         title: args?.title ?? null,
@@ -1461,7 +1638,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "self_archive") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
+        tenant_slug: await requestTenantSlug(args),
         doc_id: requireString(args, "doc_id"),
         reason: args?.reason ?? "",
         title: args?.title ?? null,
@@ -1478,9 +1655,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "self_recall_archive") {
       const result = await theoremPost("/harness/memory/self-recall-archive/", {
-        tenant_slug: args?.tenant_slug ?? null,
+        tenant_slug: await requestTenantSlug(args),
         query: args?.query ?? "",
-        actor: args?.actor ?? null,
+        actor: toolActor(args),
         limit: args?.limit ?? 10,
       });
       return jsonText(result);
@@ -1505,7 +1682,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "remember") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
+        tenant_slug: await requestTenantSlug(args),
         title: args?.title ?? null,
         content: requireString(args, "content"),
         kind: "remember",
@@ -1543,7 +1720,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "encode") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
+        tenant_slug: await requestTenantSlug(args),
         title: args?.title ?? null,
         content: requireString(args, "content"),
         kind: args?.kind ?? "encode",
@@ -1570,10 +1747,97 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(withThgMirror(result, mirror));
     }
 
+    if (name === "coordination_intent") {
+      const body = {
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
+        ...coordinationScope(args),
+        summary: requireString(args, "summary"),
+        status: args?.status ?? "working",
+        claimed_files: args?.claimed_files ?? requestIdentity(args).changed_files,
+        expected_completion: args?.expected_completion ?? "",
+      };
+      const mirror = await mirrorHarnessNode(
+        "coordination_intent",
+        args,
+        body,
+        ["CoordinationIntent"]
+      );
+      const result = await theoremPost("/harness/coordination/intent/", body);
+      return jsonText(withThgMirror(result, mirror));
+    }
+
+    if (name === "coordination_reflection") {
+      const body = {
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
+        ...coordinationScope(args),
+        summary: requireString(args, "summary"),
+        assumptions: args?.assumptions ?? [],
+        open_questions: args?.open_questions ?? [],
+        pointers: args?.pointers ?? [],
+      };
+      const mirror = await mirrorHarnessNode(
+        "coordination_reflection",
+        args,
+        body,
+        ["CoordinationReflection"]
+      );
+      const result = await theoremPost("/harness/coordination/reflection/", body);
+      return jsonText(withThgMirror(result, mirror));
+    }
+
+    if (name === "coordination_decision") {
+      const body = {
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
+        ...coordinationScope(args),
+        title: requireString(args, "title"),
+        choice: requireString(args, "choice"),
+        rationale: args?.rationale ?? "",
+        alternatives_considered: args?.alternatives_considered ?? [],
+        caused_by: args?.caused_by ?? [],
+        supersedes: args?.supersedes ?? [],
+        decision_id: args?.decision_id ?? null,
+      };
+      const mirror = await mirrorHarnessNode(
+        "coordination_decision",
+        args,
+        body,
+        ["CoordinationDecision"]
+      );
+      const result = await theoremPost("/harness/coordination/decision/", body);
+      return jsonText(withThgMirror(result, mirror));
+    }
+
+    if (name === "coordination_tension") {
+      const body = {
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
+        ...coordinationScope(args),
+        action: args?.action ?? "open",
+        title: args?.title ?? "",
+        observed: args?.observed ?? "",
+        disagreement: args?.disagreement ?? "",
+        proposed_alternative: args?.proposed_alternative ?? "",
+        tension_id: args?.tension_id ?? null,
+        status: args?.status ?? "resolved",
+        resolved_by_decision_id: args?.resolved_by_decision_id ?? "",
+      };
+      const mirror = await mirrorHarnessNode(
+        "coordination_tension",
+        args,
+        body,
+        ["CoordinationTension"]
+      );
+      const result = await theoremPost("/harness/coordination/tension/", body);
+      return jsonText(withThgMirror(result, mirror));
+    }
+
     if (name === "coordinate") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
-        actor: args?.actor ?? null,
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
         doc_id: args?.doc_id ?? null,
         message: requireString(args, "message"),
         urgency: args?.urgency ?? "info",
@@ -1598,8 +1862,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     if (name === "mentions") {
       const identity = requestIdentity(args);
       const result = await theoremPost("/harness/mentions/", {
-        tenant_slug: args?.tenant_slug ?? null,
-        actor: args?.actor ?? null,
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
         limit: args?.limit ?? 20,
         consume: args?.consume === true,
         ...identity,
@@ -1614,8 +1878,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       const result = await theoremPost(
         "/harness/mentions/wait/",
         {
-          tenant_slug: args?.tenant_slug ?? null,
-          actor: args?.actor ?? null,
+          tenant_slug: await requestTenantSlug(args),
+          actor: toolActor(args),
           limit: args?.limit ?? 20,
           consume: args?.consume === true,
           timeout_seconds: args?.timeout_seconds ?? 30,
@@ -1631,8 +1895,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       const identity = requestIdentity(args);
       if (args?.mode === "end") {
         const body = {
-          tenant_slug: args?.tenant_slug ?? null,
-          actor: args?.actor ?? null,
+          tenant_slug: await requestTenantSlug(args),
+          actor: toolActor(args),
           session_id: identity.session_id,
           surface: args?.surface ?? null,
           worktree: identity.worktree,
@@ -1652,9 +1916,11 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         );
         return jsonText(withThgMirror(result, mirror));
       }
+      const tenantSlug = await requestTenantSlug(args);
+      const actor = toolActor(args);
       const result = await theoremPost("/harness/presence/", {
-        tenant_slug: args?.tenant_slug ?? null,
-        actor: args?.actor ?? null,
+        tenant_slug: tenantSlug,
+        actor,
         session_id: identity.session_id,
         surface: args?.surface ?? null,
         worktree: identity.worktree,
@@ -1669,8 +1935,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         "presence",
         args,
         {
-          tenant_slug: args?.tenant_slug ?? null,
-          actor: args?.actor ?? null,
+          tenant_slug: tenantSlug,
+          actor,
           session_id: identity.session_id,
           surface: args?.surface ?? null,
           worktree: identity.worktree,
@@ -1690,8 +1956,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     if (name === "coordination_room") {
       const identity = requestIdentity(args);
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
-        actor: args?.actor ?? null,
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
         action: args?.action ?? "join",
         room_id: args?.room_id ?? null,
         session_id: identity.session_id,
@@ -1716,8 +1982,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 
     if (name === "subscribe") {
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
-        actor: args?.actor ?? null,
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
         doc_id: args?.doc_id ?? null,
       };
       const mirror = await mirrorHarnessNode(
@@ -1733,8 +1999,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     if (name === "continuity_pack") {
       const identity = requestIdentity(args);
       const body = {
-        tenant_slug: args?.tenant_slug ?? null,
-        actor: args?.actor ?? null,
+        tenant_slug: await requestTenantSlug(args),
+        actor: toolActor(args),
         room_id: args?.room_id ?? null,
         session_id: identity.session_id,
         surface: args?.surface ?? null,

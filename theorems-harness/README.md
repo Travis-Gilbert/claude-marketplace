@@ -52,11 +52,11 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 
 | Path | Purpose |
 |---|---|
-| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run and loads codebase/coordination context; UserPromptSubmit prepares context and suggests subagents; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
+| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run and loads codebase/coordination context; UserPromptSubmit writes live coordination intent, prepares context, and suggests subagents; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop writes a coordination reflection, then Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
 | `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
-| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes adaptive route selection (`harness_route`), context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordination_room`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
+| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes adaptive route selection (`harness_route`), context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordination_room`, `coordination_intent`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
 
 The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
 
@@ -65,7 +65,7 @@ The slim MCP advertises these launch-facing tools through `listTools`:
 - Context and runs: `harness_route`, `context_compile`, `orchestrate_refresh`, `harness_replay`, `harness_describe_current`
 - Code and research: `code_search`, `code_crawl`, `harness_fractal_expansion`, `fractal_expand`
 - Pairformer/graph readiness: `instant_kg_status`, `instant_kg_reingest`, `provenance_trace`
-- Coordination: `coordination_room`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
+- Coordination: `coordination_room`, `coordination_intent`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
 - Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 - Product/domain operations: `product_bootstrap`, `saved_contexts_list`, `saved_context_create`, `saved_context_update`, `saved_context_mute`, `saved_context_activate`, `saved_context_delete`, `saved_context_preview_recall`, `memory_patch_review_queue`, `memory_patch_review_update`, `domain_list`, `domain_install`
 
@@ -83,7 +83,9 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | Env var | Default | Purpose |
 |---|---|---|
 | `THEOREM_CONTEXT_BASE_URL` | `https://index-api-production-a5f7.up.railway.app/api/v2/theseus` | HTTP API base (must include `/api/v2/theseus`) |
-| `THEOREM_CONTEXT_API_KEY` | empty | Bearer token; required to reach `/context/compile/` (PPR-compiled artifact). Without it, the hook falls back to internal prepare planning data. |
+| `THEOREM_CONTEXT_API_KEY` / `THEOREM_API_KEY` | empty | Bearer token; `THEOREM_API_KEY` is the public product alias and is accepted anywhere `THEOREM_CONTEXT_API_KEY` is accepted. Required to reach authenticated product and context routes. |
+| `THEOREM_CONTEXT_TENANT_SLUG` / `THEOREM_TENANT_SLUG` | inferred | Optional product tenant override for direct RustyRed-THG mirrors. If unset, the MCP server infers the API-key tenant from `product_bootstrap.default_tenant_slug`; `public` is ignored because it is a THG default, not a product tenant. |
+| `THEOREM_ACTOR` | host actor | Optional actor override for MCP coordination tools. When omitted, the MCP server defaults to `codex` in Codex-hosted plugin runs and `claude-code` otherwise, so mention reads do not fall back to the API-key actor. |
 | `THEOREMS_HARNESS_THG_WRITES` | `mirror` | `mirror`, `primary`, or `off` for direct RustyRed-THG graph writes from the slim MCP memory/coordination tools. |
 | `THEOREMS_HARNESS_THG_BASE_URL` | `https://thg-product-production.up.railway.app` | RustyRed-THG product base URL for direct graph mirrors. |
 | `THEOREMS_HARNESS_THG_API_TOKEN` | empty | Optional Bearer token for RustyRed-THG direct graph mirrors. |
@@ -138,6 +140,10 @@ plugin_hooks = true
 - `POST /api/v2/theseus/harness/encode/` (record feedback, solutions, and postmortems with fitness telemetry)
 - `POST /api/v2/theseus/harness/coordinate/` (append coordination message and queue mentions)
 - `POST /api/v2/theseus/harness/coordination/room/` (join/read/control durable coordination room membership)
+- `POST /api/v2/theseus/harness/coordination/intent/` (write live per-actor intent / immediate file claim)
+- `POST /api/v2/theseus/harness/coordination/reflection/` (write turn-end working memory for the room digest)
+- `POST /api/v2/theseus/harness/coordination/decision/` (append room-scoped choice and rationale)
+- `POST /api/v2/theseus/harness/coordination/tension/` (open, resolve, or escalate visible disagreement)
 - `POST /api/v2/theseus/harness/mentions/` (load or consume pending mentions)
 - `POST /api/v2/theseus/harness/mentions/wait/` (block briefly until mentions arrive)
 - `POST /api/v2/theseus/harness/presence/` (refresh or read actor presence)

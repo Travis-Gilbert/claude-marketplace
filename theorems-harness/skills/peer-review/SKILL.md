@@ -141,12 +141,13 @@ Do not pre-assign strict file lanes unless the repo or human explicitly needs
 that safety. The preferred pattern is:
 
 1. Shared goal.
-2. Presence plus inbox check.
-3. Claim only the immediate files you are about to touch.
+2. Room digest plus inbox check.
+3. Claim only the immediate files you are about to touch with
+   `coordination_intent`.
 4. Review each other's diff before commit.
 
-Strict lanes can prevent useful negotiation. Peer review makes loose
-coordination safe enough to move quickly.
+Strict lanes and message handshakes can prevent useful negotiation. Intent
+records plus peer review make loose coordination safe enough to move quickly.
 
 ## Review Packet Shape
 

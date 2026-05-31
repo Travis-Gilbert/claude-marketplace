@@ -11,7 +11,7 @@ revise that choice as evidence changes.
 |---|---|
 | `/harness` / `theorems-harness` | Default opt-in. The agent observes, routes, acts, validates, remembers, and reports through the harness. |
 | `/context-refresh` | Narrow context artifact refresh. |
-| `/coordinate` | Presence, mentions, waits, and handoffs. |
+| `/coordinate` | Room digest, intent/reflection writes, presence, mentions, waits, and handoffs. |
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
 | `/encode` | Durable feedback, solution, or postmortem write. |
