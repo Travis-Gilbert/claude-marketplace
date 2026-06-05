@@ -1733,7 +1733,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.4.1" },
+  { name: "theorems-harness", version: "0.4.2" },
   { capabilities: { tools: {} } }
 );
 

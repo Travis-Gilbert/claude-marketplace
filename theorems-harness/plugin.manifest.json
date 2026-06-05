@@ -2,7 +2,7 @@
   "schema_version": 1,
   "plugin": {
     "name": "theorems-harness",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
     "author": {
       "name": "Travis Gilbert"
@@ -43,7 +43,6 @@
     "claude": {
       "output": ".claude-plugin/plugin.json",
       "manifest": {
-        "hooks": "./hooks/hooks.json",
         "mcpServers": {
           "theorems-harness": {
             "command": "node",
