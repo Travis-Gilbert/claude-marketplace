@@ -26,7 +26,7 @@ encode durable lessons only when they are high signal.
 | Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, and `/compute_code` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
 | Slim MCP | Local tool bus for adaptive routing, refresh, replay, memory, encode, and coordination |
-| Remote MCPs | Theseus for ML/search/control-plane work; RustyRed-THG for hot graph reads and algorithms |
+| Remote MCPs | Theorem-side RustyRed MCP for native graph reads, algorithms, search, harness coordination, memory, and event-log surfaces, reached through a Claude-compatible local proxy |
 | SDK | Typed client library used by hooks, scripts, and MCP wrappers; not a separate user-facing command layer |
 
 The older `theorem-context-sdk/claude-code` plugin is legacy host-adapter
@@ -56,15 +56,17 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 | `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
-| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes adaptive route selection (`harness_route`), context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordination_room`, `coordination_intent`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
+| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes adaptive route selection (`harness_route`), context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, native skill-pack tools (`skill_list`, `skill_get`, `skill_publish`, `skill_apply`), domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordination_room`, `coordination_intent`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`), memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
+| `mcp/rustyred-theorem-proxy.mjs` | Claude compatibility shim for the Theorem-side RustyRed MCP. It forwards tool calls to `rustyredcore-theorem-production.up.railway.app/mcp` and normalizes top-level schema combinators during `tools/list`. |
 
-The `mcpServers` field in `.claude-plugin/plugin.json` registers both this slim MCP and the fat Theseus MCP at `theseus-mcp-production.up.railway.app/mcp` (Mode 3 power-user surface, ~50 tools).
+The `mcpServers` field in `.claude-plugin/plugin.json` registers this slim MCP plus a local `rustyred-thg` proxy for the Theorem-side RustyRed MCP at `rustyredcore-theorem-production.up.railway.app/mcp`. The old Theseus MCP is intentionally not registered by the Claude host manifest; product/context HTTP routes still use `THEOREM_CONTEXT_BASE_URL`.
 
 The slim MCP advertises these launch-facing tools through `listTools`:
 
 - Context and runs: `harness_route`, `context_compile`, `orchestrate_refresh`, `harness_replay`, `harness_describe_current`
 - Code and research: `code_search`, `code_crawl`, `harness_fractal_expansion`, `fractal_expand`
 - Pairformer/graph readiness: `instant_kg_status`, `instant_kg_reingest`, `provenance_trace`
+- Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
 - Coordination: `coordination_room`, `coordination_intent`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
 - Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 - Product/domain operations: `product_bootstrap`, `saved_contexts_list`, `saved_context_create`, `saved_context_update`, `saved_context_mute`, `saved_context_activate`, `saved_context_delete`, `saved_context_preview_recall`, `memory_patch_review_queue`, `memory_patch_review_update`, `domain_list`, `domain_install`
@@ -85,10 +87,13 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | `THEOREM_CONTEXT_BASE_URL` | `https://index-api-production-a5f7.up.railway.app/api/v2/theseus` | HTTP API base (must include `/api/v2/theseus`) |
 | `THEOREM_CONTEXT_API_KEY` / `THEOREM_API_KEY` | empty | Bearer token; `THEOREM_API_KEY` is the public product alias and is accepted anywhere `THEOREM_CONTEXT_API_KEY` is accepted. Required to reach authenticated product and context routes. |
 | `THEOREM_CONTEXT_TENANT_SLUG` / `THEOREM_TENANT_SLUG` | inferred | Optional product tenant override for direct RustyRed-THG mirrors. If unset, the MCP server infers the API-key tenant from `product_bootstrap.default_tenant_slug`; `public` is ignored because it is a THG default, not a product tenant. |
+| `THEOREM_HARNESS_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Primary native Theorem RustyRed MCP used by the slim MCP route policy for memory, coordination, run, and skill-pack capability calls. |
+| `THEOREM_HARNESS_API_TOKEN` | empty | Optional Bearer token for native Theorem RustyRed MCP writes. |
 | `THEOREM_ACTOR` | host actor | Optional actor override for MCP coordination tools. When omitted, the MCP server defaults to `codex` in Codex-hosted plugin runs and `claude-code` otherwise, so mention reads do not fall back to the API-key actor. |
 | `THEOREMS_HARNESS_THG_WRITES` | `mirror` | `mirror`, `primary`, or `off` for direct RustyRed-THG graph writes from the slim MCP memory/coordination tools. |
-| `THEOREMS_HARNESS_THG_BASE_URL` | `https://thg-product-production.up.railway.app` | RustyRed-THG product base URL for direct graph mirrors. |
+| `THEOREMS_HARNESS_THG_BASE_URL` | `https://thg-product-production.up.railway.app` | RustyRed-THG product REST base URL for direct graph mirrors. This remains separate from the Claude remote MCP registration. |
 | `THEOREMS_HARNESS_THG_API_TOKEN` | empty | Optional Bearer token for RustyRed-THG direct graph mirrors. |
+| `THEOREMS_HARNESS_RUSTYRED_MCP_URL` / `RUSTYRED_THG_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Theorem-side RustyRed MCP URL used by the Claude compatibility proxy. |
 | `THEOREM_BUDGET_TOKENS` | `4000` | Default Context Artifact budget |
 | `THEOREM_ACTION_RAIL` | `record` | One of `off`, `record`, `enforce` |
 | `THEOREM_DEBUG` | `0` | Set to `1` to log hook activity to stderr |

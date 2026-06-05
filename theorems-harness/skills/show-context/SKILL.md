@@ -39,16 +39,16 @@ Context Artifact is currently active for the run). This is the trust lens for
 
 - The user asked what they themselves wrote earlier. That's transcript
   history, not artifact content.
-- The user wants the live knowledge graph state. Use the Theseus MCP
-  (`mcp__theseus__*` tools) instead.
+- The user wants the live knowledge graph state. Use the Theorem-side RustyRed
+  MCP (`mcp__rustyred-thg__*` tools) instead.
 - The user wants the prior-run timeline. Use the `replay-last-run` skill or
   call `harness_replay` directly.
 
 ## Related tools
 
-- `/context-refresh` — recompile the artifact for a new or revised task
+- `/context-refresh`: recompile the artifact for a new or revised task
   without running the full `/harness` workflow.
-- `harness_context` — compile a Context Artifact from a specific run with
+- `harness_context`: compile a Context Artifact from a specific run with
   explicit task and budget arguments (programmatic equivalent of
   `prepare-context.sh`).
-- `replay-last-run` — see the event timeline that produced this artifact.
+- `replay-last-run`: see the event timeline that produced this artifact.

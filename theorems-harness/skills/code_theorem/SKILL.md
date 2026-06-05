@@ -43,8 +43,8 @@ Not for: single-line lookups (use `Grep`), simple file reads (use `Read`), or pu
 
 For "tell me about code area X":
 
-1. `code_status` — what does Theseus already know? Cached spec, prior postmortems, recent ingestion?
-2. `code_context` — pull the relevant slice (file + neighbors + relevant claims/tensions).
+1. `code_status`: what does Theseus already know? Cached spec, prior postmortems, recent ingestion?
+2. `code_context`: pull the relevant slice (file + neighbors + relevant claims/tensions).
 3. If user asks "what does it do": `code_explain`.
 4. If user asks "what changes if I touch it": `code_impact` + `code_correlate`.
 5. If user asks "what flows through it": `code_processes`.
@@ -62,10 +62,10 @@ For "tell me about code area X":
 ## Anti-patterns
 
 - Don't call all 17 tools by default. Pick the 2-4 that match the user's question.
-- Don't substitute these for `Grep` on simple keyword lookups — they're heavier and slower.
+- Don't substitute these for `Grep` on simple keyword lookups. They're heavier and slower.
 - Don't conflate `code_context` (specific slice) with `code_minimal_context` (smallest possible); pick by what the next step needs.
 - Don't use `code_agent` (swarm orchestrator) for single-file investigations; it's for refactors that span 5+ files.
 
 ## Pure-graph reads
 
-For raw graph queries on code-related entities (`(:CodeFile)`, `(:CodeMember)`, etc.), call `mcp__rustyred-thg__graph.query` / `graph.neighbors` directly. This skill's tools are for code-context investigation that combines graph + spec + ML signals, not raw graph traversal.
+For raw graph queries on code-related entities (`(:CodeFile)`, `(:CodeMember)`, etc.), call `mcp__rustyred-thg__rustyred_thg_graph_query` / `rustyred_thg_graph_neighbors` directly. This skill's tools are for code-context investigation that combines graph + spec + ML signals, not raw graph traversal.

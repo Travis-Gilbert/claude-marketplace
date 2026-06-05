@@ -32,7 +32,7 @@ For a task that will also modify files, validate, or report, use `/harness`.
    Theseus search or GraphRAG tool available in the host and surface that the
    direct Harness path was unavailable.
 4. For raw seed-PK PPR, use `ppr_neighborhood` on the Theorem MCP or
-   `mcp__rustyred-thg__algorithm.ppr` directly.
+   `mcp__rustyred-thg__rustyred_thg_algorithm_ppr` directly.
 
 ## Output
 

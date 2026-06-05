@@ -160,7 +160,7 @@ if [[ -z "$event_type" ]]; then
   exit 0
 fi
 
-event_body=$(jq -n \
+event_args=$(jq -n \
   --arg actor "$actor" \
   --arg event_type "$event_type" \
   --argjson payload "$event_payload" \
@@ -168,14 +168,15 @@ event_body=$(jq -n \
   --arg branch "$branch" \
   '{
     actor: $actor,
-    event_type: $event_type,
-    payload: $payload,
-    repo: $repo,
-    branch: $branch
+    record_type: "event",
+    summary: $event_type,
+    title: $event_type,
+    metadata: { payload: $payload, repo: $repo, branch: $branch }
   }')
 
-# Fire-and-forget POST. We do NOT block the tool result on substrate
-# write success; this is a coordination receipt, not a transaction.
-theorem_post "/harness/coordination/event/" "$event_body" "$sid" >/dev/null 2>&1 || true
+# Fire-and-forget native write. We do NOT block the tool result on substrate
+# write success; this is a coordination receipt, not a transaction. Native MCP
+# coordination_record (record_type=event) -- no Python coordination endpoint.
+theorem_native_call "coordination_record" "$event_args" >/dev/null 2>&1 || true
 
 printf '{"continue":true}\n'

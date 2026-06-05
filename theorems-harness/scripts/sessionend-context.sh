@@ -41,7 +41,7 @@ event_body=$(jq -n \
   }')
 theorem_post "/pairformer/session-event/" "$event_body" "$sid" >/dev/null 2>&1 || true
 
-reflection_body=$(jq -n \
+reflection_args=$(jq -n \
   --arg actor "$actor" \
   --arg repo "$repo_label" \
   --arg branch "$branch" \
@@ -50,13 +50,17 @@ reflection_body=$(jq -n \
   --argjson changed_files "$changed_files_json" \
   '{
     actor: $actor,
-    repo: $repo,
-    branch: $branch,
+    record_type: "reflection",
     summary: $summary,
-    assumptions: [],
-    open_questions: [],
-    pointers: ((if $run_id != "" then ["run:" + $run_id] else [] end) + $changed_files)
+    title: "Session end reflection",
+    metadata: {
+      assumptions: [],
+      open_questions: [],
+      pointers: ((if $run_id != "" then ["run:" + $run_id] else [] end) + $changed_files),
+      repo: $repo,
+      branch: $branch
+    }
   }')
-theorem_post "/harness/coordination/reflection/" "$reflection_body" "$sid" >/dev/null 2>&1 || true
+theorem_native_call "coordination_record" "$reflection_args" >/dev/null 2>&1 || true
 
 printf '{"continue":true}\n'

@@ -21,7 +21,8 @@ skill surfaces that timeline in human-readable form. It is the audit lens for
   pass one to `harness_fork`).
 
 Do not use this for: the conversation transcript (they have that already),
-the file diff (use `git diff`), or live graph state (use the Theseus MCP).
+the file diff (use `git diff`), or live graph state (use the Theorem-side
+RustyRed MCP).
 
 ## What to do
 
@@ -69,10 +70,10 @@ against a different model: it is the deterministic-replay key.
 
 ## Related tools
 
-- `harness_compare` — diff two runs (state hashes, evidence overlap,
+- `harness_compare`: diff two runs (state hashes, evidence overlap,
   divergence point). Reach for this when the user wants to know how two
   attempts differed.
-- `harness_fork` — branch a new run through a specific step id from this
+- `harness_fork`: branch a new run through a specific step id from this
   timeline. Reach for this when the user wants to explore an alternative path.
-- `harness_context` — compile the final Context Artifact for a run, rather
+- `harness_context`: compile the final Context Artifact for a run, rather
   than the raw event timeline.

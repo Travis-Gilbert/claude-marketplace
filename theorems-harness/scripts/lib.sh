@@ -190,6 +190,28 @@ theorem_get() {
   curl -sS -m 25 "${headers[@]}" "$url"
 }
 
+# Native Theorem RustyRed MCP call (JSON-RPC tools/call). The bash twin of the
+# plugin's NativeMcpClient: coordination + memory route here, NOT the Python
+# context backend. $1 = native tool name, $2 = arguments JSON object. Returns the
+# raw JSON-RPC response on stdout; non-zero exit on HTTP/transport error so
+# callers can `|| true` for fire-and-forget receipts.
+theorem_native_call() {
+  local tool="$1"
+  local args="${2-}"
+  [ -n "$args" ] || args='{}'
+  local url="${THEOREM_HARNESS_MCP_URL:-${THEOREMS_HARNESS_RUSTYRED_MCP_URL:-${RUSTYRED_THG_MCP_URL:-https://rustyredcore-theorem-production.up.railway.app/mcp}}}"
+  local token="${THEOREM_HARNESS_API_TOKEN:-${RUSTYRED_THG_API_TOKEN:-${THEOREMS_HARNESS_THG_API_TOKEN:-}}}"
+  local headers=(-H "Content-Type: application/json" -H "Accept: application/json")
+  if [ -n "$token" ]; then
+    headers+=(-H "Authorization: Bearer ${token}")
+  fi
+  command -v jq >/dev/null 2>&1 || return 1
+  local payload
+  payload=$(jq -n --arg name "$tool" --argjson args "$args" \
+    '{jsonrpc: "2.0", id: 1, method: "tools/call", params: {name: $name, arguments: $args}}')
+  curl -sS -m 25 "${headers[@]}" -X POST -d "$payload" "$url"
+}
+
 # Detect whether jq is available; fail open with a warning if not.
 theorem_require_jq() {
   if ! command -v jq >/dev/null 2>&1; then

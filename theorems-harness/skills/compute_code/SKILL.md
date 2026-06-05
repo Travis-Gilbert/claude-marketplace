@@ -1,6 +1,6 @@
 ---
 name: compute_code
-description: Use this skill when the user wants code search ranked by graph structure rather than by exact-string matching. Routes to the most appropriate of the four RustyRed inline graph algorithm MCP tools (`rustyred_thg.algorithm.ppr_inline`, `pagerank_inline`, `components_inline`, `communities_inline`) based on the shape of the question. Triggers on phrases like "what's relevant to X", "what depends on Y", "rank by importance", "which files matter most", "what's connected to", "cluster these files", "find related code", "structural code search", and generally any code-discovery question where the answer should be ranked by adjacency/centrality/community rather than by keyword. Also triggers when the agent has just been given an adjacency map or code-graph context and needs to compute over it. Auto-triggerable from Orchestrate when a code-search subtask emerges; also user-invocable as `/compute_code`.
+description: Use this skill when the user wants code search ranked by graph structure rather than by exact-string matching. Routes to the most appropriate of the four RustyRed inline graph algorithm MCP tools (`rustyred_thg_algorithm_ppr_inline`, `rustyred_thg_algorithm_pagerank_inline`, `rustyred_thg_algorithm_components_inline`, `rustyred_thg_algorithm_communities_inline`) based on the shape of the question. Triggers on phrases like "what's relevant to X", "what depends on Y", "rank by importance", "which files matter most", "what's connected to", "cluster these files", "find related code", "structural code search", and generally any code-discovery question where the answer should be ranked by adjacency/centrality/community rather than by keyword. Also triggers when the agent has just been given an adjacency map or code-graph context and needs to compute over it. Auto-triggerable from Orchestrate when a code-search subtask emerges; also user-invocable as `/compute_code`.
 ---
 
 # compute_code
@@ -28,16 +28,16 @@ Not a fit:
 - "Where is FooClass defined?" with a known unique symbol → use `Grep` or LSP
 - "Explain what this function does" → use Read, or `code_theorem` if Theseus has ingested the area
 - "What did this change touch?" → use `code_impact` from the Theorem MCP via `code_theorem`
-- Adjacency > 100,000 edges → use the tenant-backed counterpart (`rustyred_thg.algorithm.<name>` without `_inline`); ingest the graph into a tenant first via the `rustyred_thg.bulk.*` write tools
+- Adjacency > 100,000 edges → use the tenant-backed counterpart (`rustyred_thg_algorithm_<name>` without `_inline`); ingest the graph into a tenant first via the `rustyred_thg_bulk_nodes` / `rustyred_thg_bulk_edges` write tools
 
 ## Algorithm routing (the intent map)
 
 | Intent shape | Tool | One-line reason |
 |---|---|---|
-| "What's relevant to / near / around X?" | `rustyred_thg.algorithm.ppr_inline` | PPR with X as seed returns the locally-relevant subgraph, ranked by structural distance from the seed. |
-| "Which files / modules matter most?" / "Global importance" | `rustyred_thg.algorithm.pagerank_inline` | Global PageRank ranks every node by structural authority across the whole graph. |
-| "What's connected to what?" / "Are these in the same component?" | `rustyred_thg.algorithm.components_inline` | Connected components partition the graph into disconnected subgraphs. Returns one list per component. |
-| "What logical groups / clusters exist?" / "Cluster by relationship density" | `rustyred_thg.algorithm.communities_inline` | Label-propagation communities find densely-connected groups inside a connected graph. Returns a community id per node + a modularity score. |
+| "What's relevant to / near / around X?" | `rustyred_thg_algorithm_ppr_inline` | PPR with X as seed returns the locally-relevant subgraph, ranked by structural distance from the seed. |
+| "Which files / modules matter most?" / "Global importance" | `rustyred_thg_algorithm_pagerank_inline` | Global PageRank ranks every node by structural authority across the whole graph. |
+| "What's connected to what?" / "Are these in the same component?" | `rustyred_thg_algorithm_components_inline` | Connected components partition the graph into disconnected subgraphs. Returns one list per component. |
+| "What logical groups / clusters exist?" / "Cluster by relationship density" | `rustyred_thg_algorithm_communities_inline` | Label-propagation communities find densely-connected groups inside a connected graph. Returns a community id per node + a modularity score. |
 
 When the intent is ambiguous between PPR and PageRank: prefer PPR if a seed is
 identifiable; prefer PageRank if the question is global ("what matters in this
@@ -71,7 +71,7 @@ pointing to the tenant-backed counterpart.
 
 1. **Identify intent shape.** Map the user's question to one of the four
    intent rows in the routing table. If the question doesn't fit any row,
-   compute_code is the wrong skill — defer to Grep, `code_theorem`, or
+   compute_code is the wrong skill: defer to Grep, `code_theorem`, or
    ask the user to clarify.
 
 2. **Identify the seed (PPR only).** For PPR, the seed is the symbol /
@@ -95,7 +95,7 @@ pointing to the tenant-backed counterpart.
 
 5. **Call the MCP tool.** Use the standard MCP toolchain. With the
    theorems-harness plugin loaded, the tool name surfaces as something
-   like `mcp__rustyred-thg__rustyred_thg.algorithm.<name>_inline`. Pass
+   like `mcp__rustyred-thg__rustyred_thg_algorithm_<name>_inline`. Pass
    `top_k` (e.g., 10) on PPR/PageRank to bound the response.
 
 6. **Surface results with provenance.** Always tell the user which
@@ -148,7 +148,7 @@ Return:
 
 Do NOT return:
 - The full adjacency map (sometimes large; only return on explicit request).
-- Algorithm internals (alpha, epsilon, damping — only return if the user
+- Algorithm internals (alpha, epsilon, damping: only return if the user
   asked for them or the result looks suspicious).
 
 ## What this skill explicitly does NOT do

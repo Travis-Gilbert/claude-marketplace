@@ -162,8 +162,10 @@ if [[ "$coordinate_enabled" == "true" ]]; then
       --arg actor "$actor" \
       --arg target "$target" \
       '{
+        actor: $actor,
         message: $message,
         urgency: $urgency,
+        mentions: (if $target != "" then [$target] else [] end),
         metadata: {
           repo: $repo,
           branch: $branch,
@@ -174,7 +176,7 @@ if [[ "$coordinate_enabled" == "true" ]]; then
           review_type: "peer-review"
         }
       }')"
-    if theorem_post "/harness/coordinate/" "$body" >/dev/null 2>&1; then
+    if theorem_native_call "coordinate" "$body" >/dev/null 2>&1; then
       coordinate_status="sent"
     else
       coordinate_status="failed"

@@ -44,6 +44,18 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "mcp__plugin_theorems-harness_.*|mcp__theorems-harness__.*|mcp__rustyred-thg__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/auto-approve-harness.sh",
+            "timeout": 5,
+            "statusMessage": "Authorizing harness tool"
+          }
+        ]
+      },
+      {
         "matcher": "Bash|Edit|Write|NotebookEdit",
         "hooks": [
           {

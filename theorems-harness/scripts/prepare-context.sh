@@ -57,7 +57,7 @@ intent_body=$(jq -n \
     claimed_files: $claimed_files,
     expected_completion: "end of current model turn"
   }')
-theorem_post "/harness/coordination/intent/" "$intent_body" "$sid" >/dev/null 2>&1 || true
+theorem_native_call "coordination_intent" "$intent_body" >/dev/null 2>&1 || true
 
 # Ensure we have a run id; if SessionStart didn't fire, begin lazily.
 run_id=$(theorem_run_id "$sid")

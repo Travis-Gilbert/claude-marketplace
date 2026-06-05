@@ -13,8 +13,8 @@
 //   - coordination_* / mentions_wait: shared room state plus ping-like
 //     interrupts over the harness substrate
 //
-// Deliberately bounded surface. The fat Theseus MCP at theseus-mcp-production
-// is registered separately in plugin.json for Mode 3 power-user access.
+// Deliberately bounded surface. Claude's host manifest registers a local proxy
+// for the Theorem-side RustyRed MCP's native graph and coordination tools.
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -27,6 +27,12 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { hostname, userInfo } from "node:os";
+import {
+  createDefaultRoutePolicy,
+  NativeBindingClient,
+  NativeMcpClient,
+  ROUTES,
+} from "../sdk/route-policy.mjs";
 
 const BASE_URL =
   process.env.THEOREM_CONTEXT_BASE_URL ||
@@ -51,6 +57,7 @@ const THG_WRITE_MODE = (
 ).toLowerCase();
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const STATE_DIR = join(PROJECT_DIR, ".theorem");
+const HARNESS_ROUTE_POLICY = createHarnessRoutePolicy();
 
 function hostActor() {
   const explicit = String(
@@ -204,6 +211,201 @@ function jsonText(value) {
   return {
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
   };
+}
+
+function createHarnessRoutePolicy() {
+  const clients = {};
+  if (process.env.THEOREM_HARNESS_DATA_DIR) {
+    clients[ROUTES.NATIVE_BINDING] = new NativeBindingClient({
+      dataDir: process.env.THEOREM_HARNESS_DATA_DIR,
+      bindingModulePath: process.env.THEOREM_HARNESS_NODE_BINDING_PATH,
+    });
+  }
+  clients[ROUTES.NATIVE_MCP] = new NativeMcpClient({
+    url:
+      process.env.THEOREM_HARNESS_MCP_URL ||
+      process.env.THEOREMS_HARNESS_RUSTYRED_MCP_URL ||
+      process.env.RUSTYRED_THG_MCP_URL,
+    token:
+      process.env.THEOREM_HARNESS_API_TOKEN ||
+      process.env.RUSTYRED_THG_API_TOKEN ||
+      process.env.THEOREMS_HARNESS_THG_API_TOKEN,
+  });
+  return createDefaultRoutePolicy({ clients });
+}
+
+function withRouteReceipt(result, receipt) {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return { result, route_receipt: receipt };
+  }
+  return { ...result, route_receipt: receipt };
+}
+
+function legacyRouteReceipt(selection, reason) {
+  return {
+    route: "theseus-engine",
+    verb: selection.receipt.verb,
+    family: selection.receipt.family,
+    tenant: selection.receipt.tenant,
+    server: BASE_URL,
+    readOnly: false,
+    fallbackUsed: true,
+    nativeWriteMode: selection.receipt.nativeWriteMode,
+    dataDir: null,
+    mode: selection.receipt.mode,
+    scope: selection.receipt.scope,
+    selectedRoute: selection.receipt,
+    fallbackReason: reason,
+  };
+}
+
+function directHttpRouteReceipt(selection, server, extra = {}) {
+  return {
+    ...selection.receipt,
+    server,
+    ...extra,
+  };
+}
+
+async function executeWithRoutePolicy(
+  operation,
+  payload,
+  legacyCall = null,
+  options = {},
+) {
+  const selection = HARNESS_ROUTE_POLICY.select(operation);
+  const allowFallback = options.allowFallback !== false;
+
+  if (selection.route === ROUTES.NATIVE_BINDING || selection.route === ROUTES.NATIVE_MCP) {
+    try {
+      const executed = await HARNESS_ROUTE_POLICY.execute(operation, payload);
+      return executed.result;
+    } catch (error) {
+      if (selection.receipt.mode === "native" || !legacyCall || !allowFallback) {
+        throw error;
+      }
+      const result = await legacyCall();
+      return withRouteReceipt(
+        result,
+        legacyRouteReceipt(selection, `native binding failed: ${error.message}`),
+      );
+    }
+  }
+
+  if (selection.receipt.mode === "native" || !legacyCall || !allowFallback) {
+    throw new Error(
+      `native route ${selection.route} is not wired for ${operation.verb}`,
+    );
+  }
+
+  const result = await legacyCall();
+  return withRouteReceipt(
+    result,
+    legacyRouteReceipt(
+      selection,
+      options.fallbackReason ?? `selected route ${selection.route} is not wired yet`,
+    ),
+  );
+}
+
+async function legacyHarnessReplay(runId) {
+  const events = await theoremGet(`/harness/runs/${runId}/events/`);
+  const stateHash = await theoremGet(`/harness/runs/${runId}/state-hash/`).catch(() => ({}));
+  return {
+    run_id: runId,
+    state_hash: stateHash.state_hash || null,
+    events: events.events || events,
+  };
+}
+
+async function replayHarnessRun(runId, args = {}) {
+  const operation = {
+    verb: "harness_replay",
+    scope: args?.scope ?? "local",
+  };
+  const payload = {
+    run_id: runId,
+    after_seq: args?.after_seq ?? 0,
+  };
+  return executeWithRoutePolicy(operation, payload, () => legacyHarnessReplay(runId));
+}
+
+function memoryAgentId(args = {}) {
+  return String(args?.agent_id || args?.actor || toolActor(args) || hostActor()).trim();
+}
+
+function nativeMemoryKind(args = {}, defaultKind = "belief") {
+  return String(args?.kind || args?.memory_node_type || defaultKind).trim() || defaultKind;
+}
+
+function nativeRememberPayload(args = {}, defaultKind = "belief") {
+  return {
+    agent_id: memoryAgentId(args),
+    kind: nativeMemoryKind(args, defaultKind),
+    title: String(args?.title || args?.summary || "Memory").trim() || "Memory",
+    content: requireString(args, "content"),
+  };
+}
+
+async function rememberHarnessMemory(args = {}, options = {}) {
+  const scope = args?.scope ?? "shared";
+  const verb = options.verb ?? "remember";
+  const legacyKind = options.legacyKind ?? verb;
+  // Native sole path (Travis directive): no Theseus memory fallback.
+  return executeWithRoutePolicy(
+    { verb, scope },
+    nativeRememberPayload(args, options.defaultKind ?? legacyKind),
+    null,
+    { allowFallback: false },
+  );
+}
+
+async function recallHarnessMemory(args = {}) {
+  const query = requireString(args, "query");
+  return executeWithRoutePolicy(
+    { verb: "recall", scope: args?.scope ?? "private" },
+    {
+      agent_id: memoryAgentId(args),
+      query,
+      limit: args?.limit ?? 10,
+    },
+    null,
+  );
+}
+
+async function nativeSkillTool(name, args = {}) {
+  return executeWithRoutePolicy(
+    { verb: name, scope: "shared" },
+    args ?? {},
+    null,
+    { allowFallback: false },
+  );
+}
+
+async function nativeCoordinationTool(verb, nativeToolName, body, options = {}) {
+  // Native Theorem RustyRed MCP is the SOLE path for coordination (Travis
+  // directive: retire Python). No Theseus/Django fallback and no product mirror:
+  // the room is durable in the GraphStore and authoritative. allowFallback:false
+  // returns an honest error if native is unreachable, never a Python call.
+  const operation = { verb, nativeToolName, scope: options.scope ?? "shared" };
+  if (options.family) operation.family = options.family;
+  return executeWithRoutePolicy(operation, body, null, { allowFallback: false });
+}
+
+async function savedContextPreviewRecall(args = {}) {
+  const tenantSlug = requireString(args, "tenant_slug");
+  return theoremPost(
+    `/product/tenants/${tenantSlug}/saved-contexts/preview-recall/`,
+    {
+      task: requireString(args, "task"),
+      project_slug: args?.project_slug ?? null,
+      mode: args?.mode ?? null,
+      modes: args?.modes ?? [],
+      profile_id: args?.profile_id ?? null,
+      profile_ids: args?.profile_ids ?? [],
+      permissions: args?.permissions ?? [],
+    },
+  );
 }
 
 function normalizeTenantSlug(value) {
@@ -636,6 +838,19 @@ const TOOLS = [
           description:
             "Run id to replay. Omit to use the current Claude session's run id.",
         },
+        after_seq: {
+          type: "integer",
+          description:
+            "Native-binding text cursor. Defaults to 0; ignored by legacy HTTP replay.",
+          default: 0,
+        },
+        scope: {
+          type: "string",
+          description:
+            "Route scope. Use shared-remote to avoid the local native binding when a data dir is configured.",
+          enum: ["local", "shared", "shared-remote"],
+          default: "local",
+        },
       },
     },
   },
@@ -772,6 +987,15 @@ const TOOLS = [
         tenant_slug: { type: "string" },
         title: { type: "string" },
         content: { type: "string" },
+        actor: { type: "string" },
+        agent_id: { type: "string" },
+        scope: {
+          type: "string",
+          description:
+            "Route scope. Shared preserves the existing shared memory path; private uses the local native binding when configured.",
+          enum: ["shared", "private"],
+          default: "shared",
+        },
         kind: { type: "string", default: "self_note" },
         memory_node_type: { type: "string", default: "belief" },
         tags: { type: "array", items: { type: "string" } },
@@ -833,10 +1057,25 @@ const TOOLS = [
   {
     name: "recall",
     description:
-      "Preview saved context recall for a tenant/project/task. Use before prepare when you need to see which durable memory would be injected.",
+      "Recall native harness memory by query. Compatibility mode: pass tenant_slug and task to preview product saved-context recall.",
     inputSchema: {
       type: "object",
       properties: {
+        query: {
+          type: "string",
+          description:
+            "Memory search query. When present, recall routes to native harness memory.",
+        },
+        limit: { type: "integer", default: 10 },
+        actor: { type: "string" },
+        agent_id: { type: "string" },
+        scope: {
+          type: "string",
+          description:
+            "Memory route scope. Private uses the local native binding when configured.",
+          enum: ["private", "shared"],
+          default: "private",
+        },
         tenant_slug: { type: "string" },
         task: { type: "string" },
         project_slug: { type: "string" },
@@ -846,7 +1085,6 @@ const TOOLS = [
         profile_ids: { type: "array", items: { type: "string" } },
         permissions: { type: "array", items: { type: "string" } },
       },
-      required: ["tenant_slug", "task"],
     },
   },
   {
@@ -859,6 +1097,16 @@ const TOOLS = [
         tenant_slug: { type: "string" },
         title: { type: "string" },
         content: { type: "string" },
+        actor: { type: "string" },
+        agent_id: { type: "string" },
+        scope: {
+          type: "string",
+          description:
+            "Route scope. Shared preserves the existing shared memory path; private uses the local native binding when configured.",
+          enum: ["shared", "private"],
+          default: "shared",
+        },
+        kind: { type: "string" },
         memory_node_type: { type: "string", default: "belief" },
         tags: { type: "array", items: { type: "string" } },
         links: { type: "array", items: { type: "string" } },
@@ -921,6 +1169,105 @@ const TOOLS = [
         },
       },
       required: ["content"],
+    },
+  },
+  {
+    name: "skill_list",
+    description:
+      "List native Theorem harness skill packs stored in RustyRed. Use before skill_get when choosing a capability pack for a Rust task.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        status: {
+          type: "string",
+          enum: ["draft", "shadow", "advisory", "validated", "canonical", "retired"],
+        },
+        include_retired: { type: "boolean", default: false },
+        limit: { type: "integer", default: 20 },
+      },
+    },
+  },
+  {
+    name: "skill_get",
+    description:
+      "Read one native Theorem harness skill pack by id or content hash.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        pack_id: { type: "string" },
+        packId: { type: "string" },
+        id: { type: "string" },
+        pack_content_hash: { type: "string" },
+        packContentHash: { type: "string" },
+        content_hash: { type: "string" },
+        contentHash: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "skill_publish",
+    description:
+      "Publish a content-addressed skill pack into the native Theorem RustyRed substrate.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        actor_id: { type: "string" },
+        pack: { type: "object" },
+        capability_pack: { type: "object" },
+        pack_content_hash: { type: "string" },
+        packContentHash: { type: "string" },
+        source_content_hash: { type: "string" },
+        sourceContentHash: { type: "string" },
+        artifact_hashes: { type: "array", items: { type: "string" } },
+        artifactHashes: { type: "array", items: { type: "string" } },
+        status: {
+          type: "string",
+          enum: ["draft", "shadow", "advisory", "validated", "canonical", "retired"],
+        },
+        metadata: { type: "object" },
+        created_at: { type: "string" },
+        createdAt: { type: "string" },
+      },
+      required: ["pack"],
+    },
+  },
+  {
+    name: "skill_apply",
+    description:
+      "Apply a native Theorem harness skill pack and persist a use receipt for the promotion loop.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        pack_id: { type: "string" },
+        packId: { type: "string" },
+        id: { type: "string" },
+        pack_content_hash: { type: "string" },
+        packContentHash: { type: "string" },
+        actor: { type: "string" },
+        actor_id: { type: "string" },
+        run_id: { type: "string" },
+        runId: { type: "string" },
+        task: { type: "string" },
+        context: { type: "object" },
+        outcome: { type: "object" },
+        allow_retired: { type: "boolean", default: false },
+        allowRetired: { type: "boolean", default: false },
+        receipt_id: { type: "string" },
+        receiptId: { type: "string" },
+        metadata: { type: "object" },
+        created_at: { type: "string" },
+        createdAt: { type: "string" },
+      },
+      required: ["actor"],
     },
   },
   {
@@ -1386,7 +1733,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.3.6" },
+  { name: "theorems-harness", version: "0.4.0" },
   { capabilities: { tools: {} } }
 );
 
@@ -1453,24 +1800,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
           isError: true,
         };
       }
-      const events = await theoremGet(`/harness/runs/${id}/events/`);
-      const stateHash = await theoremGet(`/harness/runs/${id}/state-hash/`).catch(() => ({}));
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                run_id: id,
-                state_hash: stateHash.state_hash || null,
-                events: events.events || events,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+      return jsonText(await replayHarnessRun(id, args));
     }
 
     if (name === "harness_describe_current") {
@@ -1594,29 +1924,21 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     }
 
     if (name === "self_note") {
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
-        title: args?.title ?? null,
-        content: requireString(args, "content"),
-        kind: args?.kind ?? "self_note",
-        memory_node_type: args?.memory_node_type ?? "belief",
-        tags: args?.tags ?? [],
-        links: args?.links ?? [],
-        summary: args?.summary ?? "",
-      };
-      const mirror = await mirrorHarnessNode(
-        "self_note",
-        args,
-        body,
-        ["MemoryAtom", "AgentMemory"]
+      return jsonText(
+        await rememberHarnessMemory(
+          { ...args, kind: args?.kind ?? "self_note" },
+          {
+            verb: "self_note",
+            legacyKind: "self_note",
+            defaultKind: "self_note",
+          },
+        ),
       );
-      const result = await theoremPost("/harness/memory/self-note/", body);
-      return jsonText(withThgMirror(result, mirror));
     }
 
     if (name === "self_revise") {
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
+      const payload = {
+        actor: toolActor(args),
         doc_id: requireString(args, "doc_id"),
         content: requireString(args, "content"),
         title: args?.title ?? null,
@@ -1626,101 +1948,116 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         cites_doc_ids: args?.cites_doc_ids ?? [],
         derived_from_doc_ids: args?.derived_from_doc_ids ?? [],
       };
-      const mirror = await mirrorHarnessNode(
-        "self_revise",
-        args,
-        body,
-        ["MemoryAtom", "AgentMemory", "MemoryRevision"]
+      const tenant = tenantId(args);
+      if (tenant) payload.tenant_slug = tenant;
+      const result = await executeWithRoutePolicy(
+        { verb: "self_revise", scope: "shared" },
+        payload,
+        null,
+        { allowFallback: false },
       );
-      const result = await theoremPost("/harness/memory/self-revise/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
     }
 
     if (name === "self_archive") {
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
+      const payload = {
+        actor: toolActor(args),
         doc_id: requireString(args, "doc_id"),
         reason: args?.reason ?? "",
         title: args?.title ?? null,
       };
-      const mirror = await mirrorHarnessNode(
-        "self_archive",
-        args,
-        body,
-        ["MemoryAtom", "AgentMemory", "MemoryArchive"]
+      const tenant = tenantId(args);
+      if (tenant) payload.tenant_slug = tenant;
+      const result = await executeWithRoutePolicy(
+        { verb: "self_archive", scope: "shared" },
+        payload,
+        null,
+        { allowFallback: false },
       );
-      const result = await theoremPost("/harness/memory/self-archive/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
     }
 
     if (name === "self_recall_archive") {
-      const result = await theoremPost("/harness/memory/self-recall-archive/", {
-        tenant_slug: await requestTenantSlug(args),
-        query: args?.query ?? "",
+      const payload = {
         actor: toolActor(args),
+        query: args?.query ?? "",
         limit: args?.limit ?? 10,
-      });
+      };
+      const tenant = tenantId(args);
+      if (tenant) payload.tenant_slug = tenant;
+      const result = await executeWithRoutePolicy(
+        { verb: "self_recall_archive", scope: "shared" },
+        payload,
+        null,
+        { allowFallback: false },
+      );
       return jsonText(result);
     }
 
     if (name === "recall") {
-      const tenantSlug = requireString(args, "tenant_slug");
-      const result = await theoremPost(
-        `/product/tenants/${tenantSlug}/saved-contexts/preview-recall/`,
-        {
-          task: requireString(args, "task"),
-          project_slug: args?.project_slug ?? null,
-          mode: args?.mode ?? null,
-          modes: args?.modes ?? [],
-          profile_id: args?.profile_id ?? null,
-          profile_ids: args?.profile_ids ?? [],
-          permissions: args?.permissions ?? [],
-        }
-      );
-      return jsonText(result);
+      if (args?.query || args?.scope === "private") {
+        return jsonText(await recallHarnessMemory(args));
+      }
+      if (args?.tenant_slug && args?.task) {
+        const result = await savedContextPreviewRecall(args);
+        const selection = HARNESS_ROUTE_POLICY.select({
+          verb: "saved_context_preview_recall",
+          scope: "shared",
+        });
+        return jsonText(
+          withRouteReceipt(
+            result,
+            directHttpRouteReceipt(selection, BASE_URL, { calledAs: "recall" }),
+          ),
+        );
+      }
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              "Pass query for native memory recall, or tenant_slug and task for saved-context preview compatibility.",
+          },
+        ],
+        isError: true,
+      };
     }
 
     if (name === "remember") {
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
-        title: args?.title ?? null,
-        content: requireString(args, "content"),
-        kind: "remember",
-        memory_node_type: args?.memory_node_type ?? "belief",
-        tags: args?.tags ?? [],
-        links: args?.links ?? [],
-        summary: args?.summary ?? "",
-      };
-      const mirror = await mirrorHarnessNode(
-        "remember",
-        args,
-        body,
-        ["MemoryAtom", "AgentMemory"]
-      );
-      const result = await theoremPost("/harness/memory/self-note/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(await rememberHarnessMemory(args));
     }
 
     if (name === "relate") {
-      const body = {
-        command: "THG.GRAPH.EDGE.UPSERT",
-        payload: {
-          from_id: requireString(args, "from_id"),
-          to_id: requireString(args, "to_id"),
-          type: args?.relation ?? "related_to",
-          properties: {
-            reason: args?.reason ?? "",
-            ...(args?.metadata ?? {}),
+      // Plugin relate is an edge UPSERT; native `relate` is a neighbor READ, so
+      // route this write to the native bulk-edge writer instead. Edge record shape
+      // mirrors the prior THG.GRAPH.EDGE.UPSERT payload; verify on first live write.
+      const payload = {
+        edges: [
+          {
+            from_id: requireString(args, "from_id"),
+            to_id: requireString(args, "to_id"),
+            type: args?.relation ?? "related_to",
+            properties: {
+              reason: args?.reason ?? "",
+              ...(args?.metadata ?? {}),
+            },
           },
-        },
+        ],
       };
-      const result = await theoremPost("/harness/thg/command/", body);
+      const tenant = tenantId(args);
+      if (tenant) payload.tenant = tenant;
+      const result = await executeWithRoutePolicy(
+        { verb: "relate", nativeToolName: "rustyred_thg_bulk_edges", scope: "shared" },
+        payload,
+        null,
+        { allowFallback: false },
+      );
       return jsonText(result);
     }
 
     if (name === "encode") {
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
+      const payload = {
+        actor: toolActor(args),
         title: args?.title ?? null,
         content: requireString(args, "content"),
         kind: args?.kind ?? "encode",
@@ -1731,20 +2068,32 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         tags: args?.tags ?? [],
         links: args?.links ?? [],
         summary: args?.summary ?? "",
-        metadata: args?.metadata ?? {},
         context: args?.context ?? {},
         auto_triggered: args?.auto_triggered === true,
-        training_weight: args?.training_weight ?? 1.0,
-        training_target: args?.training_target ?? "none",
+        metadata: {
+          ...(args?.metadata ?? {}),
+          training_weight: args?.training_weight ?? 1.0,
+          training_target: args?.training_target ?? "none",
+        },
       };
-      const mirror = await mirrorHarnessNode(
-        "encode",
-        args,
-        body,
-        ["MemoryAtom", "EncodeEvent"]
+      const tenant = tenantId(args);
+      if (tenant) payload.tenant_slug = tenant;
+      const result = await executeWithRoutePolicy(
+        { verb: "encode", scope: "shared" },
+        payload,
+        null,
+        { allowFallback: false },
       );
-      const result = await theoremPost("/harness/encode/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
+    }
+
+    if (
+      name === "skill_list" ||
+      name === "skill_get" ||
+      name === "skill_publish" ||
+      name === "skill_apply"
+    ) {
+      return jsonText(await nativeSkillTool(name, args));
     }
 
     if (name === "coordination_intent") {
@@ -1757,14 +2106,8 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         claimed_files: args?.claimed_files ?? requestIdentity(args).changed_files,
         expected_completion: args?.expected_completion ?? "",
       };
-      const mirror = await mirrorHarnessNode(
-        "coordination_intent",
-        args,
-        body,
-        ["CoordinationIntent"]
-      );
-      const result = await theoremPost("/harness/coordination/intent/", body);
-      return jsonText(withThgMirror(result, mirror));
+      const result = await nativeCoordinationTool("coordination_intent", null, body);
+      return jsonText(result);
     }
 
     if (name === "coordination_reflection") {
@@ -1777,14 +2120,23 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         open_questions: args?.open_questions ?? [],
         pointers: args?.pointers ?? [],
       };
-      const mirror = await mirrorHarnessNode(
+      const nativeBody = {
+        ...body,
+        record_type: "reflection",
+        title: args?.title ?? "Coordination reflection",
+        body: args?.body ?? body.summary,
+        metadata: {
+          assumptions: body.assumptions,
+          open_questions: body.open_questions,
+          pointers: body.pointers,
+        },
+      };
+      const result = await nativeCoordinationTool(
         "coordination_reflection",
-        args,
-        body,
-        ["CoordinationReflection"]
+        "coordination_record",
+        nativeBody,
       );
-      const result = await theoremPost("/harness/coordination/reflection/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
     }
 
     if (name === "coordination_decision") {
@@ -1800,14 +2152,24 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         supersedes: args?.supersedes ?? [],
         decision_id: args?.decision_id ?? null,
       };
-      const mirror = await mirrorHarnessNode(
+      const nativeBody = {
+        ...body,
+        record_id: body.decision_id,
+        record_type: "decision",
+        summary: body.choice,
+        body: body.rationale,
+        metadata: {
+          alternatives_considered: body.alternatives_considered,
+          caused_by: body.caused_by,
+          supersedes: body.supersedes,
+        },
+      };
+      const result = await nativeCoordinationTool(
         "coordination_decision",
-        args,
-        body,
-        ["CoordinationDecision"]
+        "coordination_record",
+        nativeBody,
       );
-      const result = await theoremPost("/harness/coordination/decision/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
     }
 
     if (name === "coordination_tension") {
@@ -1824,14 +2186,27 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         status: args?.status ?? "resolved",
         resolved_by_decision_id: args?.resolved_by_decision_id ?? "",
       };
-      const mirror = await mirrorHarnessNode(
+      const nativeBody = {
+        ...body,
+        record_id: body.tension_id,
+        record_type: "tension",
+        summary: body.title || body.disagreement || body.observed || "Coordination tension",
+        body: body.proposed_alternative || body.observed || body.disagreement,
+        metadata: {
+          action: body.action,
+          observed: body.observed,
+          disagreement: body.disagreement,
+          proposed_alternative: body.proposed_alternative,
+          status: body.status,
+          resolved_by_decision_id: body.resolved_by_decision_id,
+        },
+      };
+      const result = await nativeCoordinationTool(
         "coordination_tension",
-        args,
-        body,
-        ["CoordinationTension"]
+        "coordination_record",
+        nativeBody,
       );
-      const result = await theoremPost("/harness/coordination/tension/", body);
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
     }
 
     if (name === "coordinate") {
@@ -1849,46 +2224,62 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         target_head: args?.target_head ?? null,
         target_changed_files: args?.target_changed_files ?? [],
       };
-      const mirror = await mirrorHarnessNode(
-        "coordinate",
-        args,
-        { ...body, mentioned_actors: parseMentions(body.message) },
-        ["CoordinationMessage"]
-      );
-      const result = await theoremPost("/harness/coordinate/", body);
-      return jsonText(withThgMirror(result, mirror));
+      const nativeBody = {
+        ...body,
+        mentions: args?.mentions ?? parseMentions(body.message),
+      };
+      const result = await nativeCoordinationTool("coordinate", null, nativeBody);
+      return jsonText(result);
     }
 
     if (name === "mentions") {
       const identity = requestIdentity(args);
-      const result = await theoremPost("/harness/mentions/", {
+      const body = {
         tenant_slug: await requestTenantSlug(args),
         actor: toolActor(args),
         limit: args?.limit ?? 20,
         consume: args?.consume === true,
         ...identity,
-      });
+      };
+      const result = await nativeCoordinationTool("mentions", null, body);
       return jsonText(result);
     }
 
     if (name === "mentions_wait") {
-      const rawTimeoutSeconds = Number(args?.timeout_seconds ?? 30);
-      const timeoutSeconds = Number.isFinite(rawTimeoutSeconds) ? rawTimeoutSeconds : 30;
+      // No native blocking-wait verb exists yet, so poll native mentions
+      // client-side. Native sole path: no Python /harness/mentions/wait.
+      const rawTimeout = Number(args?.timeout_seconds ?? 30);
+      const timeoutSeconds = Number.isFinite(rawTimeout)
+        ? Math.max(0, Math.min(rawTimeout, 120))
+        : 30;
+      const rawInterval = Number(args?.interval_seconds ?? 2);
+      const intervalSeconds = Number.isFinite(rawInterval)
+        ? Math.max(1, Math.min(rawInterval, 15))
+        : 2;
       const identity = requestIdentity(args);
-      const result = await theoremPost(
-        "/harness/mentions/wait/",
-        {
-          tenant_slug: await requestTenantSlug(args),
-          actor: toolActor(args),
-          limit: args?.limit ?? 20,
-          consume: args?.consume === true,
-          timeout_seconds: args?.timeout_seconds ?? 30,
-          interval_seconds: args?.interval_seconds ?? 1,
-          ...identity,
-        },
-        Math.max(5_000, Math.min((timeoutSeconds + 5) * 1000, 125_000))
-      );
-      return jsonText(result);
+      const body = {
+        tenant_slug: tenantId(args),
+        actor: toolActor(args),
+        limit: args?.limit ?? 20,
+        consume: args?.consume === true,
+        ...identity,
+      };
+      const deadline = Date.now() + timeoutSeconds * 1000;
+      let last = null;
+      for (;;) {
+        last = await nativeCoordinationTool("mentions", "mentions", body);
+        const items = Array.isArray(last?.mentions)
+          ? last.mentions
+          : Array.isArray(last?.items)
+            ? last.items
+            : Array.isArray(last?.pending_mentions)
+              ? last.pending_mentions
+              : [];
+        if (items.length > 0 || Date.now() >= deadline) {
+          return jsonText({ ...last, waited: true, timeout_seconds: timeoutSeconds });
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalSeconds * 1000));
+      }
     }
 
     if (name === "presence") {
@@ -1907,18 +2298,12 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
           status: "inactive",
           mode: "end",
         };
-        const result = await theoremPost("/harness/presence/", body);
-        const mirror = await mirrorHarnessNode(
-          "presence",
-          args,
-          { ...body, status: "inactive", mode: "end" },
-          ["Presence"]
-        );
-        return jsonText(withThgMirror(result, mirror));
+        const result = await nativeCoordinationTool("presence", null, body);
+        return jsonText(result);
       }
       const tenantSlug = await requestTenantSlug(args);
       const actor = toolActor(args);
-      const result = await theoremPost("/harness/presence/", {
+      const body = {
         tenant_slug: tenantSlug,
         actor,
         session_id: identity.session_id,
@@ -1930,27 +2315,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         ttl_seconds: args?.ttl_seconds ?? 60,
         status: args?.status ?? "active",
         mode: args?.mode ?? "heartbeat",
-      });
-      const mirror = await mirrorHarnessNode(
-        "presence",
-        args,
-        {
-          tenant_slug: tenantSlug,
-          actor,
-          session_id: identity.session_id,
-          surface: args?.surface ?? null,
-          worktree: identity.worktree,
-          branch: identity.branch,
-          head: identity.head,
-          changed_files: identity.changed_files,
-          ttl_seconds: args?.ttl_seconds ?? 60,
-          status: args?.status ?? "active",
-          mode: args?.mode ?? "heartbeat",
-          expires_at: result?.presence?.expires_at ?? null,
-        },
-        ["Presence"]
-      );
-      return jsonText(withThgMirror(result, mirror));
+      };
+      const result = await nativeCoordinationTool("presence", null, body);
+      return jsonText(result);
     }
 
     if (name === "coordination_room") {
@@ -1970,65 +2337,56 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         changed_files: identity.changed_files,
         lane: args?.lane ?? "",
       };
-      const result = await theoremPost("/harness/coordination/room/", body);
-      const mirror = await mirrorHarnessNode(
-        "coordination_room",
-        args,
-        body,
-        ["CoordinationRoom"]
-      );
-      return jsonText(withThgMirror(result, mirror));
+      const result = await nativeCoordinationTool("coordination_room", null, body);
+      return jsonText(result);
     }
 
     if (name === "subscribe") {
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
+      // Folded: the gossip subscription is no longer the awareness path. Turn-start
+      // coordination_context, mentions for interrupts, and presence for liveness
+      // carry awareness over the shared substrate (coordination-affordances plan).
+      return jsonText({
+        ok: true,
+        folded: true,
         actor: toolActor(args),
-        doc_id: args?.doc_id ?? null,
-      };
-      const mirror = await mirrorHarnessNode(
-        "subscribe",
-        args,
-        body,
-        ["Subscription"]
-      );
-      const result = await theoremPost("/harness/subscribe/", body);
-      return jsonText(withThgMirror(result, mirror));
+        note: "subscribe is folded. Use coordination_context at turn start, mentions for interrupts, and presence for liveness.",
+      });
     }
 
     if (name === "continuity_pack") {
+      // Native sole path: persist the continuity pack as a durable native
+      // coordination_record (record_type=reflection). No Python session endpoint.
       const identity = requestIdentity(args);
-      const body = {
-        tenant_slug: await requestTenantSlug(args),
+      const summary = requireString(args, "summary");
+      const nextAction = requireString(args, "next_action");
+      const nativeBody = {
+        tenant_slug: tenantId(args),
         actor: toolActor(args),
         room_id: args?.room_id ?? null,
-        session_id: identity.session_id,
-        surface: args?.surface ?? null,
-        repo: args?.repo ?? PROJECT_DIR,
-        branch: identity.branch,
-        task: args?.task ?? "continuity compaction",
-        worktree: identity.worktree,
-        head: identity.head,
-        changed_files: identity.changed_files,
-        objective: args?.objective ?? args?.task ?? "",
-        summary: requireString(args, "summary"),
-        next_action: requireString(args, "next_action"),
-        trigger: args?.trigger ?? "manual",
-        salient_nodes: args?.salient_nodes ?? [],
-        validation_receipts: args?.validation_receipts ?? [],
-        context_web_run_id: args?.context_web_run_id ?? null,
-        context_web_query: args?.context_web_query ?? null,
-        context_web_mode: args?.context_web_mode ?? "mini",
-        context_web_budget_tokens: args?.context_web_budget_tokens ?? 1200,
+        record_type: "reflection",
+        title: args?.objective || args?.task || "Continuity pack",
+        summary,
+        body: nextAction,
+        metadata: {
+          kind: "continuity_pack",
+          objective: args?.objective ?? args?.task ?? "",
+          next_action: nextAction,
+          trigger: args?.trigger ?? "manual",
+          salient_nodes: args?.salient_nodes ?? [],
+          validation_receipts: args?.validation_receipts ?? [],
+          session_id: identity.session_id,
+          branch: identity.branch,
+          head: identity.head,
+          changed_files: identity.changed_files,
+        },
       };
-      const result = await theoremPost("/harness/session/continuity-pack/", body);
-      const mirror = await mirrorHarnessNode(
+      const result = await nativeCoordinationTool(
         "continuity_pack",
-        args,
-        body,
-        ["ContinuityPack"]
+        "coordination_record",
+        nativeBody,
+        { family: "coordination" },
       );
-      return jsonText(withThgMirror(result, mirror));
+      return jsonText(result);
     }
 
     if (name === "provenance_trace") {
@@ -2137,20 +2495,14 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     }
 
     if (name === "saved_context_preview_recall") {
-      const tenantSlug = requireString(args, "tenant_slug");
-      const result = await theoremPost(
-        `/product/tenants/${tenantSlug}/saved-contexts/preview-recall/`,
-        {
-          task: requireString(args, "task"),
-          project_slug: args?.project_slug ?? null,
-          mode: args?.mode ?? null,
-          modes: args?.modes ?? [],
-          profile_id: args?.profile_id ?? null,
-          profile_ids: args?.profile_ids ?? [],
-          permissions: args?.permissions ?? [],
-        }
+      const result = await savedContextPreviewRecall(args);
+      const selection = HARNESS_ROUTE_POLICY.select({
+        verb: "saved_context_preview_recall",
+        scope: "shared",
+      });
+      return jsonText(
+        withRouteReceipt(result, directHttpRouteReceipt(selection, BASE_URL)),
       );
-      return jsonText(result);
     }
 
     if (name === "memory_patch_review_queue") {
