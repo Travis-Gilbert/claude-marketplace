@@ -61,3 +61,39 @@ Theorem/RustyRed substrate.
 - `rust.systems.unsafe_boundary`
 - `rust.code_search.structural_rewrite`
 - `rust.git.storage_io`
+
+
+## Encoded First-Party Run
+
+This skill was run through the Theseus `code_corpus_v1` pipeline against a first-party Theorem/RustyRed slice. The generated `provenance.json` contains the full content-addressed pack record.
+
+| Field | Value |
+|---|---|
+| `source_packet_id` | `source:rust-engineering-first-party-v1` |
+| `source_content_hash` | `sha256:fda037bfe51f515d3cabfebf0e74524063eb4dee7750f0cfe0af82bce6938889` |
+| `pack_content_hash` | `sha256:8508744bffca6d68d7bf8b42de9646903d1d87b945fc8fa0748f2dd0534a944e` |
+| lowered views | `930` |
+| compiled artifacts | `930` |
+
+Encoded source files:
+- `rustyredcore_THG/crates/theorem-harness-runtime/src/skill_pack.rs`
+- `rustyredcore_THG/crates/rustyred-thg-mcp/src/lib.rs`
+- `rustyredcore_THG/crates/theorem-harness-core/src/agent_binding.rs`
+- `rustyredcore_THG/crates/rustyred-thg-core/src/graph_store.rs`
+- `rustyredcore_THG/crates/rustyred-web/src/lib.rs`
+- `apps/browser-substrate/src/lib.rs`
+
+## Native Runtime Receipt
+
+The full 930-artifact pack is materialized in this skill folder. A bounded
+native MCP smoke projection was also published and applied through RustyRed so
+the runtime has a live receipt without sending the entire generated crate over
+one MCP request.
+
+| Field | Value |
+|---|---|
+| full `pack_content_hash` | `sha256:8508744bffca6d68d7bf8b42de9646903d1d87b945fc8fa0748f2dd0534a944e` |
+| smoke `pack_content_hash` | `sha256:ad4d29cd538986cc6d2a3a7e2fb3bd376cd3b217a4a90983069e036c354e386a` |
+| `skill_apply` receipt | `7d3db727e4516e8d822a4fb79ab0a7f7790f935fbf4de2a7a9032f755f820789` |
+| validator mode | `native_artifact_sandbox` |
+| matched artifact | `coordination_member_node` |

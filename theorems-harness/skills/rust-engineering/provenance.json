@@ -1,0 +1,35 @@
+{
+  "compiler": "theseus.skill_encoder.v1",
+  "confidence": {
+    "label": "scanned (compiled, not yet held-out validated)",
+    "trust_level": "scanned"
+  },
+  "corpus": {
+    "languages": [
+      "rust"
+    ],
+    "lowered_view_count": 930,
+    "source_class": "code_corpus_v1",
+    "source_content_hash": "sha256:fda037bfe51f515d3cabfebf0e74524063eb4dee7750f0cfe0af82bce6938889",
+    "source_ref": "source:rust-engineering-first-party-v1"
+  },
+  "pack": {
+    "artifact_count": 930,
+    "id": "skill-pack:rust-engineering-general-v0.2",
+    "kind": "skill_pack",
+    "pack_content_hash": "sha256:8508744bffca6d68d7bf8b42de9646903d1d87b945fc8fa0748f2dd0534a944e",
+    "validators": [
+      "code.schema_roundtrip",
+      "code.content_hash_provenance",
+      "code.no_canonical_mutation"
+    ],
+    "version": "0.2.0"
+  },
+  "sources": [
+    {
+      "lowering": "code_corpus_v1",
+      "source_content_hash": "sha256:fda037bfe51f515d3cabfebf0e74524063eb4dee7750f0cfe0af82bce6938889",
+      "source_ref": "local://Theorem/rust-engineering-first-party-v1"
+    }
+  ]
+}

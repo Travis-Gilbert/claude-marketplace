@@ -1,6 +1,6 @@
 ---
 name: rust-engineering
-description: Use when the user asks to write, review, debug, explain, encode, or improve Rust code, Cargo workspaces, Rust MCP/server crates, Rust validators, PyO3/FFI bridges, async Rust services, parsers/macros, systems code, or Rust skill-pack corpus work. Also use when a Theorems Harness agent should apply or update a general Rust skill from encoded Rust repos and ongoing Rust implementation traces.
+description: "Use when writing, reviewing, debugging, explaining, encoding, or improving Rust code, Cargo workspaces, Rust MCP/server crates, Rust validators, PyO3/FFI bridges, async Rust services, parsers/macros, systems code, or Rust skill-pack corpus work."
 ---
 
 # Rust Engineering
@@ -127,3 +127,44 @@ For Rust skill-pack work, report:
 - Treating `node --check`, `cargo fmt`, or a successful grep as runtime proof.
 - Turning one-off reasoning traces into public skills instead of encoding them
   as evidence for a broader Rust capability.
+
+## Capabilities
+- context_atom_template
+- dependency_context_hint
+- fallback_text_context
+- native_validator_candidate
+- source_file_context
+- structure_decision_hint
+- validator_contract
+
+## Scripts
+- `scripts/Cargo.toml`
+- `scripts/src/lib.rs`
+- `scripts/src/validators/validates_acquire_redcore_directory_lock.rs`
+- `scripts/src/validators/validates_active_head_ids.rs`
+- `scripts/src/validators/validates_add_edge_indexes.rs`
+- `scripts/src/validators/validates_add_node_indexes.rs`
+- `scripts/src/validators/validates_add_receipt_node.rs`
+- `scripts/src/validators/validates_add_seed_nodes.rs`
+- `scripts/src/validators/validates_adjacency_pair.rs`
+- `scripts/src/validators/validates_admin_tool_requires_read_write_mcp_mode_and_admin_scope.rs`
+- `scripts/src/validators/validates_agent_manifest.rs`
+- `scripts/src/validators/validates_algo_communities.rs`
+- `scripts/src/validators/validates_algo_components.rs`
+- `scripts/src/validators/validates_algorithm_communities_inline_payload.rs`
+- `scripts/src/validators/validates_algorithm_communities_inline_returns_labels_and_modularity.rs`
+- `scripts/src/validators/validates_algorithm_components_inline_partitions_disconnected_inline_graph.rs`
+- `scripts/src/validators/validates_algorithm_components_inline_payload.rs`
+- `scripts/src/validators/validates_algorithm_inline_tools_listed_in_tools_response.rs`
+- `scripts/src/validators/validates_algorithm_pagerank_inline_payload.rs`
+- `scripts/src/validators/validates_algorithm_pagerank_inline_returns_scores.rs`
+- `scripts/src/validators/validates_algorithm_ppr_inline_alias_routes_to_same_handler.rs`
+- `scripts/src/validators/validates_algorithm_ppr_inline_payload.rs`
+- `scripts/src/validators/validates_algorithm_ppr_inline_returns_scores_against_inline_adjacency.rs`
+- `scripts/src/validators/validates_algorithm_ppr_tenant_backed_response_shape_unchanged.rs`
+- 696 more generated script files; inspect `scripts/` as needed.
+
+## Provenance
+Distilled from source:rust-engineering-first-party-v1 (code_corpus_v1) at confidence "scanned (compiled, not yet held-out validated)". Full record in provenance.json.
+- pack_content_hash: sha256:8508744bffca6d68d7bf8b42de9646903d1d87b945fc8fa0748f2dd0534a944e
+- source_content_hash: sha256:fda037bfe51f515d3cabfebf0e74524063eb4dee7750f0cfe0af82bce6938889
