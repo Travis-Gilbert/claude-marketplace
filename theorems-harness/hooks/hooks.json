@@ -18,6 +18,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionstart-codebase.sh",
             "timeout": 10,
             "statusMessage": "Loading codebase context"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/inject-harness-directives.sh",
+            "timeout": 5,
+            "statusMessage": "Injecting harness directives"
           }
         ]
       }
@@ -35,9 +42,34 @@
           {
             "type": "command",
             "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/inject-harness-directives.sh",
+            "timeout": 5,
+            "statusMessage": "Injecting harness directives"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/checklist-contract.sh",
+            "timeout": 10,
+            "statusMessage": "Emitting harness checklist"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/subagent-suggest.sh",
             "timeout": 10,
             "statusMessage": "Suggesting subagents"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-blocker-scan.sh",
+            "timeout": 5,
+            "statusMessage": "Scanning for deferral signals"
           }
         ]
       }
@@ -126,6 +158,13 @@
     "Stop": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/checklist-gate.sh",
+            "timeout": 10,
+            "statusMessage": "Checking harness checklist"
+          },
           {
             "type": "command",
             "shell": "bash",

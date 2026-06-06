@@ -73,6 +73,24 @@ Any of these are valid inputs:
 8. If `handoff=spark` is requested, select the first bounded slice, define
    write/validation scope, delegate it, and stay in-thread to review.
 
+## Checklist Contract
+
+When planning from a handoff, spec, migration note, or enumerated deliverable
+list, emit a machine-readable checklist before implementation starts:
+
+- Write `.harness/checklist.json` in the working directory.
+- Create one item per handoff deliverable, preserving the deliverable title and
+  acceptance criterion.
+- Initialize each item with `status: "open"`, no verification evidence, and no
+  deferral reason.
+- Mirror the same checklist to the harness coordination substrate as a
+  room-visible coordination record so other agents inherit the contract.
+- Keep stable IDs from this checklist through execution and final reporting.
+
+Completion is reconciled against this checklist. An item is complete only when
+it is verified against its acceptance criterion, or when it carries an honest
+non-forbidden deferral reason.
+
 ## Output
 
 Right-size the deliverable:

@@ -43,6 +43,7 @@ Use these as abilities inside one run, not as competing products:
 | `execute` | Files must change, tests must run, bugs must be fixed, or a slice must ship. |
 | `diagnose` | A failure, regression, flaky test, deploy issue, or runtime surprise appears. |
 | `coordinate` | Claude Code, Codex, Claude.ai, or another agent may overlap the work. |
+| `ambition` | A build, plan, or handoff could be underscoped relative to what was asked. |
 | `compile_context` | The prompt/context is stale, broad, or missing the source surface. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
 | `validate` | A claim needs tests, screenshots, deploy proof, replay, or runtime evidence. |
@@ -168,6 +169,21 @@ For multi-agent work, coordination is a lightweight safety layer:
 The durable model is room digest plus interrupt mailbox: membership, intents,
 reflections, decisions, tensions, events, continuity packs, and pending mentions
 survive agent sleep; short-TTL presence only says who is fresh.
+
+## Hook Enforcement Layer
+
+The plugin hook layer makes the highest-risk harness disciplines deterministic:
+
+- `SessionStart` and build-shaped `UserPromptSubmit` events inject the ambition
+  frame so plans do not shrink the request before execution begins.
+- Handoff-shaped prompts emit `.harness/checklist.json` and mirror it into the
+  coordination substrate as the shared contract.
+- `PostToolUse` and `Stop` scan for blocker or deferral language and inject the
+  engineering-mindset directive when the agent starts giving up too early.
+- `Stop` blocks completion while checklist items remain unresolved or carry
+  forbidden deferral phrases from `references/CONVENTIONS.md`.
+- Investigation-shaped prompts inject the curiosity frame as an enricher, not a
+  gate.
 
 ## Output Discipline
 
