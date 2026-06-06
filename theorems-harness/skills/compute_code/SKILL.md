@@ -1,15 +1,21 @@
 ---
 name: compute_code
-description: Use this skill when the user wants code search ranked by graph structure rather than by exact-string matching. Routes to the most appropriate of the four RustyRed inline graph algorithm MCP tools (`rustyred_thg_algorithm_ppr_inline`, `rustyred_thg_algorithm_pagerank_inline`, `rustyred_thg_algorithm_components_inline`, `rustyred_thg_algorithm_communities_inline`) based on the shape of the question. Triggers on phrases like "what's relevant to X", "what depends on Y", "rank by importance", "which files matter most", "what's connected to", "cluster these files", "find related code", "structural code search", and generally any code-discovery question where the answer should be ranked by adjacency/centrality/community rather than by keyword. Also triggers when the agent has just been given an adjacency map or code-graph context and needs to compute over it. Auto-triggerable from Orchestrate when a code-search subtask emerges; also user-invocable as `/compute_code`.
+description: Use this skill when the user wants native code discovery, code graph search, or graph-structural code ranking. Prefer the native CodeCrawler-backed `compute_code` MCP tool, which aliases the Theorem `code_search` MCP surface. Fall back to the RustyRed inline graph algorithm MCP tools only when the caller already has an adjacency map or needs pure graph math. User-invocable as `/compute_code`.
 ---
 
 # compute_code
 
-Routing skill for code search via RustyRed inline graph algorithms.
+Routing skill for native Theorem code discovery.
 
-The skill does not own a single algorithm. It owns the **intent-to-algorithm
-mapping** and the **shared input contract**. Given an intent and an adjacency,
-it picks the right tool, calls it, and returns ranked results with provenance.
+The skill keeps `/compute_code` as the human-facing command while routing to the
+new native MCP-backed code graph. Prefer the `compute_code` MCP tool when it is
+available. It is an alias for the Theorem CodeCrawler-backed `code_search` MCP
+surface, so it can search, explain, recognize, explore, ingest, and reindex code
+through the same native code graph.
+
+Use the older inline graph algorithms only as a fallback when you already have
+an adjacency map in hand or when the task is explicitly about centrality,
+connected components, or community detection over a supplied graph.
 
 ## When to use
 
@@ -17,20 +23,55 @@ Fire when the user asks a question whose answer is "code ranked by structural
 relevance," not "code matching this exact string."
 
 Good fits:
-- "What's related to `PairformerEncoder` in this repo?" → PPR seeded at that symbol
-- "Which files in this codebase are the load-bearing ones?" → global PageRank
-- "Are these modules actually independent or do they share dependencies?" → connected components
-- "Cluster these files by how tightly coupled they are" → label-propagation communities
+- "Find code related to `PairformerEncoder` in this repo"
+- "Explain where `native_code_search` lives and what calls it"
+- "Search the code graph for GraphStore persistence"
+- "Explore symbols around this file or node"
+- "Refresh this repo in the native code graph"
+- "Rank this supplied adjacency by importance"
+- "Cluster these supplied files by coupling"
 - The agent has built an adjacency map (from tree-sitter, imports, calls) and needs to compute over it
 
 Not a fit:
 - Pure exact-string lookup → use `Grep`
 - "Where is FooClass defined?" with a known unique symbol → use `Grep` or LSP
-- "Explain what this function does" → use Read, or `code_theorem` if Theseus has ingested the area
-- "What did this change touch?" → use `code_impact` from the Theorem MCP via `code_theorem`
-- Adjacency > 100,000 edges → use the tenant-backed counterpart (`rustyred_thg_algorithm_<name>` without `_inline`); ingest the graph into a tenant first via the `rustyred_thg_bulk_nodes` / `rustyred_thg_bulk_edges` write tools
+- "Explain this exact open function" when the file is already in context → use `Read`
+- Adjacency > 100,000 edges → use tenant-backed graph compute after ingestion
 
-## Algorithm routing (the intent map)
+## Preferred MCP path: native CodeCrawler
+
+Call the MCP tool named `compute_code` when it is available. If that alias is not
+visible in the current host, call `code_search` with the same arguments.
+
+Operation routing:
+
+| Intent shape | Operation | Notes |
+|---|---|---|
+| Find symbols/files by topic or name | `search` | Default operation. Use `query`, optional `repo_id`, `file_path`, `path_prefix`, `kinds`, `limit`. |
+| Explain a symbol or result | `explain` | Use after search, or directly with `query`/`node_id`. |
+| Expand surrounding source context | `context` | Use `node_id`, `file_path`, and optional `max_chars`. |
+| Extract symbols from inline text or a file | `recognize` | Use `text` or `file_path`. |
+| Explore call/dependency edges | `explore` | Use `node_id`, `query`, and optional `max_depth`. |
+| Ingest a repo path | `ingest` | Write operation; use only when the operator has approved indexing. |
+| Reindex a repo path | `reindex` | Write operation; use only when refreshing a known index. |
+| Record tool-use outcome | `record_use_receipt` | Write operation for learning receipts. |
+
+Minimal search call:
+
+```json
+{
+  "operation": "search",
+  "query": "GraphStore persistence",
+  "repo_id": "repo:theorem",
+  "limit": 10
+}
+```
+
+## Fallback path: inline graph algorithms
+
+Use this path only when native `compute_code` / `code_search` is unavailable or
+when the caller already supplied an adjacency map and explicitly needs graph
+math.
 
 | Intent shape | Tool | One-line reason |
 |---|---|---|
@@ -69,39 +110,24 @@ pointing to the tenant-backed counterpart.
 
 ## Standard flow
 
-1. **Identify intent shape.** Map the user's question to one of the four
-   intent rows in the routing table. If the question doesn't fit any row,
-   compute_code is the wrong skill: defer to Grep, `code_theorem`, or
-   ask the user to clarify.
+1. **Choose native first.** If the user asks for code discovery, code graph
+   search, symbol context, explanation, or repo indexing, call the MCP
+   `compute_code` tool. If only `code_search` is visible, call `code_search`.
 
-2. **Identify the seed (PPR only).** For PPR, the seed is the symbol /
-   file / module the user is asking about. If they said "what's near
-   `PairUpdate`," seed is `PairUpdate`. If they said "what's related to
-   `apps/notebook/encode/synthesis.py`," seed is that file path. Seed
-   format must match adjacency node IDs.
+2. **Choose the operation.** Default to `search`. Use `explain`, `context`,
+   `recognize`, or `explore` when the user's wording asks for those directly.
+   Use `ingest` or `reindex` only after operator approval.
 
-3. **Acquire the adjacency.** Three acceptable sources, in priority order:
-   - The caller already provided one (e.g., from a prior code-search step
-     in Orchestrate).
-   - Build one with a quick tree-sitter pass over the working directory:
-     nodes are files/symbols, edges are imports + calls + references,
-     weights default to 1.0 (or use frequency if the source supports it).
-   - If neither is feasible (large repo, no extraction infrastructure),
-     fall back to suggesting the tenant-backed path with Theseus code
-     ingestion.
+3. **Fallback only for explicit adjacency.** If the task supplies an adjacency
+   or asks for centrality/components/communities over a graph, route through the
+   inline algorithm table.
 
-4. **Validate the budget.** Count edges before calling. If > 100,000,
-   refuse to call inline and surface the tenant-backed alternative.
+4. **Validate inline budgets.** Count edges before calling an inline algorithm.
+   If > 100,000, surface the tenant-backed path instead.
 
-5. **Call the MCP tool.** Use the standard MCP toolchain. With the
-   theorems-harness plugin loaded, the tool name surfaces as something
-   like `mcp__rustyred-thg__rustyred_thg_algorithm_<name>_inline`. Pass
-   `top_k` (e.g., 10) on PPR/PageRank to bound the response.
-
-6. **Surface results with provenance.** Always tell the user which
-   algorithm fired, why it was the right choice, and what the result
-   ranking means in their question's terms ("top 5 files most related
-   to `PairUpdate` by PPR from a seed at `modal_app/epignn_model.py:90`").
+5. **Surface results with provenance.** State whether the result came from
+   native CodeCrawler or from an inline graph algorithm. Include the operation,
+   query/seed, top-K, and any receipt or graph evidence the tool returned.
 
 ## Orchestrate integration
 
@@ -139,11 +165,11 @@ positives.
 ## Output shape
 
 Return:
-- **Algorithm chosen** + one-line justification ("PPR because the user asked
-  for files relevant to a specific seed symbol").
+- **Route chosen** (`compute_code`/CodeCrawler or inline algorithm) plus a
+  one-line justification.
 - **Ranked results** (use top_k by default, typically 10).
-- **Adjacency size** (echo back `edge_count` from the tool response).
-- **Seed** (if PPR).
+- **Operation** (`search`, `explain`, `context`, etc.) or **algorithm** (if inline).
+- **Seed** (if PPR) or **query/node_id** (if CodeCrawler).
 - **Pointer to underlying tool** if the caller wants to drill in.
 
 Do NOT return:
@@ -154,13 +180,11 @@ Do NOT return:
 ## What this skill explicitly does NOT do
 
 - It does not build the code graph itself. The skill consumes an adjacency.
-  Code-graph extraction is a separate concern handled by tree-sitter,
-  `code_theorem`, or a per-session adjacency builder.
+  Code-graph extraction is handled by native CodeCrawler ingestion/reindexing.
 - It does not deduplicate against `code_theorem`. They are complementary:
   `code_theorem` reads Theseus's pre-ingested code knowledge; `compute_code`
-  computes structurally over an arbitrary adjacency you have in hand.
-- It does not write to any RustyRed tenant. The inline path is stateless
-  by design.
+  now routes to Theorem's native code graph first and computes structurally over
+  arbitrary adjacency only when using the fallback path.
 
 ## References
 

@@ -15,7 +15,7 @@ revise that choice as evidence changes.
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
 | `/encode` | Durable feedback, solution, or postmortem write. |
-| `/compute_code` | Graph-structural code ranking. |
+| `/compute_code` | Native CodeCrawler-backed code discovery, with graph-structural ranking fallback. |
 
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.

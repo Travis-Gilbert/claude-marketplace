@@ -98,7 +98,7 @@ final claims.
     launch-ready reporting.
   - `/encode` for feedback, solution, or postmortem memory.
   - `/research` for direct fractal expansion / gap-frontier discovery.
-  - `/compute_code` for graph-structural code ranking.
+  - `/compute_code` for native CodeCrawler-backed code discovery, with graph-structural ranking fallback.
 
 Compatibility commands such as `/execute` may remain installed, but new work
 should prefer `/harness` plus adaptive routing.
@@ -113,7 +113,7 @@ should prefer `/harness` plus adaptive routing.
 | `harness_step` | Record a step inside an open run. |
 | `harness_search` | Search inside the run, recording tool-call and observation steps. |
 | `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
-| `code_search` | Search ingested code symbols through CodeCrawler / code graph. |
+| `code_search` / `compute_code` | Search, explain, explore, ingest, or reindex code through the native CodeCrawler / code graph path. |
 | `harness_context` | Compile the context artifact for the current run. |
 | `harness_patch` | Propose a patch to the harness belief state. |
 | `harness_replay` | Get the full event timeline of a run. |
