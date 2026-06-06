@@ -34,20 +34,15 @@ Theorem/RustyRed substrate.
 | `https://github.com/rust-lang/rust-analyzer.git` | IDE-grade syntax/semantic analysis and incremental query architecture. |
 | `https://github.com/rayon-rs/rayon.git` | Data parallelism, work stealing, safe concurrency patterns. |
 | `https://github.com/astral-sh/ruff.git` | Large high-performance Rust application with parser/linter architecture. |
-| Local `Theorem/rustyredcore_THG` | RustyRed/THG GraphStore, native MCP, harness runtime, skill-pack serving. |
+| Local `Theorem/rustyredcore_THG` | RustyRed/THG GraphStore, native MCP, harness runtime, skill-pack serving, affordance charters, and Ensemble pack selection. |
 
 ## Corpus Policy
 
-- Refresh versions before a real ingest. Version pins above are seeds, not
-  claims that the listed release is latest.
-- Prefer representative slices over cloning every line of huge repos. Use
-  Cargo metadata, public APIs, tests, docs, and high-signal modules first.
+- Refresh versions before a real ingest. Version pins above are seeds, not claims that the listed release is latest.
+- Prefer representative slices over cloning every line of huge repos. Use Cargo metadata, public APIs, tests, docs, and high-signal modules first.
 - Keep licenses and attribution in the pack metadata.
-- Encode local Theorem/RustyRed work continuously: every reusable validator,
-  dependency-boundary fix, GraphStore contract, and native MCP lesson can update
-  the Rust skill.
-- Separate examples by domain so future agents can retrieve the relevant
-  pattern without loading the whole corpus.
+- Encode local Theorem/RustyRed work continuously: every reusable validator, dependency-boundary fix, GraphStore contract, Ensemble selector rule, affordance charter lesson, and native MCP lesson can update the Rust skill.
+- Separate examples by domain so future agents can retrieve the relevant pattern without loading the whole corpus.
 
 ## Candidate Pattern Tags
 
@@ -57,43 +52,66 @@ Theorem/RustyRed substrate.
 - `rust.proc_macro.ast`
 - `rust.ffi.pyo3_export`
 - `rust.validator.native_artifact`
+- `rust.ensemble.pack_selector`
+- `rust.affordance.charter`
 - `rust.ml.tensor_fixture`
 - `rust.systems.unsafe_boundary`
 - `rust.code_search.structural_rewrite`
 - `rust.git.storage_io`
 
 
-## Encoded First-Party Run
+## Encoded Upgraded System Run
 
-This skill was run through the Theseus `code_corpus_v1` pipeline against a first-party Theorem/RustyRed slice. The generated `provenance.json` contains the full content-addressed pack record.
+This skill was rerun through Theseus `code_corpus_v1` after the Ensemble crate and IL/exporter updates landed. The generated `provenance.json` contains the full content-addressed pack record.
 
 | Field | Value |
 |---|---|
-| `source_packet_id` | `source:rust-engineering-first-party-v1` |
-| `source_content_hash` | `sha256:fda037bfe51f515d3cabfebf0e74524063eb4dee7750f0cfe0af82bce6938889` |
-| `pack_content_hash` | `sha256:8508744bffca6d68d7bf8b42de9646903d1d87b945fc8fa0748f2dd0534a944e` |
-| lowered views | `930` |
-| compiled artifacts | `930` |
+| `source_packet_id` | `source:rust-engineering-upgraded-system-v1` |
+| `source_content_hash` | `sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e` |
+| `pack_content_hash` | `sha256:180a04297e7040edb2716a5fe2d336593634cd55c5905c2b035fea63ae135de2` |
+| lowered views | `1408` |
+| compiled artifacts | `869` |
+| rendered validator scripts | `514` |
+| compiler path | `Index-API/apps/notebook/encode` (`code_corpus.py`, `codegen/rust.py`, `skill_export.py`) |
 
 Encoded source files:
+- `rustyredcore_THG/crates/ensemble/src/lib.rs`
+- `rustyredcore_THG/crates/ensemble/src/registry.rs`
+- `rustyredcore_THG/crates/ensemble/src/selector.rs`
+- `rustyredcore_THG/crates/ensemble/src/decision.rs`
+- `rustyredcore_THG/crates/ensemble/src/trust.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/lib.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/types.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/registry.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/selection.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/charter.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/outcomes.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/training.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/registry_test.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/selection_test.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/charter_test.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/outcomes_test.rs`
+- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/training_test.rs`
+- `rustyredcore_THG/crates/theorem-harness-runtime/src/lib.rs`
 - `rustyredcore_THG/crates/theorem-harness-runtime/src/skill_pack.rs`
-- `rustyredcore_THG/crates/rustyred-thg-mcp/src/lib.rs`
 - `rustyredcore_THG/crates/theorem-harness-core/src/agent_binding.rs`
 - `rustyredcore_THG/crates/rustyred-thg-core/src/graph_store.rs`
+- `rustyredcore_THG/crates/rustyred-thg-core/src/lib.rs`
+- `rustyredcore_THG/crates/rustyred-thg-mcp/src/lib.rs`
 - `rustyredcore_THG/crates/rustyred-web/src/lib.rs`
 - `apps/browser-substrate/src/lib.rs`
 
 ## Native Runtime Receipt
 
-The full 930-artifact pack is materialized in this skill folder. A bounded
-native MCP smoke projection was also published and applied through RustyRed so
-the runtime has a live receipt without sending the entire generated crate over
-one MCP request.
+The full 869-artifact pack is materialized in this skill folder. A bounded native MCP smoke projection was also published and applied through RustyRed so the runtime has a live receipt without sending the entire generated crate over one MCP request.
 
 | Field | Value |
 |---|---|
-| full `pack_content_hash` | `sha256:8508744bffca6d68d7bf8b42de9646903d1d87b945fc8fa0748f2dd0534a944e` |
-| smoke `pack_content_hash` | `sha256:ad4d29cd538986cc6d2a3a7e2fb3bd376cd3b217a4a90983069e036c354e386a` |
-| `skill_apply` receipt | `7d3db727e4516e8d822a4fb79ab0a7f7790f935fbf4de2a7a9032f755f820789` |
+| full `pack_content_hash` | `sha256:180a04297e7040edb2716a5fe2d336593634cd55c5905c2b035fea63ae135de2` |
+| smoke `pack_content_hash` | `sha256:5f48f570441f2109c02e597a721038bc546e9d7c243ab54bf919fc667aa1b3a6` |
+| `source_content_hash` | `sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e` |
+| `skill_apply` receipt | `86e3b9d95ccc0e6f9e7a3e88b894b191085a8f2f08d2292e2e21c529441bd6df` |
 | validator mode | `native_artifact_sandbox` |
-| matched artifact | `coordination_member_node` |
+| matched artifact | `pack_get_node` |
+| artifact hash | `sha256:573be0cf113766e272bf65cb422a79ad46a3dd444697d5e44df3226cb4acb966` |
+| native route | `native-mcp`, `fallbackUsed=false` |
