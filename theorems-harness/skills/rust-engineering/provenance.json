@@ -8,28 +8,40 @@
     "languages": [
       "rust"
     ],
-    "lowered_view_count": 1408,
+    "lowered_view_count": 3325,
     "source_class": "code_corpus_v1",
-    "source_content_hash": "sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e",
-    "source_ref": "source:rust-engineering-upgraded-system-v1"
+    "source_content_hash": "sha256:683af3877bc763fb5202ed7c0d6303b47685214408973c468a77af87c1019f96",
+    "source_ref": "source:rust-engineering-external-corpus-v0.4"
   },
   "pack": {
-    "artifact_count": 869,
-    "id": "skill-pack:rust-engineering-general-v0.3",
+    "artifact_count": 2139,
+    "id": "skill-pack:rust-engineering-general-v0.4",
     "kind": "skill_pack",
-    "pack_content_hash": "sha256:180a04297e7040edb2716a5fe2d336593634cd55c5905c2b035fea63ae135de2",
+    "pack_content_hash": "sha256:325ba9cbba248cadb5edc2c207f1b5071331d64e7e2191f8ebbfa3d2fa92cf43",
     "validators": [
       "code.schema_roundtrip",
       "code.content_hash_provenance",
       "code.no_canonical_mutation"
     ],
-    "version": "0.3.0"
+    "version": "0.4.0"
+  },
+  "promotion": {
+    "benchmark_treatment_beats_baseline": false,
+    "canonical_ready": false,
+    "regression_signals": [
+      "held_out_treatment_task_floor_not_met",
+      "held_out_baseline_task_floor_not_met",
+      "treatment_does_not_beat_baseline",
+      "treatment_validator_pass_rate_below_policy"
+    ],
+    "state": "scanned",
+    "task_count": 20
   },
   "sources": [
     {
       "lowering": "code_corpus_v1",
-      "source_content_hash": "sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e",
-      "source_ref": "local://Theorem/rust-engineering-upgraded-system-v1"
+      "source_content_hash": "sha256:683af3877bc763fb5202ed7c0d6303b47685214408973c468a77af87c1019f96",
+      "source_ref": "local+external://rust-engineering-v0.4"
     }
   ]
 }

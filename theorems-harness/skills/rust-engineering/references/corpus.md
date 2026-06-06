@@ -1,117 +1,163 @@
 # Rust Skill Corpus
 
-Use this reference when selecting Rust sources to encode into a general Rust
-skill pack. The corpus should cover language mechanics, real production
-frameworks, systems code, ML/data code, parser/macro code, and the local
-Theorem/RustyRed substrate.
+This skill is refreshed by `apps/notebook/encode/refresh_rust_skill.py`.
+It combines local Theorem/RustyRed substrate files with bounded slices
+from external Rust repositories so the skill remains broad rather than
+a one-product RustyRed-only pack.
 
-## Seed Corpus
-
-| Source | Why it belongs |
-|---|---|
-| `pkg:cargo/syn@2.0.117` | AST parsing, proc-macro input modeling, robust syntax handling. |
-| `pkg:cargo/base64@0.22.1` | Small focused crate with API design, feature flags, and tests. |
-| `https://github.com/dtolnay/quote.git` | Token generation, macro ergonomics, minimal API surface. |
-| `https://github.com/huggingface/candle.git` | ML tensors, model loading, deterministic numerical fixtures. |
-| `https://github.com/TheAlgorithms/Rust.git` | Broad algorithm patterns and many small testable examples. |
-| `https://github.com/tensorzero/tensorzero.git` | Production Rust + AI system architecture, gateways, evals, data flows. |
-| `https://github.com/servo/servo.git` | Browser/systems Rust, async/resource loading, platform seams. |
-| `https://github.com/git-ai-project/git-ai.git` | Git/AI workflow integration and repository-agent patterns. |
-| `https://github.com/DragonOS-Community/DragonOS.git` | OS/kernel Rust, unsafe boundaries, hardware/platform constraints. |
-| `https://github.com/ast-grep/ast-grep.git` | Structural code search, parser-backed rewriting, tree-sitter patterns. |
-| `https://github.com/GitoxideLabs/gitoxide.git` | Large production Git implementation, no-libgit2 architecture, IO/error design. |
-
-## Additions Worth Encoding
-
-| Source | Why it belongs |
-|---|---|
-| `https://github.com/tokio-rs/tokio.git` | Async runtime, tasks, channels, cancellation, time, test utilities. |
-| `https://github.com/tokio-rs/axum.git` | Router/handler/extractor patterns and HTTP service testing. |
-| `https://github.com/hyperium/tonic.git` | gRPC service contracts, prost integration, streaming RPCs. |
-| `https://github.com/serde-rs/serde.git` | Serialization contracts, derive behavior, compatibility concerns. |
-| `https://github.com/PyO3/pyo3.git` | Python bridge patterns, exported module names, error conversion. |
-| `https://github.com/rust-lang/cargo.git` | Cargo workspace, feature resolution, package metadata, lockfile behavior. |
-| `https://github.com/rust-lang/rust-analyzer.git` | IDE-grade syntax/semantic analysis and incremental query architecture. |
-| `https://github.com/rayon-rs/rayon.git` | Data parallelism, work stealing, safe concurrency patterns. |
-| `https://github.com/astral-sh/ruff.git` | Large high-performance Rust application with parser/linter architecture. |
-| Local `Theorem/rustyredcore_THG` | RustyRed/THG GraphStore, native MCP, harness runtime, skill-pack serving, affordance charters, and Ensemble pack selection. |
-
-## Corpus Policy
-
-- Refresh versions before a real ingest. Version pins above are seeds, not claims that the listed release is latest.
-- Prefer representative slices over cloning every line of huge repos. Use Cargo metadata, public APIs, tests, docs, and high-signal modules first.
-- Keep licenses and attribution in the pack metadata.
-- Encode local Theorem/RustyRed work continuously: every reusable validator, dependency-boundary fix, GraphStore contract, Ensemble selector rule, affordance charter lesson, and native MCP lesson can update the Rust skill.
-- Separate examples by domain so future agents can retrieve the relevant pattern without loading the whole corpus.
-
-## Candidate Pattern Tags
-
-- `rust.workspace.manifest_edge`
-- `rust.async.broadcast_sse`
-- `rust.graphstore.persistence`
-- `rust.proc_macro.ast`
-- `rust.ffi.pyo3_export`
-- `rust.validator.native_artifact`
-- `rust.ensemble.pack_selector`
-- `rust.affordance.charter`
-- `rust.ml.tensor_fixture`
-- `rust.systems.unsafe_boundary`
-- `rust.code_search.structural_rewrite`
-- `rust.git.storage_io`
-
-
-## Encoded Upgraded System Run
-
-This skill was rerun through Theseus `code_corpus_v1` after the Ensemble crate and IL/exporter updates landed. The generated `provenance.json` contains the full content-addressed pack record.
+## Refresh Summary
 
 | Field | Value |
 |---|---|
-| `source_packet_id` | `source:rust-engineering-upgraded-system-v1` |
-| `source_content_hash` | `sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e` |
-| `pack_content_hash` | `sha256:180a04297e7040edb2716a5fe2d336593634cd55c5905c2b035fea63ae135de2` |
-| lowered views | `1408` |
-| compiled artifacts | `869` |
-| rendered validator scripts | `514` |
-| compiler path | `Index-API/apps/notebook/encode` (`code_corpus.py`, `codegen/rust.py`, `skill_export.py`) |
+| `source_packet_id` | `source:rust-engineering-external-corpus-v0.4` |
+| `source_content_hash` | `sha256:683af3877bc763fb5202ed7c0d6303b47685214408973c468a77af87c1019f96` |
+| `pack_content_hash` | `sha256:325ba9cbba248cadb5edc2c207f1b5071331d64e7e2191f8ebbfa3d2fa92cf43` |
+| lowered views | `3325` |
+| compiled artifacts | `2139` |
+| selected source files | `115` |
+| trust level | `scanned` |
+| canonical ready | `False` |
 
-Encoded source files:
-- `rustyredcore_THG/crates/ensemble/src/lib.rs`
-- `rustyredcore_THG/crates/ensemble/src/registry.rs`
-- `rustyredcore_THG/crates/ensemble/src/selector.rs`
-- `rustyredcore_THG/crates/ensemble/src/decision.rs`
-- `rustyredcore_THG/crates/ensemble/src/trust.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/lib.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/types.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/registry.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/selection.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/charter.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/outcomes.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/training.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/registry_test.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/selection_test.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/charter_test.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/outcomes_test.rs`
-- `rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/training_test.rs`
-- `rustyredcore_THG/crates/theorem-harness-runtime/src/lib.rs`
-- `rustyredcore_THG/crates/theorem-harness-runtime/src/skill_pack.rs`
-- `rustyredcore_THG/crates/theorem-harness-core/src/agent_binding.rs`
-- `rustyredcore_THG/crates/rustyred-thg-core/src/graph_store.rs`
-- `rustyredcore_THG/crates/rustyred-thg-core/src/lib.rs`
-- `rustyredcore_THG/crates/rustyred-thg-mcp/src/lib.rs`
-- `rustyredcore_THG/crates/rustyred-web/src/lib.rs`
-- `apps/browser-substrate/src/lib.rs`
+## External Corpus
 
-## Native Runtime Receipt
+| Source | Commit | Files | Status | Why |
+|---|---:|---:|---|---|
+| `https://github.com/dtolnay/syn.git` | `353d20b9ee40` | `8` | `cached` | Rust AST parsing and proc-macro input modeling. |
+| `https://github.com/dtolnay/quote.git` | `ba07807af385` | `8` | `cached` | Token generation and macro ergonomics. |
+| `https://github.com/marshallpierce/rust-base64.git` | `13f4fe86e565` | `8` | `cached` | Small focused crate with API design, feature flags, and tests. |
+| `https://github.com/huggingface/candle.git` | `b5a101a3b745` | `8` | `cached` | ML tensor and model-loading patterns. |
+| `https://github.com/TheAlgorithms/Rust.git` | `7789289348bb` | `2` | `cached` | Broad algorithm implementations with small tests. |
+| `https://github.com/tensorzero/tensorzero.git` | `62eb8f63e8ec` | `8` | `cached` | Production Rust AI gateway and evaluation architecture. |
+| `https://github.com/servo/servo.git` | `92c8770e55d5` | `8` | `cached` | Browser and systems Rust with platform seams. |
+| `https://github.com/git-ai-project/git-ai.git` | `5647ea559450` | `8` | `cached` | Git and AI workflow integration. |
+| `https://github.com/DragonOS-Community/DragonOS.git` | `c57512cc5e7f` | `8` | `cached` | OS/kernel Rust and unsafe boundary patterns. |
+| `https://github.com/ast-grep/ast-grep.git` | `796ccba08222` | `8` | `cached` | Parser-backed structural search and rewrite patterns. |
+| `https://github.com/GitoxideLabs/gitoxide.git` | `eac50e1207e2` | `8` | `cached` | Large production Git implementation and IO/error design. |
 
-The full 869-artifact pack is materialized in this skill folder. A bounded native MCP smoke projection was also published and applied through RustyRed so the runtime has a live receipt without sending the entire generated crate over one MCP request.
+## Selected Files
 
-| Field | Value |
-|---|---|
-| full `pack_content_hash` | `sha256:180a04297e7040edb2716a5fe2d336593634cd55c5905c2b035fea63ae135de2` |
-| smoke `pack_content_hash` | `sha256:5f48f570441f2109c02e597a721038bc546e9d7c243ab54bf919fc667aa1b3a6` |
-| `source_content_hash` | `sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e` |
-| `skill_apply` receipt | `86e3b9d95ccc0e6f9e7a3e88b894b191085a8f2f08d2292e2e21c529441bd6df` |
-| validator mode | `native_artifact_sandbox` |
-| matched artifact | `pack_get_node` |
-| artifact hash | `sha256:573be0cf113766e272bf65cb422a79ad46a3dd444697d5e44df3226cb4acb966` |
-| native route | `native-mcp`, `fallbackUsed=false` |
+- `local/theorem/rustyredcore_THG/crates/ensemble/src/lib.rs`
+- `local/theorem/rustyredcore_THG/crates/ensemble/src/registry.rs`
+- `local/theorem/rustyredcore_THG/crates/ensemble/src/selector.rs`
+- `local/theorem/rustyredcore_THG/crates/ensemble/src/decision.rs`
+- `local/theorem/rustyredcore_THG/crates/ensemble/src/trust.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-runtime/src/lib.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-runtime/src/skill_pack.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-runtime/src/coordination.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-runtime/src/memory.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-runtime/src/event_log.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-runtime/src/binding_store.rs`
+- `local/theorem/rustyredcore_THG/crates/theorem-harness-core/src/agent_binding.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-core/src/graph_store.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-core/src/symbolic.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-core/src/lib.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-mcp/src/lib.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/lib.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/types.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/registry.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/selection.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/charter.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/outcomes.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/training.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/registry_test.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/selection_test.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/charter_test.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/outcomes_test.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-thg-affordances/src/tests/training_test.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-web/src/lib.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-web/src/fetch_cascade.rs`
+- `local/theorem/rustyredcore_THG/crates/rustyred-web/src/robots.rs`
+- `local/theorem/apps/browser-substrate/src/lib.rs`
+- `local/theorem/apps/browser-substrate/tests/persistence.rs`
+- `external/syn/Cargo.toml`
+- `external/syn/src/lib.rs`
+- `external/syn/tests/test_token_trees.rs`
+- `external/syn/tests/test_parse_quote.rs`
+- `external/syn/tests/test_asyncness.rs`
+- `external/syn/tests/regression.rs`
+- `external/syn/tests/test_attribute.rs`
+- `external/syn/tests/test_derive_input.rs`
+- `external/quote/Cargo.toml`
+- `external/quote/src/lib.rs`
+- `external/quote/tests/compiletest.rs`
+- `external/quote/tests/test.rs`
+- `external/quote/benches/lib.rs`
+- `external/quote/benches/main.rs`
+- `external/quote/src/to_tokens.rs`
+- `external/quote/src/runtime.rs`
+- `external/base64/Cargo.toml`
+- `external/base64/src/lib.rs`
+- `external/base64/tests/encode.rs`
+- `external/base64/tests/tests.rs`
+- `external/base64/src/tests.rs`
+- `external/base64/benches/benchmarks.rs`
+- `external/base64/examples/base64.rs`
+- `external/base64/src/alphabet.rs`
+- `external/candle/Cargo.toml`
+- `external/candle/candle-core/src/lib.rs`
+- `external/candle/candle-core/src/cuda_backend/error.rs`
+- `external/candle/candle-core/src/error.rs`
+- `external/candle/candle-core/src/quantized/tokenizer.rs`
+- `external/candle/candle-core/src/test_utils.rs`
+- `external/candle/candle-core/Cargo.toml`
+- `external/candle/candle-core/src/accelerate.rs`
+- `external/the-algorithms-rust/Cargo.toml`
+- `external/the-algorithms-rust/src/lib.rs`
+- `external/tensorzero/crates/gateway/tests/error_json.rs`
+- `external/tensorzero/crates/tensorzero-derive/tests/deserialize.rs`
+- `external/tensorzero/crates/tensorzero-client/tests/test_stored_inferences.rs`
+- `external/tensorzero/crates/autopilot-tools/tests/config_tools.rs`
+- `external/tensorzero/crates/autopilot-tools/tests/datapoint_tools.rs`
+- `external/tensorzero/crates/autopilot-tools/tests/episode_tools.rs`
+- `external/tensorzero/crates/autopilot-tools/tests/feedback_tools.rs`
+- `external/tensorzero/crates/autopilot-tools/tests/inference_tool.rs`
+- `external/servo/Cargo.toml`
+- `external/servo/components/net/tests/main.rs`
+- `external/servo/components/storage/tests/main.rs`
+- `external/servo/components/url/tests/main.rs`
+- `external/servo/components/hyper_serde/tests/tokens.rs`
+- `external/servo/components/background_hang_monitor/tests/hang_monitor_tests.rs`
+- `external/servo/components/fonts/tests/font.rs`
+- `external/servo/components/fonts/tests/font_context.rs`
+- `external/git-ai/Cargo.toml`
+- `external/git-ai/src/lib.rs`
+- `external/git-ai/src/main.rs`
+- `external/git-ai/tests/async_mode.rs`
+- `external/git-ai/tests/commit_hunks.rs`
+- `external/git-ai/tests/commit_tree_update_ref.rs`
+- `external/git-ai/tests/config_fresh_test.rs`
+- `external/git-ai/tests/notes_sync_regression.rs`
+- `external/dragonos/kernel/crates/bitmap/tests/alloc-bitmap.rs`
+- `external/dragonos/kernel/crates/bitmap/tests/static-bitmap.rs`
+- `external/dragonos/kernel/crates/intertrait/tests/castable_to.rs`
+- `external/dragonos/kernel/crates/intertrait/tests/on-enum.rs`
+- `external/dragonos/kernel/crates/intertrait/tests/on-struct.rs`
+- `external/dragonos/kernel/crates/intertrait/tests/on-trait-impl-assoc-type1.rs`
+- `external/dragonos/kernel/crates/intertrait/tests/on-trait-impl-assoc-type2.rs`
+- `external/dragonos/kernel/crates/intertrait/tests/on-trait-impl-assoc-type3.rs`
+- `external/ast-grep/Cargo.toml`
+- `external/ast-grep/crates/cli/tests/help_test.rs`
+- `external/ast-grep/crates/cli/tests/run_test.rs`
+- `external/ast-grep/crates/cli/tests/scan_test.rs`
+- `external/ast-grep/crates/cli/tests/verify_test.rs`
+- `external/ast-grep/crates/lsp/tests/basic.rs`
+- `external/ast-grep/crates/wasm/tests/web.rs`
+- `external/ast-grep/crates/cli/src/lib.rs`
+- `external/gitoxide/Cargo.toml`
+- `external/gitoxide/src/lib.rs`
+- `external/gitoxide/examples/log.rs`
+- `external/gitoxide/examples/ls-tree.rs`
+- `external/gitoxide/src/ein.rs`
+- `external/gitoxide/src/gix.rs`
+- `external/gitoxide/src/shared.rs`
+- `external/gitoxide/src/uni.rs`
+
+## Held-Out Gate
+
+- `canonical_ready`: `False`
+- `benchmark_treatment_beats_baseline`: `False`
+- `regression_signals`: `held_out_treatment_task_floor_not_met, held_out_baseline_task_floor_not_met, treatment_does_not_beat_baseline, treatment_validator_pass_rate_below_policy`
+
+The gate requires real baseline and treatment receipts across the full
+20-task Rust held-out set. Missing receipts keep this pack at scanned
+confidence even when the corpus compiles successfully.

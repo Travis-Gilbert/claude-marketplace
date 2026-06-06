@@ -1,0 +1,392 @@
+{
+  "baseline": {
+    "attempted_task_count": 0,
+    "label": "baseline",
+    "success_rate": 0.0,
+    "successful_task_count": 0,
+    "task_count": 20,
+    "task_results": [
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-001",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-002",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-003",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-004",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-005",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-006",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-007",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-008",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-009",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-010",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-011",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-012",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-013",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-014",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-015",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-016",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-017",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-018",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-019",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-020",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      }
+    ],
+    "tasks_with_time": 0,
+    "time_to_correct_average": 0.0,
+    "time_to_correct_total": 0.0,
+    "token_cost_average": 0.0,
+    "token_cost_total": 0.0,
+    "validator_pass_rate": 0.0,
+    "validator_passed_task_count": 0
+  },
+  "benchmark_treatment_beats_baseline": false,
+  "canonical_ready": false,
+  "regression_signals": [
+    "held_out_treatment_task_floor_not_met",
+    "held_out_baseline_task_floor_not_met",
+    "treatment_does_not_beat_baseline",
+    "treatment_validator_pass_rate_below_policy"
+  ],
+  "success_rate_delta": 0.0,
+  "task_count": 20,
+  "task_count_floor": 20,
+  "task_floor_met": true,
+  "task_ids": [
+    "rust-refactor-001",
+    "rust-refactor-002",
+    "rust-refactor-003",
+    "rust-refactor-004",
+    "rust-refactor-005",
+    "rust-refactor-006",
+    "rust-refactor-007",
+    "rust-refactor-008",
+    "rust-refactor-009",
+    "rust-refactor-010",
+    "rust-refactor-011",
+    "rust-refactor-012",
+    "rust-refactor-013",
+    "rust-refactor-014",
+    "rust-refactor-015",
+    "rust-refactor-016",
+    "rust-refactor-017",
+    "rust-refactor-018",
+    "rust-refactor-019",
+    "rust-refactor-020"
+  ],
+  "time_to_correct_delta": 0.0,
+  "token_cost_delta": 0.0,
+  "treatment": {
+    "attempted_task_count": 0,
+    "label": "treatment",
+    "success_rate": 0.0,
+    "successful_task_count": 0,
+    "task_count": 20,
+    "task_results": [
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-001",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-002",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-003",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-004",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-005",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-006",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-007",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-008",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-009",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-010",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-011",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-012",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-013",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-014",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-015",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-016",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-017",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-018",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-019",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "rust-refactor-020",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      }
+    ],
+    "tasks_with_time": 0,
+    "time_to_correct_average": 0.0,
+    "time_to_correct_total": 0.0,
+    "token_cost_average": 0.0,
+    "token_cost_total": 0.0,
+    "validator_pass_rate": 0.0,
+    "validator_passed_task_count": 0
+  },
+  "treatment_task_floor_met": false,
+  "validator_pass_rate_floor": 0.95
+}

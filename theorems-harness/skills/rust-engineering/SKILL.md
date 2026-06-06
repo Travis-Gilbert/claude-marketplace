@@ -159,13 +159,13 @@ For Rust skill-pack work, report:
 - `scripts/src/validators/validates_algorithm_ppr_inline_returns_scores_against_inline_adjacency.rs`
 - `scripts/src/validators/validates_algorithm_ppr_tenant_backed_response_shape_unchanged.rs`
 - `scripts/src/validators/validates_algorithm_tool_calls_run_over_graph_edges.rs`
-- `scripts/src/validators/validates_apply.rs`
-- `scripts/src/validators/validates_apply_neighbor_budget.rs`
-- `scripts/src/validators/validates_apply_recovered_delete.rs`
-- `scripts/src/validators/validates_apply_recovered_edge.rs`
-- 490 more generated script files; inspect `scripts/` as needed.
+- `scripts/src/validators/validates_append_binding_transition_persists_binding_event_and_edges.rs`
+- `scripts/src/validators/validates_append_rejects_conflicting_event_at_same_sequence.rs`
+- `scripts/src/validators/validates_append_requires_contiguous_events.rs`
+- `scripts/src/validators/validates_append_transition_persists_run_event_and_edges.rs`
+- 989 more generated script files; inspect `scripts/` as needed.
 
 ## Provenance
-Distilled from source:rust-engineering-upgraded-system-v1 (code_corpus_v1) at confidence "scanned (compiled, not yet held-out validated)". Full record in provenance.json.
-- pack_content_hash: sha256:180a04297e7040edb2716a5fe2d336593634cd55c5905c2b035fea63ae135de2
-- source_content_hash: sha256:4c8f06571b49170d725a11897df6d45ca6af088ef15fea216ca6100960033a8e
+Distilled from source:rust-engineering-external-corpus-v0.4 (code_corpus_v1) at confidence "scanned (compiled, not yet held-out validated)". Full record in provenance.json.
+- pack_content_hash: sha256:325ba9cbba248cadb5edc2c207f1b5071331d64e7e2191f8ebbfa3d2fa92cf43
+- source_content_hash: sha256:683af3877bc763fb5202ed7c0d6303b47685214408973c468a77af87c1019f96
