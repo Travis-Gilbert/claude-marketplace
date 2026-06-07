@@ -1,0 +1,402 @@
+{
+  "baseline": {
+    "attempted_task_count": 0,
+    "label": "baseline",
+    "success_rate": 0.0,
+    "successful_task_count": 0,
+    "task_count": 20,
+    "task_results": [
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-001-contrast-token-button",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-002-focus-visible-tabs",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-003-reduced-motion-dialog",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-004-spacing-grid-card",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-005-type-scale-article",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-006-measure-reading-pane",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-007-target-size-toolbar",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-008-radii-tokenized-popover",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-009-breakpoint-tokenized-shell",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-010-menu-roving-fixture",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-011-combobox-labels",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-012-visualization-palette",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-013-infinite-animation-pause",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-014-uswds-form-scale",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-015-dialog-targets-focus",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-016-article-theme-token-colors",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-017-grid-gutters",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-018-large-text-contrast",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-019-tabs-type-motion",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-020-viz-axis-fixture",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      }
+    ],
+    "tasks_with_time": 0,
+    "time_to_correct_average": 0.0,
+    "time_to_correct_total": 0.0,
+    "token_cost_average": 0.0,
+    "token_cost_total": 0.0,
+    "validator_pass_rate": 0.0,
+    "validator_passed_task_count": 0
+  },
+  "benchmark_treatment_beats_baseline": false,
+  "canonical_ready": false,
+  "pending_axes": [
+    "axe_render",
+    "apg_behavioral"
+  ],
+  "regression_signals": [
+    "held_out_treatment_task_floor_not_met",
+    "held_out_baseline_task_floor_not_met",
+    "treatment_does_not_beat_baseline",
+    "treatment_validator_pass_rate_below_policy",
+    "render_axes_pending"
+  ],
+  "scored_axes": [
+    "css_static",
+    "token_lint"
+  ],
+  "static_axes_only": true,
+  "success_rate_delta": 0.0,
+  "task_count": 20,
+  "task_count_floor": 20,
+  "task_floor_met": true,
+  "task_ids": [
+    "design-001-contrast-token-button",
+    "design-002-focus-visible-tabs",
+    "design-003-reduced-motion-dialog",
+    "design-004-spacing-grid-card",
+    "design-005-type-scale-article",
+    "design-006-measure-reading-pane",
+    "design-007-target-size-toolbar",
+    "design-008-radii-tokenized-popover",
+    "design-009-breakpoint-tokenized-shell",
+    "design-010-menu-roving-fixture",
+    "design-011-combobox-labels",
+    "design-012-visualization-palette",
+    "design-013-infinite-animation-pause",
+    "design-014-uswds-form-scale",
+    "design-015-dialog-targets-focus",
+    "design-016-article-theme-token-colors",
+    "design-017-grid-gutters",
+    "design-018-large-text-contrast",
+    "design-019-tabs-type-motion",
+    "design-020-viz-axis-fixture"
+  ],
+  "time_to_correct_delta": 0.0,
+  "token_cost_delta": 0.0,
+  "treatment": {
+    "attempted_task_count": 0,
+    "label": "treatment",
+    "success_rate": 0.0,
+    "successful_task_count": 0,
+    "task_count": 20,
+    "task_results": [
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-001-contrast-token-button",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-002-focus-visible-tabs",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-003-reduced-motion-dialog",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-004-spacing-grid-card",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-005-type-scale-article",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-006-measure-reading-pane",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-007-target-size-toolbar",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-008-radii-tokenized-popover",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-009-breakpoint-tokenized-shell",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-010-menu-roving-fixture",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-011-combobox-labels",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-012-visualization-palette",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-013-infinite-animation-pause",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-014-uswds-form-scale",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-015-dialog-targets-focus",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-016-article-theme-token-colors",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-017-grid-gutters",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-018-large-text-contrast",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-019-tabs-type-motion",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      },
+      {
+        "attempted": false,
+        "success": false,
+        "task_id": "design-020-viz-axis-fixture",
+        "time_to_correct_seconds": 0.0,
+        "token_cost": 0.0,
+        "validator_passed": false
+      }
+    ],
+    "tasks_with_time": 0,
+    "time_to_correct_average": 0.0,
+    "time_to_correct_total": 0.0,
+    "token_cost_average": 0.0,
+    "token_cost_total": 0.0,
+    "validator_pass_rate": 0.0,
+    "validator_passed_task_count": 0
+  },
+  "treatment_task_floor_met": false,
+  "validator_pass_rate_floor": 0.95
+}

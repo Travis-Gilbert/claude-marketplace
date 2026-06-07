@@ -1,0 +1,62 @@
+{
+  "compiler": "theseus.skill_encoder.v1",
+  "confidence": {
+    "label": "scanned (compiled, not yet held-out validated)",
+    "trust_level": "scanned"
+  },
+  "corpus": {
+    "languages": [
+      "css",
+      "design",
+      "design_fixture",
+      "javascript",
+      "json",
+      "tsx",
+      "typescript"
+    ],
+    "lowered_view_count": 11055,
+    "source_class": "code_corpus_v1",
+    "source_content_hash": "sha256:08d543dfd4d07702cc8ae8ff008c0e079ec6d30f3a90b95213997b64c85eb501",
+    "source_ref": "source:design-engineering-external-corpus-v0.1"
+  },
+  "pack": {
+    "artifact_count": 9246,
+    "id": "skill-pack:design-engineering-general-v0.1",
+    "kind": "skill_pack",
+    "pack_content_hash": "sha256:8a74b42202b10f8394f2cbaa82c041d8617c76ceb5eeb0ecb214a661e35c2f3b",
+    "validators": [
+      "code.schema_roundtrip",
+      "code.content_hash_provenance",
+      "code.no_canonical_mutation"
+    ],
+    "version": "0.1.0"
+  },
+  "promotion": {
+    "benchmark_treatment_beats_baseline": false,
+    "canonical_ready": false,
+    "pending_axes": [
+      "axe_render",
+      "apg_behavioral"
+    ],
+    "regression_signals": [
+      "held_out_treatment_task_floor_not_met",
+      "held_out_baseline_task_floor_not_met",
+      "treatment_does_not_beat_baseline",
+      "treatment_validator_pass_rate_below_policy",
+      "render_axes_pending"
+    ],
+    "scored_axes": [
+      "css_static",
+      "token_lint"
+    ],
+    "state": "scanned",
+    "task_count": 20
+  },
+  "sources": [
+    {
+      "lowering": "code_corpus_v1",
+      "source_content_hash": "sha256:08d543dfd4d07702cc8ae8ff008c0e079ec6d30f3a90b95213997b64c85eb501",
+      "source_ref": "local+external://design-engineering-v0.1"
+    }
+  ]
+}
