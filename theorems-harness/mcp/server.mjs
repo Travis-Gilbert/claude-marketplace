@@ -33,6 +33,7 @@ import {
   NativeMcpClient,
   ROUTES,
 } from "../sdk/route-policy.mjs";
+import { createMultiheadStore } from "./multihead-state.mjs";
 
 const BASE_URL =
   process.env.THEOREM_CONTEXT_BASE_URL ||
@@ -58,6 +59,7 @@ const THG_WRITE_MODE = (
 const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const STATE_DIR = join(PROJECT_DIR, ".theorem");
 const HARNESS_ROUTE_POLICY = createHarnessRoutePolicy();
+const MULTIHEAD_STORE = createMultiheadStore({ projectDir: PROJECT_DIR });
 
 function hostActor() {
   const explicit = String(
@@ -390,6 +392,21 @@ async function nativeCoordinationTool(verb, nativeToolName, body, options = {}) 
   const operation = { verb, nativeToolName, scope: options.scope ?? "shared" };
   if (options.family) operation.family = options.family;
   return executeWithRoutePolicy(operation, body, null, { allowFallback: false });
+}
+
+async function multiheadRuntimeTool(name, payload, localFallback) {
+  return executeWithRoutePolicy(
+    { verb: name, nativeToolName: name, scope: "shared", family: "run" },
+    payload,
+    localFallback,
+    { fallbackReason: "native multi-head runtime tool unavailable; used local spike" },
+  );
+}
+
+async function multiheadToolResponse(name, payload, localFallback) {
+  return jsonText(
+    await multiheadRuntimeTool(name, payload, () => localFallback(payload)),
+  );
 }
 
 async function savedContextPreviewRecall(args = {}) {
@@ -1533,6 +1550,115 @@ const TOOLS = [
     },
   },
   {
+    name: "multihead_run",
+    description:
+      "Start or read a local multi-head run substrate. V0.1 spike: run state is local JSON under .theorem/multihead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["start", "status"], default: "start" },
+        run_id: { type: "string" },
+        goal: { type: "string" },
+        actor: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "multihead_task",
+    description:
+      "Create a claimable task node inside a local multi-head run. The graph can grow during work; this is the v0.1 dynamic frontier seed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        run_id: { type: "string" },
+        node_id: { type: "string" },
+        goal: { type: "string" },
+        description: { type: "string" },
+        kind: { type: "string", default: "task" },
+        actor: { type: "string" },
+        prerequisites: { type: "array", items: { type: "string" } },
+        metadata: { type: "object" },
+      },
+      required: ["run_id", "goal"],
+    },
+  },
+  {
+    name: "multihead_claim",
+    description:
+      "Acquire, renew, or release a leased CAS claim on a task node. Expired leases reopen automatically and stale epochs cannot submit patches.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["claim", "release"], default: "claim" },
+        run_id: { type: "string" },
+        node_id: { type: "string" },
+        claim_id: { type: "string" },
+        owner: { type: "string" },
+        lease_ttl_seconds: { type: "integer", default: 90 },
+      },
+      required: ["run_id", "owner"],
+    },
+  },
+  {
+    name: "multihead_patch",
+    description:
+      "Propose or rebase a patch against a claimed task. Receipts bind to patch_id + base_commit and are invalidated on rebase.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["propose", "rebase"], default: "propose" },
+        run_id: { type: "string" },
+        node_id: { type: "string" },
+        patch_id: { type: "string" },
+        owner: { type: "string" },
+        epoch: { type: "integer" },
+        base_commit: { type: "string" },
+        new_base_commit: { type: "string" },
+        files: { type: "array", items: { type: "string" } },
+        patch: { type: "string" },
+        patch_ref: { type: "object" },
+      },
+      required: ["run_id"],
+    },
+  },
+  {
+    name: "multihead_proof",
+    description:
+      "Run a proof command locally through the substrate and attach an actual receipt to a patch. Head assertions are not accepted as proof.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        run_id: { type: "string" },
+        patch_id: { type: "string" },
+        command: { type: "string" },
+        args: { type: "array", items: { type: "string" } },
+        cwd: { type: "string" },
+        timeout_ms: { type: "integer", default: 120000 },
+      },
+      required: ["run_id", "patch_id", "command"],
+    },
+  },
+  {
+    name: "multihead_review",
+    description:
+      "Open or complete an adversarial review node for a patch. Completed reviews should list falsification attempts, findings, and waived risks.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["open", "complete"], default: "open" },
+        run_id: { type: "string" },
+        patch_id: { type: "string" },
+        review_id: { type: "string" },
+        reviewer: { type: "string" },
+        status: { type: "string" },
+        falsification_attempts: { type: "array", items: { type: "string" } },
+        findings: { type: "array", items: { type: "object" } },
+        waived_risks: { type: "array", items: { type: "string" } },
+      },
+      required: ["run_id", "patch_id", "reviewer"],
+    },
+  },
+  {
     name: "provenance_trace",
     description:
       "Read reasoning trace provenance. Pass trace_id for a full trace, trace_id plus object_pk for an object-specific explanation, or query to search traces.",
@@ -2387,6 +2513,125 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         { family: "coordination" },
       );
       return jsonText(result);
+    }
+
+    if (name === "multihead_run") {
+      const action = args?.action ?? "start";
+      if (action === "status") {
+        const payload = {
+          ...args,
+          action,
+          run_id: requireString(args, "run_id"),
+          actor: toolActor(args),
+        };
+        return multiheadToolResponse(name, payload, (body) =>
+          MULTIHEAD_STORE.readRun({ run_id: body.run_id }),
+        );
+      }
+      const payload = {
+        ...args,
+        action,
+        actor: toolActor(args),
+      };
+      return multiheadToolResponse(name, payload, (body) =>
+        MULTIHEAD_STORE.startRun({
+          run_id: body.run_id,
+          goal: body.goal,
+          actor: body.actor,
+        }),
+      );
+    }
+
+    if (name === "multihead_task") {
+      const payload = {
+        ...args,
+        run_id: requireString(args, "run_id"),
+        actor: toolActor(args),
+        goal: requireString(args, "goal"),
+      };
+      return multiheadToolResponse(name, payload, (body) =>
+        MULTIHEAD_STORE.createTask(body),
+      );
+    }
+
+    if (name === "multihead_claim") {
+      const action = args?.action ?? "claim";
+      if (action === "release") {
+        const payload = {
+          ...args,
+          action,
+          run_id: requireString(args, "run_id"),
+          claim_id: requireString(args, "claim_id"),
+          owner: requireString(args, "owner"),
+        };
+        return multiheadToolResponse(name, payload, (body) =>
+          MULTIHEAD_STORE.releaseClaim(body),
+        );
+      }
+      const payload = {
+        ...args,
+        action,
+        run_id: requireString(args, "run_id"),
+        node_id: requireString(args, "node_id"),
+        owner: requireString(args, "owner"),
+        lease_ttl_seconds: args?.lease_ttl_seconds ?? 90,
+      };
+      return multiheadToolResponse(name, payload, (body) =>
+        MULTIHEAD_STORE.claimTask(body),
+      );
+    }
+
+    if (name === "multihead_patch") {
+      const action = args?.action ?? "propose";
+      if (action === "rebase") {
+        const payload = {
+          ...args,
+          action,
+          run_id: requireString(args, "run_id"),
+          patch_id: requireString(args, "patch_id"),
+          new_base_commit: requireString(args, "new_base_commit"),
+        };
+        return multiheadToolResponse(name, payload, (body) =>
+          MULTIHEAD_STORE.rebasePatch(body),
+        );
+      }
+      const payload = {
+        ...args,
+        action,
+        run_id: requireString(args, "run_id"),
+        node_id: requireString(args, "node_id"),
+        owner: requireString(args, "owner"),
+        epoch: args?.epoch,
+        base_commit: requireString(args, "base_commit"),
+      };
+      return multiheadToolResponse(name, payload, (body) =>
+        MULTIHEAD_STORE.proposePatch(body),
+      );
+    }
+
+    if (name === "multihead_proof") {
+      const payload = {
+        ...args,
+        run_id: requireString(args, "run_id"),
+        patch_id: requireString(args, "patch_id"),
+        command: requireString(args, "command"),
+      };
+      return multiheadToolResponse(name, payload, (body) =>
+        MULTIHEAD_STORE.runProof(body),
+      );
+    }
+
+    if (name === "multihead_review") {
+      const payload = {
+        ...args,
+        run_id: requireString(args, "run_id"),
+        patch_id: requireString(args, "patch_id"),
+        reviewer: requireString(args, "reviewer"),
+        action: args?.action ?? "open",
+      };
+      return multiheadToolResponse(name, payload, (body) =>
+        MULTIHEAD_STORE.reviewPatch(body),
+      );
     }
 
     if (name === "provenance_trace") {

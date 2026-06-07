@@ -30,6 +30,12 @@ const VERB_FAMILIES = Object.freeze({
   harness_fork: "run",
   harness_compare: "run",
   harness_toolkit: "run",
+  multihead_run: "run",
+  multihead_task: "run",
+  multihead_claim: "run",
+  multihead_patch: "run",
+  multihead_proof: "run",
+  multihead_review: "run",
   remember: "memory",
   recall: "memory",
   self_note: "memory",
@@ -127,7 +133,7 @@ export class HarnessRoutePolicy {
     }
 
     const scope = cleanString(operation.scope) ?? "shared";
-    const route = this.#routeFor({ family, scope });
+    const route = this.#routeFor({ verb, family, scope });
     const receipt = this.#receipt({ verb, family, route, scope });
     return { family, route, receipt };
   }
@@ -146,9 +152,13 @@ export class HarnessRoutePolicy {
     };
   }
 
-  #routeFor({ family, scope }) {
+  #routeFor({ verb, family, scope }) {
     if (family === "product") return ROUTES.PRODUCT_HTTP;
     if (family === "theseus-engine") return ROUTES.THESEUS_ENGINE;
+
+    if (verb.startsWith("multihead_")) {
+      return ROUTES.NATIVE_MCP;
+    }
 
     if (family === "skill") {
       return ROUTES.NATIVE_MCP;
