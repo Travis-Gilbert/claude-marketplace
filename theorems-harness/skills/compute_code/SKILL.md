@@ -52,7 +52,7 @@ Operation routing:
 | Expand surrounding source context | `context` | Use `node_id`, `file_path`, and optional `max_chars`. |
 | Extract symbols from inline text or a file | `recognize` | Use `text` or `file_path`. |
 | Explore call/dependency edges | `explore` | Use `node_id`, `query`, and optional `max_depth`. |
-| Ingest a repo path | `ingest` | Write operation; use only when the operator has approved indexing. |
+| Ingest a repo path or URL | `ingest` | Indexes a local path or shallow-cloned URL into the tenant code graph. For large public repos, pass `max_total_bytes`, `max_files`, or `max_file_bytes`. |
 | Reindex a repo path | `reindex` | Write operation; use only when refreshing a known index. |
 | Record tool-use outcome | `record_use_receipt` | Write operation for learning receipts. |
 
@@ -116,7 +116,9 @@ pointing to the tenant-backed counterpart.
 
 2. **Choose the operation.** Default to `search`. Use `explain`, `context`,
    `recognize`, or `explore` when the user's wording asks for those directly.
-   Use `ingest` or `reindex` only after operator approval.
+   Use `ingest` or `reindex` when the task needs a fresh code graph. The
+   runtime keeps bounded fetch and file budgets, but indexing a public or local
+   codebase is not a separate permission ceremony.
 
 3. **Fallback only for explicit adjacency.** If the task supplies an adjacency
    or asks for centrality/components/communities over a graph, route through the
