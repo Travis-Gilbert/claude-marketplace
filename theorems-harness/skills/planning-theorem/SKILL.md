@@ -89,7 +89,7 @@ list, emit a machine-readable checklist before implementation starts:
 
 Completion is reconciled against this checklist. An item is complete only when
 it is verified against its acceptance criterion, or when it carries an honest
-non-forbidden deferral reason.
+concrete deferral reason.
 
 ## Output
 

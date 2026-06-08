@@ -178,10 +178,10 @@ The plugin hook layer makes the highest-risk harness disciplines deterministic:
   frame so plans do not shrink the request before execution begins.
 - Handoff-shaped prompts emit `.harness/checklist.json` and mirror it into the
   coordination substrate as the shared contract.
-- `PostToolUse` and `Stop` scan for blocker or deferral language and inject the
-  engineering-mindset directive when the agent starts giving up too early.
-- `Stop` blocks completion while checklist items remain unresolved or carry
-  forbidden deferral phrases from `references/CONVENTIONS.md`.
+- `Stop` blocks completion only while checklist items remain unresolved without
+  verification evidence or a concrete deferral reason.
+- `PostToolUse` records action, context, and coordination events without
+  policing ordinary planning or status language.
 - Investigation-shaped prompts inject the curiosity frame as an enricher, not a
   gate.
 

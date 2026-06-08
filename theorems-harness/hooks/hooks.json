@@ -120,13 +120,6 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-event.sh",
             "timeout": 10,
             "statusMessage": "Recording coordination event"
-          },
-          {
-            "type": "command",
-            "shell": "bash",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-blocker-scan.sh",
-            "timeout": 5,
-            "statusMessage": "Scanning for deferral signals"
           }
         ]
       }

@@ -42,8 +42,8 @@ away to avoid a risk that is not there.
   minimum that technically satisfies it.
 - Do not insert conservative defaults that contradict the plan. A flag set false
   to be safe when the plan said build it is a descope.
-- Do not frame in-scope work as future, later, or a separate effort to make the
-  current build smaller.
+- Do not quietly shrink in-scope work to make the current build smaller. If the
+  scope changes, keep the skipped item visible with a concrete reason.
 - Hard is not a reason to shrink. If the ambitious version is hard, that is an
   engineering problem to solve, not a reason to build the timid version.
 - Genuine risk gets a real safeguard (a backup, a confirmation, a reversible

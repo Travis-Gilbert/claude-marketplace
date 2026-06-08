@@ -145,7 +145,7 @@ theorem_native_call "coordination_record" "$record_args" >/dev/null 2>&1 || true
 
 rm -f "$source_file"
 
-context=$(printf '## Harness checklist contract\nCreated `%s` with %s open deliverables. Complete each item with verification evidence or an honest non-forbidden deferral before reporting done.' "$checklist_file" "$item_count")
+context=$(printf '## Harness checklist contract\nCreated `%s` with %s open deliverables. Complete each item with verification evidence or a concrete deferral reason before reporting done.' "$checklist_file" "$item_count")
 jq -n \
   --arg ctx "$context" \
   '{

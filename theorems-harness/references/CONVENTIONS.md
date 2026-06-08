@@ -4,8 +4,8 @@ Standing rules for Claude Code, Codex, and any agent executing work in this repo
 
 ## Scope
 - A handoff is one build session. Everything in it is in scope now.
-- There is no phase two. If you write "later," "future milestone," "separate effort," or "out of scope for now" about something the handoff lists, stop and build it.
-- Deliver the full list. Partial completion is not completion.
+- Do not silently move handoff deliverables into an unspecified follow-up. If scope changes, keep the skipped item visible with a concrete reason.
+- Deliver the full list when it is feasible. Partial completion must be labeled as partial.
 
 ## Named choices are requirements
 - Every named library, tool, API, model, or technique in a handoff was chosen deliberately. It is a requirement, not an example.
