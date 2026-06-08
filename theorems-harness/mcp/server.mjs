@@ -1865,7 +1865,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.4.2" },
+  { name: "theorems-harness", version: "0.4.6" },
   { capabilities: { tools: {} } }
 );
 
