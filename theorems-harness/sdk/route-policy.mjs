@@ -53,6 +53,8 @@ const VERB_FAMILIES = Object.freeze({
   skill_apply: "skill",
   coordination_room: "coordination",
   coordination_intent: "coordination",
+  write_intent: "coordination",
+  read_intents_for_room: "coordination",
   coordination_record: "coordination",
   coordination_reflection: "coordination",
   coordination_decision: "coordination",

@@ -1319,6 +1319,44 @@ const TOOLS = [
     },
   },
   {
+    name: "write_intent",
+    description:
+      "Alias for coordination_intent. Write this actor's live room intent before acting, using the name taught by the coordination skill.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        actor: { type: "string" },
+        room_id: { type: "string" },
+        repo: { type: "string" },
+        branch: { type: "string" },
+        task: { type: "string" },
+        summary: { type: "string" },
+        status: {
+          type: "string",
+          enum: ["working", "paused", "done"],
+          default: "working",
+        },
+        claimed_files: { type: "array", items: { type: "string" } },
+        expected_completion: { type: "string" },
+      },
+      required: ["summary"],
+    },
+  },
+  {
+    name: "read_intents_for_room",
+    description:
+      "Read native Theorem harness room intents so agents can see live claims before editing.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant_slug: { type: "string" },
+        room_id: { type: "string" },
+        statuses: { type: "array", items: { type: "string" } },
+      },
+    },
+  },
+  {
     name: "coordination_reflection",
     description:
       "Write this actor's working-memory reflection for peers to read at their next SessionStart.",
@@ -1865,7 +1903,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.4.6" },
+  { name: "theorems-harness", version: "0.4.7" },
   { capabilities: { tools: {} } }
 );
 
@@ -2228,7 +2266,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(await nativeSkillTool(name, args));
     }
 
-    if (name === "coordination_intent") {
+    if (name === "coordination_intent" || name === "write_intent") {
       const body = {
         tenant_slug: await requestTenantSlug(args),
         actor: toolActor(args),
@@ -2239,6 +2277,16 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         expected_completion: args?.expected_completion ?? "",
       };
       const result = await nativeCoordinationTool("coordination_intent", null, body);
+      return jsonText(result);
+    }
+
+    if (name === "read_intents_for_room") {
+      const body = {
+        tenant_slug: await requestTenantSlug(args),
+        room_id: args?.room_id ?? null,
+        statuses: args?.statuses ?? [],
+      };
+      const result = await nativeCoordinationTool("read_intents_for_room", null, body);
       return jsonText(result);
     }
 

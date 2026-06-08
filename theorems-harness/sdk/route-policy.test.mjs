@@ -121,6 +121,26 @@ function policy(options = {}) {
 }
 
 {
+  const nativeClient = new FakeRouteClient(ROUTES.NATIVE_MCP);
+  const routePolicy = policy({
+    nativeMcpUrl: "https://native.example/mcp",
+    clients: {
+      [ROUTES.NATIVE_MCP]: nativeClient,
+    },
+  });
+
+  await routePolicy.execute({ verb: "write_intent" }, { actor: "codex" });
+  await routePolicy.execute(
+    { verb: "read_intents_for_room" },
+    { room_id: "repo:theorem:branch:main" },
+  );
+
+  assert.equal(nativeClient.calls.length, 2);
+  assert.equal(nativeClient.calls[0].operation.verb, "write_intent");
+  assert.equal(nativeClient.calls[1].operation.verb, "read_intents_for_room");
+}
+
+{
   const requests = [];
   const nativeMcpClient = new NativeMcpClient({
     url: "https://native.example/mcp",
