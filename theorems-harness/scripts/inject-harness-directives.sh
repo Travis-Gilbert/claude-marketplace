@@ -18,6 +18,12 @@ if [ -z "$hook_event" ]; then
 fi
 prompt=$(theorem_jq "$input" '.prompt')
 context=""
+cwd=$(theorem_resolve_cwd "$input")
+THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
+sid=$(theorem_session_id "$input")
+writing_disabled_file="$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}.writing-engineering-disabled"
+plugin_root=$(theorem_plugin_root)
+writing_skill_file="$plugin_root/skills/writing-engineering/SKILL.md"
 
 append_context() {
   local block="$1"
@@ -42,9 +48,32 @@ Match the full capability implied by the request. Do not shrink in-scope work in
 curiosity_frame='## Curiosity directive
 For investigation and explanation tasks, pull related graph or code context before answering shallowly. Mention only the few related facts that materially change the answer.'
 
+writing_frame=''
+if [ -f "$writing_skill_file" ]; then
+  writing_directive=$(awk '
+    /^## Core Directive$/ {capture=1; next}
+    /^## / && capture {exit}
+    capture && NF {print}
+  ' "$writing_skill_file" | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]$//')
+  if [ -n "$writing_directive" ]; then
+    writing_frame="## Writing Engineering directive
+- ${writing_directive}
+- Source: skills/writing-engineering/SKILL.md"
+  fi
+fi
+
+if [ "$hook_event" = "UserPromptSubmit" ] && printf '%s' "$prompt" | grep -Eiq '(^|[^[:alnum:]])normal mode([^[:alnum:]]|$)'; then
+  mkdir -p "$(dirname "$writing_disabled_file")" 2>/dev/null || true
+  printf 'disabled by normal mode at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$writing_disabled_file" 2>/dev/null || true
+fi
+
 case "$hook_event" in
   SessionStart)
     append_context "$standing_frame"
+    rm -f "$writing_disabled_file" 2>/dev/null || true
+    if [ -n "$writing_frame" ]; then
+      append_context "$writing_frame"
+    fi
     ;;
   UserPromptSubmit)
     if printf '%s' "$prompt" | grep -Eiq 'build|implement|integrat(e|ion)|ship|publish|plan|handoff|spec|migration|feature|fix'; then
@@ -52,6 +81,9 @@ case "$hook_event" in
     fi
     if printf '%s' "$prompt" | grep -Eiq 'investigat|research|explain|understand|why|trace|diagnos|debug|search|evidence|graph context'; then
       append_context "$curiosity_frame"
+    fi
+    if [ ! -f "$writing_disabled_file" ] && [ -n "$writing_frame" ] && printf '%s' "$prompt" | grep -Eiq 'synthes|report|handoff|coordinate|mention|postmortem|summary|write|prose|brief'; then
+      append_context "$writing_frame"
     fi
     ;;
 esac
