@@ -341,12 +341,15 @@ function nativeMemoryKind(args = {}, defaultKind = "belief") {
 }
 
 function nativeRememberPayload(args = {}, defaultKind = "belief") {
-  return {
+  const payload = {
     agent_id: memoryAgentId(args),
     kind: nativeMemoryKind(args, defaultKind),
     title: String(args?.title || args?.summary || "Memory").trim() || "Memory",
     content: requireString(args, "content"),
   };
+  const tenant = tenantId(args);
+  if (tenant) payload.tenant_slug = tenant;
+  return payload;
 }
 
 async function rememberHarnessMemory(args = {}, options = {}) {
@@ -364,13 +367,16 @@ async function rememberHarnessMemory(args = {}, options = {}) {
 
 async function recallHarnessMemory(args = {}) {
   const query = requireString(args, "query");
+  const payload = {
+    agent_id: memoryAgentId(args),
+    query,
+    limit: args?.limit ?? 10,
+  };
+  const tenant = tenantId(args);
+  if (tenant) payload.tenant_slug = tenant;
   return executeWithRoutePolicy(
     { verb: "recall", scope: args?.scope ?? "private" },
-    {
-      agent_id: memoryAgentId(args),
-      query,
-      limit: args?.limit ?? 10,
-    },
+    payload,
     null,
   );
 }

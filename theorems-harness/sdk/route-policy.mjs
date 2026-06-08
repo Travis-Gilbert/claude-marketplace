@@ -86,7 +86,15 @@ export class HarnessRoutePolicy {
   constructor(options = {}) {
     const env = options.env ?? process.env;
     this.mode = normalizeMode(options.mode ?? env.THEOREM_HARNESS_ROUTE_MODE);
-    this.tenant = cleanString(options.tenant ?? env.THEOREM_HARNESS_TENANT) ?? DEFAULT_TENANT;
+    this.tenant =
+      cleanString(
+        options.tenant ??
+          env.THEOREM_HARNESS_TENANT ??
+          env.THEOREMS_HARNESS_TENANT ??
+          env.RUSTYRED_THG_TENANT ??
+          env.THEOREM_CONTEXT_TENANT_SLUG ??
+          env.THEOREM_TENANT_SLUG,
+      ) ?? DEFAULT_TENANT;
     this.nativeWriteMode = normalizeWriteMode(
       options.nativeWriteMode ??
         env.THEOREM_HARNESS_NATIVE_WRITE_MODE ??

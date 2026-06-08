@@ -30,6 +30,15 @@ function policy(options = {}) {
 
 {
   const routePolicy = policy({
+    env: { THEOREM_CONTEXT_TENANT_SLUG: "travis-gilbert" },
+  });
+  const selection = routePolicy.select({ verb: "recall" });
+
+  assert.equal(selection.receipt.tenant, "travis-gilbert");
+}
+
+{
+  const routePolicy = policy({
     bindingDataDir: "/tmp/theorem",
     nativeMcpUrl: "https://native.example/mcp",
   });
