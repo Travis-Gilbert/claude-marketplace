@@ -52,6 +52,21 @@ function policy(options = {}) {
 {
   const routePolicy = policy({
     bindingDataDir: "/tmp/theorem",
+    nativeMcpUrl: "https://native.example/mcp",
+  });
+  const selection = routePolicy.select({
+    verb: "code_search",
+    family: "run",
+    scope: "shared-remote",
+  });
+
+  assert.equal(selection.route, ROUTES.NATIVE_MCP);
+  assert.equal(selection.receipt.server, "https://native.example/mcp");
+}
+
+{
+  const routePolicy = policy({
+    bindingDataDir: "/tmp/theorem",
   });
   const selection = routePolicy.select({ verb: "remember", scope: "shared" });
 

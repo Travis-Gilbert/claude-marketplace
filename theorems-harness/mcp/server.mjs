@@ -400,6 +400,15 @@ async function nativeCoordinationTool(verb, nativeToolName, body, options = {}) 
   return executeWithRoutePolicy(operation, body, null, { allowFallback: false });
 }
 
+async function nativeCodeTool(nativeToolName, body) {
+  return executeWithRoutePolicy(
+    { verb: "code_search", nativeToolName, scope: "shared-remote", family: "run" },
+    body,
+    null,
+    { allowFallback: false },
+  );
+}
+
 async function multiheadRuntimeTool(name, payload, localFallback) {
   return executeWithRoutePolicy(
     { verb: name, nativeToolName: name, scope: "shared", family: "run" },
@@ -906,26 +915,113 @@ const TOOLS = [
   {
     name: "code_search",
     description:
-      "Search ingested code symbols through the CodeCrawler/code graph surface. Use before code_context when you need to discover the exact symbol name or file.",
+      "Native CodeCrawler/code graph operations over the tenant RustyRed graph. Search by default; pass operation=ingest/reindex/context/explore/explain/recognize for the full code graph surface.",
     inputSchema: {
       type: "object",
       properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        operation: {
+          type: "string",
+          enum: ["ingest", "reindex", "search", "context", "recognize", "explore", "explain", "record_use_receipt"],
+          default: "search",
+        },
+        repo_path: { type: "string" },
+        repo_url: { type: "string" },
+        path: { type: "string" },
         query: { type: "string" },
-        entity_type: { type: "string" },
-        language: { type: "string" },
-        repo: { type: "string" },
+        node_id: { type: "string" },
+        repo_id: { type: "string" },
+        repo: {
+          type: "string",
+          description: "Legacy alias. For search it maps to repo_id; for ingest it maps to repo_path.",
+        },
+        file_path: { type: "string" },
+        path_prefix: { type: "string" },
+        kinds: { type: "array", items: { type: "string" } },
+        entity_type: {
+          type: "string",
+          description: "Legacy alias for one symbol kind; maps to kinds when kinds is absent.",
+        },
+        include_extensions: { type: "array", items: { type: "string" } },
+        exclude_dirs: { type: "array", items: { type: "string" } },
         limit: { type: "integer", default: 20, minimum: 1, maximum: 100 },
+        max_depth: { type: "integer", default: 1 },
+        max_files: { type: "integer" },
+        max_file_bytes: { type: "integer" },
+        max_total_bytes: { type: "integer" },
+        max_clone_bytes: { type: "integer" },
+        max_repo_bytes: { type: "integer" },
+        before_lines: { type: "integer" },
+        after_lines: { type: "integer" },
+        max_chars: { type: "integer" },
+        text: { type: "string" },
+        action: { type: "string" },
+        outcome: { type: "string" },
+        use: { type: "object" },
+        actor: { type: "string" },
+        timeout_ms: { type: "integer", default: 120000 },
+        dry_run: { type: "boolean", default: false },
       },
-      required: ["query"],
+    },
+  },
+  {
+    name: "compute_code",
+    description:
+      "Alias for the native CodeCrawler-backed code_search tool. Use for graph-structural code discovery, ingest, context, explain, explore, and compute-code replacement flows.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        operation: {
+          type: "string",
+          enum: ["ingest", "reindex", "search", "context", "recognize", "explore", "explain", "record_use_receipt"],
+          default: "search",
+        },
+        repo_path: { type: "string" },
+        repo_url: { type: "string" },
+        path: { type: "string" },
+        query: { type: "string" },
+        node_id: { type: "string" },
+        repo_id: { type: "string" },
+        repo: { type: "string" },
+        file_path: { type: "string" },
+        path_prefix: { type: "string" },
+        kinds: { type: "array", items: { type: "string" } },
+        entity_type: { type: "string" },
+        include_extensions: { type: "array", items: { type: "string" } },
+        exclude_dirs: { type: "array", items: { type: "string" } },
+        limit: { type: "integer", default: 20, minimum: 1, maximum: 100 },
+        max_depth: { type: "integer", default: 1 },
+        max_files: { type: "integer" },
+        max_file_bytes: { type: "integer" },
+        max_total_bytes: { type: "integer" },
+        max_clone_bytes: { type: "integer" },
+        max_repo_bytes: { type: "integer" },
+        before_lines: { type: "integer" },
+        after_lines: { type: "integer" },
+        max_chars: { type: "integer" },
+        text: { type: "string" },
+        action: { type: "string" },
+        outcome: { type: "string" },
+        use: { type: "object" },
+        actor: { type: "string" },
+        timeout_ms: { type: "integer", default: 120000 },
+        dry_run: { type: "boolean", default: false },
+      },
     },
   },
   {
     name: "code_crawl",
     description:
-      "Ingest or refresh a repository in the CodeCrawler/code graph surface. Use for operator-approved code graph crawls before Pairformer/code-search work.",
+      "Compatibility wrapper for native code_search operation=ingest. Ingest or refresh a repository URL/path in the CodeCrawler/code graph surface.",
     inputSchema: {
       type: "object",
       properties: {
+        tenant: { type: "string" },
+        tenant_slug: { type: "string" },
+        repo_id: { type: "string" },
         repo: {
           type: "string",
           description: "Public GitHub URL or owner/repo short form to clone and ingest.",
@@ -938,6 +1034,15 @@ const TOOLS = [
         language: { type: "string" },
         notebook_id: { type: "string" },
         graph_write_token: { type: "string" },
+        include_extensions: { type: "array", items: { type: "string" } },
+        exclude_dirs: { type: "array", items: { type: "string" } },
+        max_files: { type: "integer" },
+        max_file_bytes: { type: "integer" },
+        max_total_bytes: { type: "integer" },
+        max_clone_bytes: { type: "integer" },
+        max_repo_bytes: { type: "integer" },
+        timeout_ms: { type: "integer", default: 120000 },
+        dry_run: { type: "boolean", default: false },
       },
     },
   },
@@ -1999,17 +2104,33 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
       return jsonText(result);
     }
 
-    if (name === "code_search") {
-      const query = requireString(args, "query");
-      const result = await theoremGet(
-        `/code/symbols/${buildQuery({
-          search: query,
-          entity_type: args?.entity_type,
-          language: args?.language,
-          repo: args?.repo,
-          limit: args?.limit ?? 20,
-        })}`
-      );
+    if (name === "code_search" || name === "compute_code") {
+      const operation = String(args?.operation || "search").trim() || "search";
+      const payload = {
+        ...args,
+        operation,
+      };
+      const tenant = await requestTenantSlug(args);
+      if (tenant && !payload.tenant_slug && !payload.tenant) payload.tenant_slug = tenant;
+      if (!payload.repo_id && args?.repo && operation === "search") {
+        payload.repo_id = args.repo;
+      }
+      if (!payload.repo_path && args?.repo && (operation === "ingest" || operation === "reindex")) {
+        payload.repo_path = args.repo;
+      }
+      if (!payload.repo_path && args?.path && (operation === "ingest" || operation === "reindex")) {
+        payload.repo_path = args.path;
+      }
+      if (!payload.kinds && args?.entity_type) {
+        payload.kinds = [String(args.entity_type)];
+      }
+      if (operation === "search" && !payload.query && !payload.text && !payload.node_id) {
+        return {
+          content: [{ type: "text", text: "Error: pass query, text, or node_id for code search." }],
+          isError: true,
+        };
+      }
+      const result = await nativeCodeTool(name, payload);
       return jsonText(result);
     }
 
@@ -2020,18 +2141,14 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
           isError: true,
         };
       }
-      const result = await theoremPost(
-        "/code/ingest/",
-        {
-          repo: args?.repo ?? null,
-          path: args?.path ?? null,
-          paths: args?.paths ?? null,
-          language: args?.language ?? null,
-          notebook_id: args?.notebook_id ?? null,
-          graph_write_token: args?.graph_write_token ?? null,
-        },
-        240_000
-      );
+      const payload = {
+        ...args,
+        operation: "ingest",
+        repo_path: args?.repo ?? args?.path,
+      };
+      const tenant = await requestTenantSlug(args);
+      if (tenant && !payload.tenant_slug && !payload.tenant) payload.tenant_slug = tenant;
+      const result = await nativeCodeTool("code_search", payload);
       return jsonText(result);
     }
 

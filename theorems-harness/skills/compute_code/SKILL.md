@@ -52,7 +52,7 @@ Operation routing:
 | Expand surrounding source context | `context` | Use `node_id`, `file_path`, and optional `max_chars`. |
 | Extract symbols from inline text or a file | `recognize` | Use `text` or `file_path`. |
 | Explore call/dependency edges | `explore` | Use `node_id`, `query`, and optional `max_depth`. |
-| Ingest a repo path or URL | `ingest` | Indexes a local path or shallow-cloned URL into the tenant code graph. For large public repos, pass `max_total_bytes`, `max_files`, or `max_file_bytes`. |
+| Ingest a repo path or URL | `ingest` | Indexes a local path or shallow-cloned URL into the tenant code graph. For large public repos, pass `timeout_ms`, `max_files`, `max_file_bytes`, `include_extensions`, and `exclude_dirs`. `path_prefix` is search filtering only; it does not reduce clone or ingest scope. |
 | Reindex a repo path | `reindex` | Write operation; use only when refreshing a known index. |
 | Record tool-use outcome | `record_use_receipt` | Write operation for learning receipts. |
 
