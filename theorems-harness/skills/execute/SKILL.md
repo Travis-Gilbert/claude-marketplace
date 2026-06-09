@@ -149,7 +149,7 @@ Use this full shape only when the work needs it:
 ## Remaining Work
 - What remains:
 - Why:
-- Owner/next step:
+- Next step:
 ```
 
 ## Completion Rule
@@ -159,7 +159,8 @@ Never report "done" unless the evidence supports it.
 - If validation did not run, say not run.
 - If the behavior is only wired, say wired.
 - If runtime proof is missing, say runtime proof is missing.
-- If another agent owns the next step, name the handoff and send the mention.
+- If the next step belongs to another head, leave the handoff in your footprint
+  and mention it.
 
 ## Guardrails
 

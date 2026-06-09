@@ -7,8 +7,8 @@ description: Coordinate cross-frontier-model review between Claude Code and Code
 
 Peer review is the launch-week quality loop for Theorem's Harness: two
 different frontier models inspect each other's work before the change is
-declared ready. It is strongest after loose coordination, where both agents had
-a shared goal and negotiated file ownership through `coordinate` messages.
+declared ready. It is strongest after the heads worked as a unit on a shared
+goal, co-editing rather than dividing the files.
 
 ## When To Use
 
@@ -43,7 +43,7 @@ commit or launch-ready reporting when any of these signals are present:
 - `coordinate`, `mentions`, or `mentions_wait` were used during the task.
 - The task instructions mention multiple agents, Claude Code, Codex, or
   Claude.ai working together.
-- The diff includes files another active agent claimed, reviewed, or generated.
+- The diff includes files another active head touched, reviewed, or generated.
 - The user asked for high confidence, launch readiness, or "you two decide."
 
 Automatic means "start the review loop without waiting for a separate user
@@ -135,19 +135,18 @@ waiting on the peer.
 - Run focused validation after fixes.
 - Send a short `coordinate` reply with the reconciliation result.
 
-## Loose Coordination Rule
+## Coordination posture
 
-Do not pre-assign strict file lanes unless the repo or human explicitly needs
-that safety. The preferred pattern is:
+The heads work as one unit, not as workers dividing files. The pattern:
 
 1. Shared goal.
-2. Room digest plus inbox check.
-3. Claim only the immediate files you are about to touch with
-   `coordination_intent`.
+2. Room digest plus mention drain at turn-start.
+3. Footprint your current files with `coordination_intent`, and build on a peer's
+   footprint where it overlaps yours.
 4. Review each other's diff before commit.
 
-Strict lanes and message handshakes can prevent useful negotiation. Intent
-records plus peer review make loose coordination safe enough to move quickly.
+Reading the room plus co-editing plus peer review makes fast multi-head work
+safe. Pre-assigning territory or handshaking before edits only slows it down.
 
 ## Review Packet Shape
 

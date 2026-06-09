@@ -123,7 +123,7 @@ should prefer `/harness` plus adaptive routing.
 | `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
 | `encode` | Record feedback, solutions, and postmortems with outcome metadata. |
 | `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
-| `coordination_intent` | Write the live file/subsystem claim peers read at SessionStart. |
+| `coordination_intent` | Write your live footprint (what you are doing, which files your hands are on) for peers to build on at SessionStart. |
 | `coordination_reflection` | Write turn-end working memory for the next agent. |
 | `coordination_decision` | Preserve a room-scoped choice with rationale. |
 | `coordination_tension` | Surface a structural disagreement without blocking peer work. |
@@ -150,25 +150,26 @@ The local `theorems-harness` MCP server also exposes launch-facing aliases:
 
 ## Coordination Rule
 
-For multi-agent work, coordination is a lightweight safety layer:
+The heads are one agent with several hands (`codex`, `claude-code`, `claude-ai`),
+not separate workers dividing the repo. Coordinate as a unit:
 
-- Heartbeat presence.
-- Join or inspect the durable coordination room when a shared task has more than
-  a one-off packet.
-- Read the SessionStart digest and write `coordination_intent` for the immediate
-  files or subsystem before overlapping edits.
-- Subscribe to the shared repo/task channel and consume pending interrupts.
-- Send `coordinate` messages with stable `@actor` mentions only for interrupts,
-  review requests, or asks that affect the next immediate action.
-- Write `coordination_reflection`, `coordination_decision`, or
-  `coordination_tension` when the next agent should inherit working memory,
-  rationale, or a visible disagreement.
-- Wait briefly only when a response is useful now.
-- Prefer shared goals and file-level claims over rigid global lane ownership.
+- Read the room (intents, reflections, open tensions) and drain mentions at
+  turn-start, before planning edits.
+- Write `coordination_intent` as your footprint: what you are doing now and which
+  files your hands are on, for peers to build on. It is not a lock.
+- When your work meets another head's footprint, build on its edit rather than
+  yielding or waiting; held, not clobbered. A real disagreement is a
+  `coordination_tension` you record and work around, not a silent overwrite.
+- Send `coordinate` with an `@actor` only for a block or a fork that changes the
+  next action. Ordinary progress goes in your footprint summary.
+- Close your footprint at turn-end and write a `coordination_reflection` (and a
+  `coordination_decision` for any architectural choice) so the next head resumes
+  cold.
 
 The durable model is room digest plus interrupt mailbox: membership, intents,
 reflections, decisions, tensions, events, continuity packs, and pending mentions
-survive agent sleep; short-TTL presence only says who is fresh.
+survive head sleep; short-TTL presence only says who is fresh. Full protocol:
+`skills/harness-coordinate/SKILL.md`.
 
 ## Hook Enforcement Layer
 
@@ -210,5 +211,6 @@ The plugin hook layer makes the highest-risk harness disciplines deterministic:
 - Treating `/harness mode=execute` as permission to skip design when a third
   workaround appears.
 - Reporting hook or route success as product success without runtime evidence.
-- Using strict file lanes or message handshakes where shared intent records,
-  file-level claims, and peer review would be safer and faster.
+- Treating files as territory to reserve instead of footprints to build on; using
+  message handshakes where reading the room and co-editing on overlap would be
+  faster.

@@ -77,12 +77,12 @@ ${cadence_body}"
 fi
 if [ -z "$cadence_frame" ]; then
   cadence_frame='## Coordination cadence (turn-shape contract)
-- Turn-start: read room intents and drain your mentions before planning.
-- Begin: write your intent with the files you are claiming now.
-- During: broadcast forks as tensions and keep working; never freeze a lane.
+- Turn-start: read the room (intents, reflections, open tensions) and drain your mentions before planning.
+- Begin: write your intent, what you are doing now and which files your hands are on. It is a footprint others build on, not a fence.
+- During: when your work meets a footprint from another head, read its edit and build on it; do not step away or wait. Surface a real disagreement as a tension and keep working.
 - Questions: substrate first (recall, room decisions); else record an ask with a named default and continue on non-blocked work.
-- Blocked: do not wait on a peer; take other ready work or re-read the room.
-- Turn-end: close your intent as the handoff and write a reflection.
+- Blocked: take other ready work or re-read the room; do not idle on a peer.
+- Turn-end: close your intent as the handoff and write a reflection so the next head resumes cold.
 - Wake: a live head drains its own wakes at its checkpoint; the courier only spawns asleep heads. Frequency over fences.'
 fi
 
