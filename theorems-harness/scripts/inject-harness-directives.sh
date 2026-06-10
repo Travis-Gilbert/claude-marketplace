@@ -86,6 +86,23 @@ if [ -z "$cadence_frame" ]; then
 - Wake: a live head drains its own wakes at its checkpoint; the courier only spawns asleep heads. Frequency over fences.'
 fi
 
+unit_frame=''
+if [ -f "$agents_file" ]; then
+  unit_body=$(awk '
+    /^## Unit model$/ {capture=1; next}
+    /^## / && capture {exit}
+    capture {print}
+  ' "$agents_file" | sed '/^[[:space:]]*$/d')
+  if [ -n "$unit_body" ]; then
+    unit_frame="## Unit model (one agent, several heads)
+${unit_body}"
+  fi
+fi
+if [ -z "$unit_frame" ]; then
+  unit_frame='## Unit model (one agent, several heads)
+You are one agent with several heads (codex, claude-code, claude-ai), not several agents dividing the work: one identity, one shared scratchpad the heads append revisions to, one budget, heads as hands. Leave a footprint others build on, not a file you own; when two hands land on the same file the later one builds on the earlier edit, held not clobbered. Do not split a shared task into clean lanes to keep your hands apart: the overlap is where two heads catch errors a single head would miss, so tighten the loop instead of shrinking the contact surface. Surface a real disagreement as a tension and keep working. Frequency over fences.'
+fi
+
 if [ "$hook_event" = "UserPromptSubmit" ] && printf '%s' "$prompt" | grep -Eiq '(^|[^[:alnum:]])normal mode([^[:alnum:]]|$)'; then
   mkdir -p "$(dirname "$writing_disabled_file")" 2>/dev/null || true
   printf 'disabled by normal mode at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$writing_disabled_file" 2>/dev/null || true
@@ -94,6 +111,7 @@ fi
 case "$hook_event" in
   SessionStart)
     append_context "$standing_frame"
+    append_context "$unit_frame"
     append_context "$cadence_frame"
     rm -f "$writing_disabled_file" 2>/dev/null || true
     if [ -n "$writing_frame" ]; then
