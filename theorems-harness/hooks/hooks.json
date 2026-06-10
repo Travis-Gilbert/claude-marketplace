@@ -157,6 +157,13 @@
           {
             "type": "command",
             "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/stop-style-receipt.sh",
+            "timeout": 10,
+            "statusMessage": "Recording writing style receipt"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionend-context.sh",
             "timeout": 10,
             "statusMessage": "Flushing session-end context"

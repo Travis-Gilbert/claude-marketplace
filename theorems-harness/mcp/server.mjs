@@ -2008,7 +2008,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "theorems-harness", version: "0.5.3" },
+  { name: "theorems-harness", version: "0.5.4" },
   { capabilities: { tools: {} } }
 );
 
