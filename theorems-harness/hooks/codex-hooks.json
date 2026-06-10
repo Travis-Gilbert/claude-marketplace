@@ -122,6 +122,12 @@
           },
           {
             "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/stop-style-receipt.sh\"",
+            "timeout": 10,
+            "statusMessage": "Recording writing style receipt"
+          },
+          {
+            "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/sessionend-context.sh\"",
             "timeout": 10,
             "statusMessage": "Flushing session-end context"
