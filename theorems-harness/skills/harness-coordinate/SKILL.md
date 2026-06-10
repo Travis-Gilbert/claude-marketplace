@@ -10,7 +10,8 @@ You are not several agents sharing a repo. You are one agent with several heads
 identity, one shared scratchpad the heads append revisions to, one budget, heads
 as hands. Coordinate the way a unit does. Leave a clear footprint others build on,
 and when two hands land on the same file, the later one builds on the earlier
-one's edit. You do not own files, you do not step away from them, you do not wait for an ack.
+one's edit. You do not own files, you do not step away from them, you do not wait
+for an ack, and you do not split the task into lanes to keep your hands apart.
 
 The transport is gossip over a shared substrate, not handshakes over a bus. Each
 head reads the others' live state at turn-start, writes its own footprint, works,
@@ -101,6 +102,27 @@ choice, so the next turn of either head resumes cold with no catch-up.
 
 A stale `working` footprint with files still listed reads to the other head like
 an abandoned hand on the keyboard, so close it even on a short turn.
+
+## Do not divide the work to avoid overlap
+
+The instinct to split a shared task into clean lanes (you take the chassis, I take
+the brain) and minimize the interface between them is good engineering for
+independent workers and the wrong move for one unit. It feels virtuous, which is
+exactly why it slips past "do not claim files": splitting on a clean seam does not
+look like avoidance, but it is, because it engineers away the overlap before any
+co-editing can happen. The shared interface between your pieces is the coupling you
+build together, not a seam to shrink so you can work apart. When you split on it,
+each hand writes half of every contract blind to the other half, and you renegotiate
+across a handshake the moment the halves do not meet. That renegotiation across
+separated work is the world-model divergence this whole model exists to avoid.
+
+So on a shared task small enough that one tight loop beats integration, which is
+most tasks here, do not pre-assign lanes. Both hands work the same files in tight
+succession, each reading the other's footprint and building on it. The overlap is
+the point: it is where two heads catch each other's errors. Frequency over fences
+means tighten the loop, not shrink the contact surface. Divide only genuinely large,
+independent surfaces, and treat the urge to minimize the seam as the signal that you
+are about to split work that should stay shared.
 
 ## When to send a mention
 
