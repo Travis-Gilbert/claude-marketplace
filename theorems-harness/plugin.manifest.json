@@ -2,7 +2,7 @@
   "schema_version": 1,
   "plugin": {
     "name": "theorems-harness",
-    "version": "0.5.4",
+    "version": "0.5.6",
     "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
     "author": {
       "name": "Travis Gilbert"
@@ -36,7 +36,9 @@
       "codebase-context",
       "subagent-suggestions",
       "peer-review",
-      "adaptive-routing"
+      "adaptive-routing",
+      "crdt-substrate",
+      "semantic-overlap"
     ]
   },
   "hosts": {
@@ -89,6 +91,8 @@
             "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing.",
             "If a host repository opts in through AGENTS.md or CLAUDE.md, prefer harness-backed prepare, preview, and run surfaces for multi-file, high-risk, or long-running work, but do not force harness orchestration for trivial requests.",
             "For cross-agent work, run the coordinate protocol over the shared native room: read coordination_context at the start of each turn (shared task, the other head's intents, recent records and contributions), heartbeat presence, write an advisory coordination_intent for the subsystem you are touching now (a focus signal, not a lock), consume pending mentions, reserve coordinate @mentions for interrupts or review requests, write coordination_reflection / coordination_decision / coordination_tension when those facts should survive, keep a shared frontier record both heads pull micro-tasks from, and write continuity_pack before compaction or handoff.",
+            "For CRDT substrate work, keep Rust runtime changes in the Theorem/RustyRed repositories and use the native RustyRed MCP/backend as the executable source of truth. The plugin marketplace package distributes prompts, hooks, skills, and MCP proxy wiring; it does not automatically mirror uncommitted Rust code into installed sessions.",
+            "When coordination_intent footprints overlap on the code graph, treat emitted semantic-overlap tensions as awareness signals rather than locks. Resolve the tension in the room and keep the footprint write nonblocking.",
             "At the end of multi-agent work, run peer-review before commit, PR, or launch-ready reporting: create a review packet, ask the other frontier model to inspect the diff, reconcile findings, then validate.",
             "Use encode for high-signal feedback, solutions, and postmortems. Agents may auto-trigger encode when a durable lesson emerges, while keeping secrets out of stored memory."
           ]
