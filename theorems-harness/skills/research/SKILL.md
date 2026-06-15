@@ -26,13 +26,13 @@ For a task that will also modify files, validate, or report, use `/harness`.
 
 1. Prefer `harness_fractal_expansion` with `query`, `run_id` (if a run is
    open), `top_k`, `budget`, and `scope`.
-2. For code-specific discovery, run `code_search` first, then `code_context`
-   on the most relevant symbol.
+2. For code-specific discovery, run `compute_code` first, then `code_context`
+   on the most relevant symbol if the code-theorem tool family is available.
 3. If `harness_fractal_expansion` is unavailable, fall back to the full
    Theseus search or GraphRAG tool available in the host and surface that the
    direct Harness path was unavailable.
 4. For raw seed-PK PPR, use `ppr_neighborhood` on the Theorem MCP or
-   `mcp__rustyred-thg__rustyred_thg_algorithm_ppr` directly.
+   `mcp__theorems-harness__rustyred_thg_algorithm_ppr` directly.
 
 ## Output
 

@@ -1,6 +1,6 @@
 {
   "name": "theorems-harness",
-  "version": "0.5.5",
+  "version": "0.5.7",
   "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
@@ -34,7 +34,9 @@
     "codebase-context",
     "subagent-suggestions",
     "peer-review",
-    "adaptive-routing"
+    "adaptive-routing",
+    "crdt-substrate",
+    "semantic-overlap"
   ],
   "mcpServers": "./.mcp.json",
   "skills": "./skills/",
@@ -56,13 +58,15 @@
       "Treat /harness as session/task opt-in, not as a forced narrow mode. Choose the best capability mix, reroute at checkpoints, and keep moving unless a real blocker requires user input.",
       "When available, use harness_route to inspect the recommended capability mix before or during a run.",
       "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /harness mode=plan handoff=spark and keep the planner in-thread to review what was built.",
-      "For multi-agent work, you and the other agent are two execution heads of one agent working one goal over one shared substrate. Prefer transactional substrate state over head-to-head chat: use multihead_run/task/claim/patch/proof/review when available, claim task nodes with leases, submit patch proposals against a base commit, let the substrate rerun proofs, and make review an adversarial falsification step. Use coordination_intent/coordinate only for awareness, interrupts, or review asks.",
+      "For multi-head work, announce over the shared native room first: read the room at turn-start, announce your current move with coordination_intent, keep working in isolated execution, and build on completed peer edits. The semantic-overlap guard is the headline conflict detector because it catches code-graph conflicts that git text merge and the room cannot show.",
       "The Harness delegates internally to observe, theorize, plan, execute, diagnose, coordinate, context refresh, research, validation, peer review, memory, SDK harness product awareness, Redis harness agents, and other installed specialists.",
       "Use stable checklist IDs when they reduce risk or preserve acceptance criteria; do not claim done unless validation supports it.",
       "For UI visual projects, add the UI Visual Milestone: split Runtime complete, Product complete, and Vision complete; capture before/after/target screenshots; run the Do Not Downgrade gate; and keep a reversible product boundary until the new surface is equal-or-better.",
       "If the work touches Redis-backed harness state, THG product service, RESP/Valkey facade, TheoremContextClient, or TheoremHotGraphClient, consult the relevant SDK/Redis specialist agent before locking decisions or editing.",
       "If a host repository opts in through AGENTS.md or CLAUDE.md, prefer harness-backed prepare, preview, and run surfaces for multi-file, high-risk, or long-running work, but do not force harness orchestration for trivial requests.",
-      "For cross-agent work, run the coordinate protocol over the shared native room: read coordination_context at the start of each turn (shared task, the other head's intents, recent records and contributions), heartbeat presence, write an advisory coordination_intent for the subsystem you are touching now (a focus signal, not a lock), consume pending mentions, reserve coordinate @mentions for interrupts or review requests, write coordination_reflection / coordination_decision / coordination_tension when those facts should survive, keep a shared frontier record both heads pull micro-tasks from, and write continuity_pack before compaction or handoff.",
+      "For cross-head work, run the announce protocol over the shared native room: read coordination_context at the start of each turn, heartbeat presence, write coordination_intent as a live room signal, consume pending mentions, reserve coordinate @mentions for interrupts or review requests, write coordination_reflection / coordination_decision / coordination_tension when those facts should survive, and write continuity_pack before compaction or handoff.",
+      "For CRDT substrate work, keep Rust runtime changes in the Theorem/RustyRed repositories and use the native RustyRed MCP/backend as the executable source of truth. The plugin marketplace package distributes prompts, hooks, skills, and MCP proxy wiring; it does not automatically mirror uncommitted Rust code into installed sessions.",
+      "When coordination_intent announcements semantically overlap on the code graph, treat emitted semantic-overlap tensions as awareness signals rather than locks. Resolve the tension in the room and keep the announcement write nonblocking.",
       "At the end of multi-agent work, run peer-review before commit, PR, or launch-ready reporting: create a review packet, ask the other frontier model to inspect the diff, reconcile findings, then validate.",
       "Use encode for high-signal feedback, solutions, and postmortems. Agents may auto-trigger encode when a durable lesson emerges, while keeping secrets out of stored memory."
     ]

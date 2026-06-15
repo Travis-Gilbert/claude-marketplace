@@ -4,9 +4,9 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 ## What's shared (both hosts read this)
 
-- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/curiosity/`, `skills/session-offload/`
-- All 11 `agents/*.md` (orchestrate-planner, action-rail-specialist, validator-reporter, redis-harness-operator, redis-product-safety, plugin-router, federation-learning-recorder, epistemic-graphrag-specialist, context-artifact-specialist, codex-sdk-harness-product, checklist-manifest)
-- All 20 `references/*.md`: `ARTIFACT_SCHEMAS.md`, `BRIEF_TEMPLATE.md`, `CHECKLIST_MANIFESTO.md`, `CONCISE_ACTION.md`, `ENGINEERS_MINDSET.md`, `EPISTEMIC_PRIMITIVES.md`, `HOST_REPO_OPT_IN.md`, `LEARNINGS.md`, `ORCHESTRATE_REPORTING.md`, `PLAN_TEMPLATE.md`, `PLUGIN_INVENTORY.md`, `PRODUCTION_GATES.md`, `PROFILES.md`, `REFS_AUDIT.md`, `REFS_MANIFEST.md`, `REPORTING.md`, `ROUTING.md`, `SDK_DATABASE_HARNESS.md`, `SETTINGS.md`, `UI_VISUAL_PROJECT_GATES.md`
+- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/graph-version/`, `skills/symbolic/`, `skills/dispatch/`, `skills/browser-web/`, `skills/curiosity/`, `skills/session-offload/`
+- Agent profiles under `agents/*.md`.
+- Shared references under `references/*.md`.
 
 A change to any of these flows to both hosts on next install / sync. There is no port to keep up to date.
 
@@ -25,9 +25,8 @@ encode durable lessons only when they are high signal.
 |---|---|
 | Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, and `/compute_code` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
-| Slim MCP | Local tool bus for adaptive routing, refresh, replay, memory, encode, and coordination |
-| Remote MCPs | Theorem-side RustyRed MCP for native graph reads, algorithms, search, harness coordination, memory, and event-log surfaces, reached through a Claude-compatible local proxy |
-| SDK | Typed client library used by hooks, scripts, and MCP wrappers; not a separate user-facing command layer |
+| Native MCP | Single remote HTTP `theorems-harness` server for graph reads, algorithms, code discovery, code ingest, harness run lifecycle, memory, coordination, and skill-pack surfaces |
+| SDK | Typed client helpers used by scripts and compatibility utilities; not a separate user-facing command layer |
 
 The older `theorem-context-sdk/claude-code` plugin is legacy host-adapter
 plumbing. Its manual refresh behavior now belongs under `/context-refresh`;
@@ -56,21 +55,23 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 | `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. Codex also reads the same `.harness/checklist.json` contract and coordination mirror. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
-| `mcp/server.mjs` + `mcp/package.json` | Slim MCP fallback (Mode 2). Includes adaptive route selection (`harness_route`), context compile/refresh/replay, code search/crawl, research/fractal expansion, Instant KG status/reingest, provenance trace reads, native skill-pack tools (`skill_list`, `skill_get`, `skill_publish`, `skill_apply`), domain pack list/install, saved-context product tools, memory-patch review tools, headless coordination tools (`coordination_room`, `coordination_intent`, `write_intent`, `read_intents_for_room`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`), multi-head substrate tools (`multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`) that route to the Rust runtime-backed MCP with the local `.theorem/multihead` spike as compat fallback, memory tools (`recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`), and `encode` for feedback/solution/postmortem memory. Cross-agent behavior is taught by `skills/harness-coordinate/`. |
-| `mcp/rustyred-theorem-proxy.mjs` | Claude compatibility shim for the Theorem-side RustyRed MCP. It forwards tool calls to `rustyredcore-theorem-production.up.railway.app/mcp` and normalizes top-level schema combinators during `tools/list`. |
+| `.mcp.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | Register the single remote HTTP MCP server named `theorems-harness`. There is no bundled Node MCP server or local proxy. |
 
-The `mcpServers` field in `.claude-plugin/plugin.json` registers this slim MCP plus a local `rustyred-thg` proxy for the Theorem-side RustyRed MCP at `rustyredcore-theorem-production.up.railway.app/mcp`. The old Theseus MCP is intentionally not registered by the Claude host manifest; product/context HTTP routes still use `THEOREM_CONTEXT_BASE_URL`.
+The `mcpServers` field registers one server, `theorems-harness`, pointing at
+`https://rustyredcore-theorem-production.up.railway.app/mcp`. The old local
+Node MCP and the separate RustyRed proxy are removed; hooks call native tools
+through `theorem_native_call`.
 
-The slim MCP advertises these launch-facing tools through `listTools`:
+The native MCP advertises these launch-facing tools through `tools/list`:
 
-- Context and runs: `harness_route`, `context_compile`, `orchestrate_refresh`, `harness_replay`, `harness_describe_current`
-- Code and research: `code_search`, `code_crawl`, `harness_fractal_expansion`, `fractal_expand`
-- Pairformer/graph readiness: `instant_kg_status`, `instant_kg_reingest`, `provenance_trace`
+- Context and runs: `harness_prepare`, `harness_append_transition`, `harness_run`, `harness_kg_status`
+- Code: `compute_code` for reads and `code_ingest` for ingest/reindex/session overlay writes. The old `code_search` name is dispatch-compatible only; it is not advertised.
+- Graph and reasoning: `rustyred_thg_graph_*`, `rustyred_thg_algorithm_*`, `rustyred_thg_symbolic_*`, and graph-version tools.
+- Web: `rustyweb_search_acquisition`, `browse_for_me`, `browse_with_me`, `web_consume`
 - Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
 - Coordination: `coordination_room`, `coordination_intent`, `write_intent`, `read_intents_for_room`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
-- Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`. In compat mode these call the native Rust MCP first and fall back to local `.theorem/multihead/state.json` when the deployed runtime does not yet expose the tool.
+- Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`
 - Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
-- Product/domain operations: `product_bootstrap`, `saved_contexts_list`, `saved_context_create`, `saved_context_update`, `saved_context_mute`, `saved_context_activate`, `saved_context_delete`, `saved_context_preview_recall`, `memory_patch_review_queue`, `memory_patch_review_update`, `domain_list`, `domain_install`
 
 ## Configuration
 
@@ -85,16 +86,13 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `THEOREM_CONTEXT_BASE_URL` | `https://index-api-production-a5f7.up.railway.app/api/v2/theseus` | HTTP API base (must include `/api/v2/theseus`) |
-| `THEOREM_CONTEXT_API_KEY` / `THEOREM_API_KEY` | empty | Bearer token; `THEOREM_API_KEY` is the public product alias and is accepted anywhere `THEOREM_CONTEXT_API_KEY` is accepted. Required to reach authenticated product and context routes. |
-| `THEOREM_CONTEXT_TENANT_SLUG` / `THEOREM_TENANT_SLUG` | inferred | Optional product tenant override for direct RustyRed-THG mirrors. If unset, the MCP server infers the API-key tenant from `product_bootstrap.default_tenant_slug`; `public` is ignored because it is a THG default, not a product tenant. |
-| `THEOREM_HARNESS_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Primary native Theorem RustyRed MCP used by the slim MCP route policy for memory, coordination, run, and skill-pack capability calls. |
+| `THEOREM_API_KEY` | empty | Compatibility bearer token fallback for native MCP calls when `THEOREM_HARNESS_API_TOKEN` is not set. |
+| `THEOREM_TENANT_ID` / `THEOREMS_HARNESS_TENANT` / `RUSTYRED_THG_TENANT` / `THEOREM_CONTEXT_TENANT_SLUG` / `THEOREM_TENANT_SLUG` | empty | Tenant slug for native calls and code KG hooks. The production harness tenant is `Travis-Gilbert`. |
+| `THEOREM_HARNESS_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Primary native Theorem MCP URL used by hook scripts. |
 | `THEOREM_HARNESS_API_TOKEN` | empty | Optional Bearer token for native Theorem RustyRed MCP writes. |
 | `THEOREM_ACTOR` | host actor | Optional actor override for MCP coordination tools. When omitted, the MCP server defaults to `codex` in Codex-hosted plugin runs and `claude-code` otherwise, so mention reads do not fall back to the API-key actor. |
-| `THEOREMS_HARNESS_THG_WRITES` | `mirror` | `mirror`, `primary`, or `off` for direct RustyRed-THG graph writes from the slim MCP memory/coordination tools. |
-| `THEOREMS_HARNESS_THG_BASE_URL` | `https://thg-product-production.up.railway.app` | RustyRed-THG product REST base URL for direct graph mirrors. This remains separate from the Claude remote MCP registration. |
 | `THEOREMS_HARNESS_THG_API_TOKEN` | empty | Optional Bearer token for RustyRed-THG direct graph mirrors. |
-| `THEOREMS_HARNESS_RUSTYRED_MCP_URL` / `RUSTYRED_THG_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Theorem-side RustyRed MCP URL used by the Claude compatibility proxy. |
+| `THEOREMS_HARNESS_RUSTYRED_MCP_URL` / `RUSTYRED_THG_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Compatibility fallback URL for hook scripts when `THEOREM_HARNESS_MCP_URL` is unset. |
 | `THEOREM_BUDGET_TOKENS` | `4000` | Default Context Artifact budget |
 | `THEOREM_ACTION_RAIL` | `record` | One of `off`, `record`, `enforce` |
 | `THEOREM_DEBUG` | `0` | Set to `1` to log hook activity to stderr |
@@ -105,10 +103,7 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 ## Install (Claude Code)
 
 ```bash
-# 1. Install MCP deps
-cd $(claude plugin path theorems-harness)/mcp && npm install
-
-# 2. Enable in ~/.claude/settings.json:
+# Enable in ~/.claude/settings.json:
 #   "theorems-harness@codex-marketplace": true
 ```
 
@@ -124,36 +119,13 @@ plugin_hooks = true
 
 3. Restart the session so Codex reviews and trusts the bundled hook commands.
 
-## Backend routes (hooks exercise these)
+## Native MCP calls hooks exercise
 
-- `POST /api/v2/theseus/harness/runs/` (begin run)
-- `POST /api/v2/theseus/orchestrate/prepare/` (internal prepare route; public command is `/context-refresh`)
-- `POST /api/v2/theseus/context/compile/` (PPR-compiled artifact, auth-gated)
-- `GET  /api/v2/theseus/code/symbols/` (code graph symbol search)
-- `POST /api/v2/theseus/code/ingest/` (operator-approved code graph ingest/crawl)
-- `POST /api/v2/theseus/capture/instant-kg/` (enqueue Instant KG reingest/capture)
-- `GET  /api/v2/theseus/trace/search/` and `GET /api/v2/theseus/trace/{id}/` (reasoning provenance trace reads)
-- `GET  /api/v2/packs/` and `POST /api/v2/pack-installs/` (domain pack list/install)
-- `POST /api/v2/theseus/harness/runs/{id}/step/` (record tool use)
-- `POST /api/v2/theseus/harness/runs/{id}/outcome/` (run outcome)
-- `POST /api/v2/theseus/harness/runs/{id}/context-injected/` (mark inject)
-- `GET  /api/v2/theseus/harness/runs/{id}/events/` (replay)
-- `GET  /api/v2/theseus/harness/runs/{id}/state-hash/` (deterministic replay key)
-- `POST /api/v2/theseus/harness/memory/self-note/` (typed agent memory)
-- `POST /api/v2/theseus/harness/memory/self-revise/` (revision-tracked memory)
-- `POST /api/v2/theseus/harness/memory/self-archive/` (archive memory out of active recall)
-- `POST /api/v2/theseus/harness/memory/self-recall-archive/` (recall archived memory)
-- `POST /api/v2/theseus/harness/encode/` (record feedback, solutions, and postmortems with fitness telemetry)
-- `POST /api/v2/theseus/harness/coordinate/` (append coordination message and queue mentions)
-- `POST /api/v2/theseus/harness/coordination/room/` (join/read/control durable coordination room membership)
-- `POST /api/v2/theseus/harness/coordination/intent/` (write live per-actor intent / immediate file claim)
-- `POST /api/v2/theseus/harness/coordination/reflection/` (write turn-end working memory for the room digest)
-- `POST /api/v2/theseus/harness/coordination/decision/` (append room-scoped choice and rationale)
-- `POST /api/v2/theseus/harness/coordination/tension/` (open, resolve, or escalate visible disagreement)
-- `POST /api/v2/theseus/harness/mentions/` (load or consume pending mentions)
-- `POST /api/v2/theseus/harness/mentions/wait/` (block briefly until mentions arrive)
-- `POST /api/v2/theseus/harness/presence/` (refresh or read actor presence)
-- `POST /api/v2/theseus/harness/subscribe/` (register mention polling channel)
-- `POST /api/v2/theseus/harness/session/continuity-pack/` (write graph-backed and disk-mirrored continuity before compaction or handoff)
+- `harness_prepare` (compile the Context Brief from Ensemble selection plus memory recall)
+- `harness_append_transition` (append run lifecycle events)
+- `harness_run` (read run event ledgers)
+- `compute_code` and `code_ingest` (read code graph context and ingest/reindex when needed)
+- `coordination_room`, `coordination_intent`, `coordination_record`, `coordination_reflection`, `coordinate`, `mentions`, `presence`
+- `remember`, `recall`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 
 Failure semantics: every hook fails open. Backend 500, missing jq, malformed responses all result in `{"continue": true}` so the user's session never breaks because the plugin had a bad day.

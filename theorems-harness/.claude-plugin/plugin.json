@@ -1,6 +1,6 @@
 {
   "name": "theorems-harness",
-  "version": "0.5.5",
+  "version": "0.5.7",
   "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
@@ -34,20 +34,17 @@
     "codebase-context",
     "subagent-suggestions",
     "peer-review",
-    "adaptive-routing"
+    "adaptive-routing",
+    "crdt-substrate",
+    "semantic-overlap"
   ],
   "mcpServers": {
     "theorems-harness": {
-      "command": "node",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
-      ]
-    },
-    "rustyred-thg": {
-      "command": "node",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp/rustyred-theorem-proxy.mjs"
-      ]
+      "type": "http",
+      "url": "https://rustyredcore-theorem-production.up.railway.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${THEOREM_HARNESS_API_TOKEN}"
+      }
     }
   }
 }

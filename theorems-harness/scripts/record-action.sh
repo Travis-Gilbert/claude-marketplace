@@ -30,7 +30,7 @@ step_body=$(jq -n \
   --argjson tin "${tool_input:-{}}" \
   --argjson tout "${tool_response:-{}}" \
   '{
-    kind: "tool_use",
+    event_subtype: "tool_use",
     tool: $tool,
     input: $tin,
     output_summary: ($tout | tostring | .[0:2000]),
@@ -38,6 +38,6 @@ step_body=$(jq -n \
   }')
 
 # Best-effort, fire-and-forget so the user's session isn't slowed.
-( theorem_post "/harness/runs/${run_id}/step/" "$step_body" >/dev/null 2>&1 || true ) &
+( theorem_append_transition "$run_id" "SESSION.EVENT_RECORDED" "${THEOREM_ACTOR:-$(theorem_host)}" "$step_body" "tool-use:$sid:$tool_name:$(date -u +%s)" >/dev/null 2>&1 || true ) &
 
 printf '{"continue":true}\n'

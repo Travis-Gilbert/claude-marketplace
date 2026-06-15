@@ -40,7 +40,7 @@ Context Artifact is currently active for the run). This is the trust lens for
 - The user asked what they themselves wrote earlier. That's transcript
   history, not artifact content.
 - The user wants the live knowledge graph state. Use the Theorem-side RustyRed
-  MCP (`mcp__rustyred-thg__*` tools) instead.
+  MCP (`mcp__theorems-harness__*` tools) instead.
 - The user wants the prior-run timeline. Use the `replay-last-run` skill or
   call `harness_replay` directly.
 

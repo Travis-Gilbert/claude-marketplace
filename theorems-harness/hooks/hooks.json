@@ -42,6 +42,13 @@
           {
             "type": "command",
             "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/code-neighborhood.sh",
+            "timeout": 30,
+            "statusMessage": "Composing code neighborhood"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/inject-harness-directives.sh",
             "timeout": 5,
             "statusMessage": "Injecting harness directives"
@@ -65,7 +72,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__plugin_theorems-harness_.*|mcp__theorems-harness__.*|mcp__rustyred-thg__.*",
+        "matcher": "mcp__plugin_theorems-harness_.*|mcp__theorems-harness__.*",
         "hooks": [
           {
             "type": "command",
@@ -120,6 +127,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/posttool-event.sh",
             "timeout": 10,
             "statusMessage": "Recording coordination event"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/delta-queue.sh",
+            "timeout": 5,
+            "statusMessage": "Queueing code-delta paths"
           }
         ]
       }
@@ -140,6 +154,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/filechange-reingest.sh",
             "timeout": 5,
             "statusMessage": "Reingesting changed files"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/delta-queue.sh",
+            "timeout": 5,
+            "statusMessage": "Queueing code-delta paths"
           }
         ]
       }
@@ -174,6 +195,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/finalize-run.sh",
             "timeout": 30,
             "statusMessage": "Finalizing theorem run"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/code-use-receipt.sh",
+            "timeout": 15,
+            "statusMessage": "Recording code-use receipts"
           }
         ]
       }

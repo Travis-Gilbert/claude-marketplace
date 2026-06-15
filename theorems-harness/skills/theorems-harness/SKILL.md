@@ -114,7 +114,8 @@ should prefer `/harness` plus adaptive routing.
 | `harness_step` | Record a step inside an open run. |
 | `harness_search` | Search inside the run, recording tool-call and observation steps. |
 | `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
-| `code_search` / `compute_code` | Search, explain, explore, ingest, or reindex code through the native CodeCrawler / code graph path. |
+| `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path. |
+| `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
 | `harness_context` | Compile the context artifact for the current run. |
 | `harness_patch` | Propose a patch to the harness belief state. |
 | `harness_replay` | Get the full event timeline of a run. |
@@ -123,7 +124,7 @@ should prefer `/harness` plus adaptive routing.
 | `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
 | `encode` | Record feedback, solutions, and postmortems with outcome metadata. |
 | `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
-| `coordination_intent` | Write your live footprint (what you are doing, which files your hands are on) for peers to build on at SessionStart. |
+| `coordination_intent` | Announce what you are doing, which files or concepts your hands are on, and any semantic overlap peers should read. |
 | `coordination_reflection` | Write turn-end working memory for the next agent. |
 | `coordination_decision` | Preserve a room-scoped choice with rationale. |
 | `coordination_tension` | Surface a structural disagreement without blocking peer work. |
@@ -140,7 +141,7 @@ The local `theorems-harness` MCP server also exposes launch-facing aliases:
 | Tool | Purpose |
 |---|---|
 | `context_compile` | Compile an explicit Context Theorem artifact for a task. |
-| `code_crawl` | Ingest or refresh a repository in the CodeCrawler/code graph. |
+| `code_ingest` | Ingest or refresh a repository in the CodeCrawler/code graph. |
 | `fractal_expand` | Launch-facing alias for `harness_fractal_expansion`. |
 | `instant_kg_status` | Check tenant-scoped Instant KG readiness through THG product. |
 | `instant_kg_reingest` | Enqueue fresh Instant KG capture/reingest. |
@@ -155,16 +156,17 @@ not separate workers dividing the repo. Coordinate as a unit:
 
 - Read the room (intents, reflections, open tensions) and drain mentions at
   turn-start, before planning edits.
-- Write `coordination_intent` as your footprint: what you are doing now and which
-  files your hands are on, for peers to build on. It is not a lock.
-- When your work meets another head's footprint, build on its edit rather than
-  yielding or waiting; held, not clobbered. A real disagreement is a
+- Write `coordination_intent` as an announcement: what you are doing now, which
+  files or concepts your hands are on, and where semantic overlap may exist. It
+  is not a lock.
+- When your work semantically overlaps another head's work, build on its edit
+  rather than yielding or waiting; held, not clobbered. A real disagreement is a
   `coordination_tension` you record and work around, not a silent overwrite.
 - Send `coordinate` with an `@actor` only for a block or a fork that changes the
-  next action. Ordinary progress goes in your footprint summary.
-- Close your footprint at turn-end and write a `coordination_reflection` (and a
-  `coordination_decision` for any architectural choice) so the next head resumes
-  cold.
+  next action. Ordinary progress goes in your announcement summary.
+- Close your announcement at turn-end and write a `coordination_reflection` (and
+  a `coordination_decision` for any architectural choice) so the next head
+  resumes cold.
 
 The durable model is room digest plus interrupt mailbox: membership, intents,
 reflections, decisions, tensions, events, continuity packs, and pending mentions
@@ -185,6 +187,12 @@ The plugin hook layer makes the highest-risk harness disciplines deterministic:
   policing ordinary planning or status language.
 - Investigation-shaped prompts inject the curiosity frame as an enricher, not a
   gate.
+- `UserPromptSubmit` injects an ambient `## Code neighborhood` block when a
+  tenant is set (`THEOREM_TENANT_ID`): PPR-ranked code hits over the merged
+  committed-base + local-edit delta, with `file:line` and an "editing X reaches
+  Y" impact block. Trust it as PPR-ranked; prefer drilling in by `node_id`
+  (`compute_code` operation `context`/`explore`) over a fresh lexical search,
+  and read the impact line before editing a load-bearing symbol.
 
 ## Output Discipline
 
@@ -211,6 +219,6 @@ The plugin hook layer makes the highest-risk harness disciplines deterministic:
 - Treating `/harness mode=execute` as permission to skip design when a third
   workaround appears.
 - Reporting hook or route success as product success without runtime evidence.
-- Treating files as territory to reserve instead of footprints to build on; using
+- Treating files as territory to reserve instead of announcements to build on; using
   message handshakes where reading the room and co-editing on overlap would be
   faster.

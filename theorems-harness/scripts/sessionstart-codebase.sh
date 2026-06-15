@@ -10,7 +10,9 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
-tenant_id="${THEOREM_TENANT_ID:-public}"
+# AM1: canonical tenant resolution; no `public` fallback. Empty means the code
+# KG is disabled for this session (logged at Loop 1), never a fixture tenant.
+tenant_id=$(theorem_tenant)
 actor="${THEOREM_ACTOR:-$(theorem_host)}"
 cwd=$(theorem_jq "$input" '.cwd')
 [[ -z "$cwd" ]] && cwd="${CLAUDE_PROJECT_DIR:-$PWD}"
@@ -32,17 +34,19 @@ if git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 event_body=$(jq -n \
-  --arg tenant_id "$tenant_id" \
+  --arg actor "$actor" \
   --arg session_id "$sid" \
   --arg repo "$repo_label" \
   --arg root "$repo_root" \
   --argjson manifests "$manifest_files" \
   --argjson files "$tracked_files" \
   '{
-    tenant_id: $tenant_id,
-    session_id: $session_id,
-    event_type: "SessionStart",
-    payload: {
+    actor: $actor,
+    record_type: "event",
+    summary: "SessionStart",
+    title: "SessionStart",
+    metadata: {
+      session_id: $session_id,
       repo: $repo,
       root: $root,
       code_kg_status: "building",
@@ -50,13 +54,44 @@ event_body=$(jq -n \
       file_tree_sample: $files
     }
   }')
-theorem_post "/pairformer/session-event/" "$event_body" "$sid" >/dev/null 2>&1 || true
+theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
 
-if [[ "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
-  ingest_body=$(jq -n --arg path "$repo_root" '{path: $path}')
-  (
-    theorem_post "/code/ingest/stream/" "$ingest_body" "$sid" >/dev/null 2>&1 || true
-  ) &
+# --- AM7: code-KG base sync (Loop 1) ---
+# The base graph is the repo at its last pushed commit, ingested server-side by
+# URL (the only path that works remotely). Freshness is keyed on HEAD sha: a warm
+# start at the same HEAD fires zero ingests; a commit-then-restart fires one
+# reindex. Never blocks (async); fails open. Replaces the retired Django
+# /code/ingest/stream/ call, which could never see the local filesystem.
+if [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
+  origin_url=$(git -C "$repo_root" remote get-url origin 2>/dev/null || printf '')
+  head_now=$(theorem_git_head "$repo_root")
+  harness_dir=$(theorem_init_harness_dir "$repo_root")
+  manifest="$harness_dir/code-kg-manifest.json"
+  if [[ -z "$origin_url" ]]; then
+    theorem_log "local-only repo, base sync skipped"
+  else
+    prev_head=""
+    [ -f "$manifest" ] && prev_head=$(jq -r '.head_sha // empty' "$manifest" 2>/dev/null)
+    if [[ -n "$head_now" && "$prev_head" == "$head_now" ]]; then
+      theorem_log "code KG base at HEAD $head_now; no ingest"
+    else
+      # repo_id is derived the same way the server does (last URL segment), so
+      # the manifest is usable immediately, before the async ingest completes.
+      repo_slug=$(basename "$origin_url"); repo_slug="${repo_slug%.git}"
+      repo_id="repo:${repo_slug}"
+      op="ingest"; [ -n "$prev_head" ] && op="reindex"
+      jq -n --arg repo_id "$repo_id" --arg repo_url "$origin_url" --arg head "$head_now" \
+        --arg op "$op" \
+        '{repo_id: $repo_id, repo_url: $repo_url, head_sha: $head, operation: $op}' \
+        > "$manifest" 2>/dev/null || true
+      (
+        ingest_extra=$(jq -n --arg url "$origin_url" '{repo_url: $url, confirmed: true}')
+        theorem_code_call "$op" "$ingest_extra" >/dev/null 2>&1 || true
+      ) &
+    fi
+  fi
+elif [[ -z "$tenant_id" ]]; then
+  theorem_log "code KG disabled: no tenant (set THEOREM_TENANT_ID)"
 fi
 
 # Coordination room: auto-join the room derived from repo+branch, fetch
@@ -103,7 +138,7 @@ session_start_body=$(jq -n \
     }
   }')
 
-session_response=$(theorem_post "/harness/session/start/" "$session_start_body" "$sid" 2>/dev/null || printf '')
+session_response=$(theorem_native_json "coordination_context" "$session_start_body" 2>/dev/null || printf '')
 
 additional_context=""
 if [[ -n "$session_response" ]]; then
@@ -155,94 +190,57 @@ if [[ -n "$session_response" ]]; then
       (if (.status // "") != "" then " (" + .status + ")" else "" end) +
       ": " + ((.summary // "") | gsub("\n"; " ") | .[0:220]);
 
-    (.coordination_room // {}) as $room
-    | (.pending_mentions // {}) as $inbox
-    | (($inbox.count // 0) | tonumber) as $mention_count
-    | (.coordination_digest // {}) as $digest
-    | (.continuity_pack // {}) as $continuity
-    | (($digest.events // []) | length) as $event_count
-    | (($digest.decisions // []) | length) as $decision_count
-    | (($digest.open_tensions // []) | length) as $tension_count
-    | (($digest.peer_intents // []) | length) as $intent_count
-    | (($digest.peer_reflections // []) | length) as $reflection_count
+    (.room // {}) as $room
+    | (.pending_mentions // []) as $mentions
+    | (($mentions // []) | length) as $mention_count
+    | (.records // []) as $records
+    | (.intents // []) as $intents
+    | (($records | map(select((.record_type // "") == "event"))) | length) as $event_count
+    | (($records | map(select((.record_type // "") == "decision"))) | length) as $decision_count
+    | (($records | map(select((.record_type // "") == "tension"))) | length) as $tension_count
+    | (($intents // []) | length) as $intent_count
+    | (($records | map(select((.record_type // "") == "reflection"))) | length) as $reflection_count
     | ($event_count + $decision_count + $tension_count + $intent_count + $reflection_count) as $digest_total
-    | (($continuity.salient_nodes // []) | length) as $continuity_node_count
-    | (($continuity.validation_receipts // []) | length) as $continuity_receipt_count
-    | if (($room | length) == 0) and ($mention_count == 0) and ($digest_total == 0) and (($continuity.pack_id // "") == "") then
+    | if (($room | length) == 0) and ($mention_count == 0) and ($digest_total == 0) then
         ""
       else
         "## Coordination room\n"
         + "**Room:** `" + ($room.room_id // "(none)") + "`\n"
         + "**Mode:** " + ($room.mode // "collaborating") + "\n"
         + "**Status:** " + ($room.status // "active") + "\n"
-        + (if (($room.participants // []) | length) > 0 then
+        + (if (($room.members // [] | if type == "object" then to_entries | map(.value) else . end) | length) > 0 then
             "**Participants:**\n"
-            + (($room.participants // []) | map(fmt_member) | join("\n"))
+            + (($room.members // [] | if type == "object" then to_entries | map(.value) else . end) | map(fmt_member) | join("\n"))
             + "\n"
           else "" end)
         + (if $mention_count > 0 then
             "\n## Pending mentions (" + ($mention_count | tostring) + ")\n"
-            + (($inbox.mentions // []) | map(fmt_mention) | join("\n"))
+            + (($mentions // []) | map(fmt_mention) | join("\n"))
             + "\n\nConsume via the mentions tool when you have read them.\n"
-          else "" end)
-        + (if (($continuity.pack_id // "") != "") then
-            "\n## Continuity pack\n"
-            + "**Pack:** `" + ($continuity.pack_id // "") + "`"
-            + (if ($continuity.trigger // "") != "" then " · " + $continuity.trigger else "" end)
-            + (if ($continuity.created_at // "") != "" then " · " + $continuity.created_at else "" end)
-            + "\n"
-            + (if ($continuity.objective // "") != "" then
-                "**Objective:** " + (($continuity.objective // "") | gsub("\n"; " ") | .[0:260]) + "\n"
-              else "" end)
-            + (if ($continuity.summary // "") != "" then
-                "**Summary:** " + (($continuity.summary // "") | gsub("\n"; " ") | .[0:360]) + "\n"
-              else "" end)
-            + (if ($continuity.next_action // "") != "" then
-                "**Next action:** " + (($continuity.next_action // "") | gsub("\n"; " ") | .[0:260]) + "\n"
-              else "" end)
-            + (if $continuity_node_count > 0 then
-                "\n**Salient nodes:**\n"
-                + (($continuity.salient_nodes // []) | map(fmt_salient_node) | join("\n"))
-                + "\n"
-              else "" end)
-            + (if $continuity_receipt_count > 0 then
-                "\n**Validation receipts:**\n"
-                + (($continuity.validation_receipts // []) | map(fmt_validation_receipt) | join("\n"))
-                + "\n"
-              else "" end)
-            + (if (($continuity.storage // "") == "disk-mirror") then
-                "\n**Source:** disk mirror (graph was unavailable or empty; see file for full pack)\n"
-              else "" end)
-            + (if (($continuity.disk_path // "") != "") then
-                "**Pack file:** `" + ($continuity.disk_path // "") + "`\n"
-              else "" end)
-            + (if (($continuity.graph_outcome // "") | startswith("failed_open")) then
-                "**Note:** graph write failed open at compaction time: `" + ($continuity.graph_outcome // "") + "`\n"
-              else "" end)
           else "" end)
         + (if $intent_count > 0 then
             "\n## Peer intents (" + ($intent_count | tostring) + ")\n"
-            + (($digest.peer_intents // []) | map(fmt_peer_intent) | join("\n"))
+            + (($intents // []) | map(fmt_peer_intent) | join("\n"))
             + "\n"
           else "" end)
         + (if $reflection_count > 0 then
             "\n## Peer reflections (" + ($reflection_count | tostring) + ")\n"
-            + (($digest.peer_reflections // []) | map(fmt_peer_reflection) | join("\n"))
+            + (($records | map(select((.record_type // "") == "reflection"))) | map(fmt_peer_reflection) | join("\n"))
             + "\n"
           else "" end)
         + (if $tension_count > 0 then
             "\n## Open tensions (" + ($tension_count | tostring) + ")\n"
-            + (($digest.open_tensions // []) | map(fmt_tension) | join("\n"))
+            + (($records | map(select((.record_type // "") == "tension"))) | map(fmt_tension) | join("\n"))
             + "\n"
           else "" end)
         + (if $decision_count > 0 then
             "\n## Recent decisions (" + ($decision_count | tostring) + ")\n"
-            + (($digest.decisions // []) | map(fmt_decision) | join("\n"))
+            + (($records | map(select((.record_type // "") == "decision"))) | map(fmt_decision) | join("\n"))
             + "\n"
           else "" end)
         + (if $event_count > 0 then
             "\n## Recent events (" + ($event_count | tostring) + ")\n"
-            + (($digest.events // []) | map(fmt_event) | join("\n"))
+            + (($records | map(select((.record_type // "") == "event"))) | map(fmt_event) | join("\n"))
             + "\n"
           else "" end)
       end

@@ -7,18 +7,11 @@ set -u
 set -o pipefail
 
 # Configuration with sensible defaults. Override via env or .theoremrc.
-# THEOREM_CONTEXT_BASE_URL must include the /api/v2/theseus prefix; this
-# matches the Python and TypeScript SDKs' base_url contract.
-: "${THEOREM_CONTEXT_BASE_URL:=https://index-api-production-a5f7.up.railway.app/api/v2/theseus}"
-: "${THEOREM_CONTEXT_API_KEY:=}"
 : "${THEOREM_API_KEY:=}"
+: "${THEOREM_HARNESS_API_TOKEN:=}"
 : "${THEOREM_BUDGET_TOKENS:=4000}"
 : "${THEOREM_ACTION_RAIL:=record}"   # one of: record, enforce, off
 : "${THEOREM_DEBUG:=0}"
-
-if [ -z "${THEOREM_CONTEXT_API_KEY}" ] && [ -n "${THEOREM_API_KEY}" ]; then
-  THEOREM_CONTEXT_API_KEY="${THEOREM_API_KEY}"
-fi
 
 theorem_host() {
   if [ -n "${PLUGIN_ROOT:-}" ]; then
@@ -168,28 +161,6 @@ theorem_set_run_id() {
   printf '%s' "$run_id" > "$run_dir/${sid//[\/:]/_}.run_id"
 }
 
-# Authoritative POST helper. Returns body on stdout; non-zero exit on HTTP error.
-theorem_post() {
-  local path="$1"
-  local body="$2"
-  local url="${THEOREM_CONTEXT_BASE_URL}${path}"
-  local headers=(-H "Content-Type: application/json" -H "Accept: application/json")
-  if [ -n "${THEOREM_CONTEXT_API_KEY}" ]; then
-    headers+=(-H "Authorization: Bearer ${THEOREM_CONTEXT_API_KEY}")
-  fi
-  curl -sS -m 25 "${headers[@]}" -X POST -d "$body" "$url"
-}
-
-theorem_get() {
-  local path="$1"
-  local url="${THEOREM_CONTEXT_BASE_URL}${path}"
-  local headers=(-H "Accept: application/json")
-  if [ -n "${THEOREM_CONTEXT_API_KEY}" ]; then
-    headers+=(-H "Authorization: Bearer ${THEOREM_CONTEXT_API_KEY}")
-  fi
-  curl -sS -m 25 "${headers[@]}" "$url"
-}
-
 # Native Theorem RustyRed MCP call (JSON-RPC tools/call). The bash twin of the
 # plugin's NativeMcpClient: coordination + memory route here, NOT the Python
 # context backend. $1 = native tool name, $2 = arguments JSON object. Returns the
@@ -200,7 +171,7 @@ theorem_native_call() {
   local args="${2-}"
   [ -n "$args" ] || args='{}'
   local url="${THEOREM_HARNESS_MCP_URL:-${THEOREMS_HARNESS_RUSTYRED_MCP_URL:-${RUSTYRED_THG_MCP_URL:-https://rustyredcore-theorem-production.up.railway.app/mcp}}}"
-  local token="${THEOREM_HARNESS_API_TOKEN:-${RUSTYRED_THG_API_TOKEN:-${THEOREMS_HARNESS_THG_API_TOKEN:-}}}"
+  local token="${THEOREM_HARNESS_API_TOKEN:-${RUSTYRED_THG_API_TOKEN:-${THEOREMS_HARNESS_THG_API_TOKEN:-${THEOREM_API_KEY:-}}}}"
   local headers=(-H "Content-Type: application/json" -H "Accept: application/json")
   if [ -n "$token" ]; then
     headers+=(-H "Authorization: Bearer ${token}")
@@ -212,6 +183,42 @@ theorem_native_call() {
   curl -sS -m 25 "${headers[@]}" -X POST -d "$payload" "$url"
 }
 
+theorem_native_json() {
+  local tool="$1"
+  local args="${2-}"
+  local response
+  response=$(theorem_native_call "$tool" "$args") || return 1
+  printf '%s' "$response" | jq -c '
+    if .error then empty
+    elif (.result.structuredContent? // null) != null then .result.structuredContent
+    elif (.result.content[0].text? // null) != null then (.result.content[0].text | try fromjson catch .)
+    else .result
+    end
+  ' 2>/dev/null
+}
+
+theorem_append_transition() {
+  local run_id="$1"
+  local event_type="$2"
+  local actor="$3"
+  local payload="${4:-{}}"
+  local idempotency_key="${5:-}"
+  local args
+  args=$(jq -n \
+    --arg run_id "$run_id" \
+    --arg event_type "$event_type" \
+    --arg actor "$actor" \
+    --arg idempotency_key "$idempotency_key" \
+    --argjson payload "$payload" \
+    '{
+      run_id: $run_id,
+      type: $event_type,
+      actor: $actor,
+      payload: $payload
+    } + (if $idempotency_key == "" then {} else {idempotency_key: $idempotency_key} end)') || return 1
+  theorem_native_json "harness_append_transition" "$args"
+}
+
 # Detect whether jq is available; fail open with a warning if not.
 theorem_require_jq() {
   if ! command -v jq >/dev/null 2>&1; then
@@ -219,4 +226,54 @@ theorem_require_jq() {
     return 1
   fi
   return 0
+}
+
+# --- Ambient code-KG helpers (AM1 / AM7-10) ---
+
+# AM1: canonical tenant resolution. THEOREM_TENANT_ID is canonical; the legacy
+# names stay as aliases for one release. There is NO `public`/`theorem` default:
+# the absence of a tenant is an explicit skip (the caller logs and continues),
+# never a silent fallback into a fixture tenant.
+theorem_tenant() {
+  printf '%s' "${THEOREM_TENANT_ID:-${THEOREMS_HARNESS_TENANT:-${RUSTYRED_THG_TENANT:-${THEOREM_CONTEXT_TENANT_SLUG:-${THEOREM_TENANT_SLUG:-}}}}}"
+}
+
+# The .harness state dir at the repo root (shared with the checklist contract).
+# Holds the code-KG manifest, the session-delta queue, and offered-node ledgers.
+theorem_harness_dir() {
+  local repo_root="$1"
+  printf '%s/.harness' "$repo_root"
+}
+
+theorem_init_harness_dir() {
+  local repo_root="$1"
+  local dir
+  dir=$(theorem_harness_dir "$repo_root")
+  mkdir -p "$dir" 2>/dev/null || true
+  printf '%s' "$dir"
+}
+
+# Call a compute-code operation over native MCP with the tenant injected. Echoes
+# the inner tool-result JSON text (unwrapped from the JSON-RPC envelope), or
+# empty on error / missing tenant. $1 = operation, $2 = extra args JSON object.
+theorem_code_call() {
+  local operation="$1"
+  local extra="${2:-{}}"
+  local tenant
+  tenant=$(theorem_tenant)
+  if [ -z "$tenant" ]; then
+    theorem_log "code KG disabled: no tenant (set THEOREM_TENANT_ID)"
+    return 1
+  fi
+  command -v jq >/dev/null 2>&1 || return 1
+  local args
+  args=$(jq -n --arg op "$operation" --arg tenant "$tenant" --argjson extra "$extra" \
+    '$extra + {operation: $op, tenant_slug: $tenant}') || return 1
+  local tool="compute_code"
+  case "$operation" in
+    ingest|reindex|session_reingest|record_use_receipt)
+      tool="code_ingest"
+      ;;
+  esac
+  theorem_native_json "$tool" "$args"
 }

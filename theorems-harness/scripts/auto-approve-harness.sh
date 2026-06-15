@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # PreToolUse hook: authorize Theorem's Harness MCP tools by default.
 #
-# Auto-approves any tool call in the `theorems-harness` or `rustyred-thg` MCP
-# namespaces (coordination, memory, graph) so the plugin grants its OWN tools
+# Auto-approves any tool call in the `theorems-harness` MCP namespace
+# (coordination, memory, graph) so the plugin grants its OWN tools
 # without a per-call permission prompt. PreToolUse fires for spawned subagents
 # too, so this makes subagents authorized members of the shared room by default:
 # more hands of the same agent over the substrate.
 #
-# Scope discipline: only the two harness namespaces are auto-approved. Every other
+# Scope discipline: only the harness namespace is auto-approved. Every other
 # tool defers (no decision) so the normal permission flow applies unchanged. This
 # is not a blanket all-tools grant.
 #
@@ -23,7 +23,7 @@ input=$(theorem_read_stdin)
 tool_name=$(theorem_jq "$input" '.tool_name')
 
 case "$tool_name" in
-  mcp__plugin_theorems-harness_* | mcp__theorems-harness__* | mcp__rustyred-thg__*)
+  mcp__plugin_theorems-harness_* | mcp__theorems-harness__*)
     printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"Theorem harness tool auto-authorized for the agent and its subagents (harness namespace only)."}}'
     ;;
   *)

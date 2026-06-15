@@ -10,7 +10,7 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
-tenant_id="${THEOREM_TENANT_ID:-public}"
+tenant_id=$(theorem_tenant)
 cwd=$(theorem_resolve_cwd "$input")
 THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 seq_file="$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}.seq"
@@ -34,18 +34,23 @@ if [[ -f "$atoms_file" ]]; then
 fi
 
 event_body=$(jq -n \
-  --arg tenant_id "$tenant_id" \
+  --arg actor "${THEOREM_ACTOR:-$(theorem_host)}" \
   --arg session_id "$sid" \
   --argjson seq "$seq" \
   --argjson payload "$input" \
   --argjson references "$references" \
   '{
-    tenant_id: $tenant_id,
-    session_id: $session_id,
-    event_type: "ToolResult",
-    seq: $seq,
-    payload: { tool_result: $payload, references: ($references.references // []) }
+    actor: $actor,
+    record_type: "event",
+    summary: "ToolResult",
+    title: "ToolResult",
+    metadata: {
+      session_id: $session_id,
+      seq: $seq,
+      tool_result: $payload,
+      references: ($references.references // [])
+    }
   }')
-theorem_post "/pairformer/session-event/" "$event_body" "$sid" >/dev/null 2>&1 || true
+theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
 
 printf '{"continue":true}\n'

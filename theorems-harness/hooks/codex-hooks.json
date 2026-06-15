@@ -37,6 +37,12 @@
           },
           {
             "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/code-neighborhood.sh\"",
+            "timeout": 30,
+            "statusMessage": "Composing code neighborhood"
+          },
+          {
+            "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/inject-harness-directives.sh\"",
             "timeout": 5,
             "statusMessage": "Injecting harness directives"
@@ -58,7 +64,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__plugin_theorems-harness_.*|mcp__theorems-harness__.*|mcp__rustyred-thg__.*",
+        "matcher": "mcp__plugin_theorems-harness_.*|mcp__theorems-harness__.*",
         "hooks": [
           {
             "type": "command",
@@ -107,6 +113,12 @@
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/posttool-event.sh\"",
             "timeout": 10,
             "statusMessage": "Recording coordination event"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/delta-queue.sh\"",
+            "timeout": 5,
+            "statusMessage": "Queueing code-delta paths"
           }
         ]
       }
@@ -137,6 +149,12 @@
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/finalize-run.sh\"",
             "timeout": 30,
             "statusMessage": "Finalizing theorem run"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/code-use-receipt.sh\"",
+            "timeout": 15,
+            "statusMessage": "Recording code-use receipts"
           }
         ]
       }

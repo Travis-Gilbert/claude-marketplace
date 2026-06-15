@@ -10,7 +10,7 @@ theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
-tenant_id="${THEOREM_TENANT_ID:-public}"
+tenant_id=$(theorem_tenant)
 cwd=$(theorem_resolve_cwd "$input")
 THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 run_id=$(theorem_run_id "$sid" || true)
@@ -29,17 +29,18 @@ if [ -z "$reflection_summary" ]; then
 fi
 
 event_body=$(jq -n \
-  --arg tenant_id "$tenant_id" \
+  --arg actor "$actor" \
   --arg session_id "$sid" \
   --arg run_id "$run_id" \
   --argjson payload "$input" \
   '{
-    tenant_id: $tenant_id,
-    session_id: $session_id,
-    event_type: "SessionEnd",
-    payload: { harness_run_id: $run_id, outcome: $payload }
+    actor: $actor,
+    record_type: "event",
+    summary: "SessionEnd",
+    title: "SessionEnd",
+    metadata: { session_id: $session_id, harness_run_id: $run_id, outcome: $payload }
   }')
-theorem_post "/pairformer/session-event/" "$event_body" "$sid" >/dev/null 2>&1 || true
+theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
 
 reflection_args=$(jq -n \
   --arg actor "$actor" \

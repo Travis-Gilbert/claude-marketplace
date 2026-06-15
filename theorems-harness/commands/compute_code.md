@@ -8,7 +8,7 @@ Run the theorems-harness:compute_code skill against the user's input.
 
 1. Parse the user's argument as a natural-language code-search question. If empty, ask the user what code question they want answered before proceeding.
 2. Invoke the `theorems-harness:compute_code` skill via the Skill tool, passing the user's argument as the input. The fully-qualified `theorems-harness:compute_code` form disambiguates from this command of the same base name; using the bare `compute_code` form causes the Skill tool to recurse back into this command and hang. The skill body (`skills/compute_code/SKILL.md`) is the authoritative spec for intent-to-algorithm routing.
-3. The skill will prefer the native MCP `compute_code` tool, which aliases the Theorem `code_search` CodeCrawler route. If only `code_search` is visible in the host, it will call that tool with the same operation payload.
+3. The skill will prefer the native MCP `compute_code` tool for reads and `code_ingest` for ingest/reindex/session overlays.
 4. Use inline graph algorithms only when the user supplied an adjacency map or explicitly asked for centrality/components/communities over a graph.
 5. Stream the route choice + one-line justification before showing results, so the user can see whether the routing matched their intent.
 6. Return ranked results with provenance: route, operation or algorithm, query/seed, top-K node list, and receipt or graph evidence when returned.

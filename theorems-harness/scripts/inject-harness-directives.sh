@@ -78,11 +78,12 @@ fi
 if [ -z "$cadence_frame" ]; then
   cadence_frame='## Coordination cadence (turn-shape contract)
 - Turn-start: read the room (intents, reflections, open tensions) and drain your mentions before planning.
-- Begin: write your intent, what you are doing now and which files your hands are on. It is a footprint others build on, not a fence.
-- During: when your work meets a footprint from another head, read its edit and build on it; do not step away or wait. Surface a real disagreement as a tension and keep working.
+- Begin: announce what you are doing now, which files your hands are on, and any overlap you already see. It is a live room signal others build on, not a fence or a claim.
+- Guard: watch the code-graph semantic-overlap check. When your announced footprint overlaps a peer'\''s on structurally coupled code, the substrate emits a semantic-overlap tension; read it first, because it catches runtime disagreement that a clean text merge hides.
+- During: you edit in isolation. When a peer'\''s completed edit lands on code you also need, build on it rather than redoing or waiting. Surface a real disagreement as a tension and keep working.
 - Questions: substrate first (recall, room decisions); else record an ask with a named default and continue on non-blocked work.
 - Blocked: take other ready work or re-read the room; do not idle on a peer.
-- Turn-end: close your intent as the handoff and write a reflection so the next head resumes cold.
+- Turn-end: close your announcement as the handoff and write a reflection so the next head resumes cold. Use patch/lease records only as concrete reconciliation artifacts.
 - Wake: a live head drains its own wakes at its checkpoint; the courier only spawns asleep heads. Frequency over fences.'
 fi
 
@@ -100,7 +101,7 @@ ${unit_body}"
 fi
 if [ -z "$unit_frame" ]; then
   unit_frame='## Unit model (one agent, several heads)
-You are one agent with several heads (codex, claude-code, claude-ai), not several agents dividing the work: one identity, one shared scratchpad the heads append revisions to, one budget, heads as hands. Leave a footprint others build on, not a file you own; when two hands land on the same file the later one builds on the earlier edit, held not clobbered. Do not split a shared task into clean lanes to keep your hands apart: the overlap is where two heads catch errors a single head would miss, so tighten the loop instead of shrinking the contact surface. Surface a real disagreement as a tension and keep working. Frequency over fences.'
+You are one agent with several heads (codex, claude-code, claude-ai), not several agents dividing the work: one identity, one shared scratchpad the heads append revisions to, one budget, heads as hands. The heads run in isolated execution: separate worktrees or environments, each patching against a base, and that fence stays, because a source file has no semantic merge and two hands on the same bytes lose work. What unifies you across the fence is shared awareness: announce over the room before acting (what you are doing, which files your hands are on, any overlap you see) and build on a peer'\''s completed edit rather than redoing it. The headline guard is the code-graph semantic-overlap check: it catches the one failure isolation and text merge both miss, edits that merge cleanly and still disagree at runtime. An announcement is a live signal, not a lock. Surface a real disagreement as a tension and keep working. Patch and lease mechanics are how isolated execution reconciles after overlap is visible, not a way to carve ownership. Frequency over fences.'
 fi
 
 if [ "$hook_event" = "UserPromptSubmit" ] && printf '%s' "$prompt" | grep -Eiq '(^|[^[:alnum:]])normal mode([^[:alnum:]]|$)'; then

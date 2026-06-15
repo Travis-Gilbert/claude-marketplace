@@ -15,7 +15,7 @@ Run Theorem's Harness on the user's current intent.
    capability mix. Otherwise apply `skills/theorems-harness/SKILL.md` directly.
 4. Invoke the `theorems-harness:theorems-harness` skill with the full argument
    and the resolved task. The skill body is the authoritative behavior contract.
-5. Stream only useful phase boundaries: coordination claim, plan/checklist
+5. Stream only useful phase boundaries: coordination announcement, plan/checklist
    locked, first edit, validation result, peer-review handoff, memory write, or
    final report.
 6. At the end, report the actual outcome and validation. Surface artifact paths

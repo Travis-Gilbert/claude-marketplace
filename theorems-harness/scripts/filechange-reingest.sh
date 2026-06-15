@@ -21,11 +21,11 @@ if [[ -n "$path" && "${THEOREM_CODE_KG_REINGEST:-1}" == "1" ]]; then
     rel_path="${path#"$repo_root/"}"
   fi
   ingest_body=$(
-    jq -n --arg root "$repo_root" --arg path "$rel_path" \
-      '{path: $root, paths: [$path]}'
+    jq -n --arg root "$repo_root" --arg path "$rel_path" --arg session "$sid" \
+      '{repo: $root, session_id: $session, paths: [$path]}'
   )
   (
-    theorem_post "/code/ingest/stream/" "$ingest_body" "$sid" >/dev/null 2>&1 || true
+    theorem_code_call "session_reingest" "$ingest_body" >/dev/null 2>&1 || true
   ) &
 fi
 

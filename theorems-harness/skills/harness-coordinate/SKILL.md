@@ -1,6 +1,6 @@
 ---
 name: harness-coordinate
-description: Teach and run Theorem's Harness cross-agent coordination protocol. Use when Codex, Claude Code, Claude.ai, or another head works the same repo/task and the user wants coordination, shared intent, mentions, presence, handoff, or a ping-like wait. The model is one agent with several heads sharing a scratchpad, coordinating by footprint over a shared substrate, not separate workers dividing files over a bus.
+description: Teach and run Theorem's Harness cross-agent coordination protocol. Use when Codex, Claude Code, Claude.ai, or another head works the same repo/task and the user wants coordination, shared intent, mentions, presence, handoff, or a ping-like wait. The model is one agent with several heads sharing a scratchpad, announcing over a shared room and checking semantic overlap before reconciling concrete edits.
 ---
 
 # Harness Coordinate
@@ -8,17 +8,38 @@ description: Teach and run Theorem's Harness cross-agent coordination protocol. 
 You are not several agents sharing a repo. You are one agent with several heads
 (`codex`, `claude-code`, `claude-ai`), and the binding makes that literal: one
 identity, one shared scratchpad the heads append revisions to, one budget, heads
-as hands. Coordinate the way a unit does. Leave a clear footprint others build on,
-and when two hands land on the same file, the later one builds on the earlier
-one's edit. You do not own files, you do not step away from them, you do not wait
-for an ack, and you do not split the task into lanes to keep your hands apart.
+as hands. The one-sentence model: you and the other head edit in isolation and
+share one live room. Do not claim files. Announce what you are doing and your next
+move, watch the room, build on a peer's completed edit, and let the semantic guard
+catch the conflicts the room cannot show. The verb is announce, not coordinate and
+not claim.
+
+The heads run in isolated execution: separate worktrees or environments, each
+patching against a base. That fence stays. A source file has no semantic merge, so
+two hands on the same bytes lose work, and a third-party head cannot be made to edit
+through a shared buffer. What unifies you across the fence is not a shared tree, it
+is announce frequency plus the headline guard below. Closeness is awareness, not
+shared bytes.
 
 The transport is gossip over a shared substrate, not handshakes over a bus. Each
-head reads the others' live state at turn-start, writes its own footprint, works,
-and closes that footprint as a handoff at turn-end. The next head reads those
-records and continues. That is what makes coordination feel continuous across
-sleeps: the records persist and are read at the next turn-start, whether or not
-anyone was waiting.
+head reads the others' live state at turn-start, writes its own announcement,
+works, and closes that announcement as a handoff at turn-end. The next head
+reads those records and continues. That is what makes coordination feel
+continuous across sleeps: the records persist and are read at the next
+turn-start, whether or not anyone was waiting.
+
+## The headline guard: semantic overlap
+
+Named first, because it is the one thing isolation and text merge both miss. The
+room shows who is touching what; git shows whether two diffs merge as text. Neither
+catches an edit that merges cleanly and still disagrees at runtime: you change a
+function's contract in your worktree while the other head writes a caller in theirs,
+both land, both merge as text, and the program is now wrong. The semantic-overlap
+check runs over the code graph. When your announced footprint and a peer's touch
+structurally coupled code, the substrate emits a `coordination_tension`. Read those
+tensions before you decide your edit is safe. Isolation is commodity (every 2026
+agent tool ships worktrees); semantic-overlap detection over a code graph is not, so
+it is the guard you lead with.
 
 ## When to use
 
@@ -31,11 +52,13 @@ anyone was waiting.
 
 | Primitive | Tool | Role |
 |---|---|---|
-| Footprint | `coordination_intent` / `read_intents_for_room` | The spine. One live record per (room, head): what you are doing now and which files your hands are on. Read others' at turn-start, write yours before you act, close it at turn-end as your handoff. It marks where you are so others build on it; it is not a fence. |
+| Announcement | `coordination_intent` / `read_intents_for_room` | The spine. One live record per (room, head): what you are doing now, which files or concepts your hands are on, and where semantic overlap may exist. Read others' at turn-start, write yours before you act, close it at turn-end as your handoff. It is not a fence. |
 | Room | `coordination_room` | Durable membership and the task. `status` to read, `start` / `join` to enter. |
 | Presence | `presence` | Short-TTL liveness. Who is fresh right now. |
 | Interrupt | `coordinate` + `mentions` | The block and fork channel. A specific head must see this now: something is broken, or a real disagreement changes the next step. Not the default channel. |
+| Semantic overlap | code-graph overlap check -> `coordination_tension` | The headline guard. When your announced footprint and a peer's touch structurally coupled code, the substrate raises a tension; read it before you commit to your edit, because it catches runtime disagreement a clean text merge hides. |
 | Fork | `coordination_tension` | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
+| Reconciliation | `multihead_patch` / lease-like records | Isolated mechanics for concrete patch review, proof, and merge reconciliation after overlap is understood. They are not the headline coordination model and not a way to reserve files. |
 | Memory | `coordination_reflection` / `coordination_decision` | Turn-end working memory and architectural choices the next head inherits. |
 
 ## The turn, in four beats
@@ -56,34 +79,36 @@ Also read open tensions and recent reflections / decisions when the task is live
 Synthesize: where are the other hands, and does anything I am about to do cut
 against an open fork or a recorded decision.
 
-**2. Leave your footprint.** Write what you are doing and where your hands are.
-This replaces stating a lane and replaces asking "can I take X".
+**2. Announce your work.** Write what you are doing, where your hands are, and
+what semantic overlap you have already noticed. This replaces stating a lane and
+replaces asking "can I take X".
 
 ```json
 {
   "actor": "claude-code",
   "room_id": "harness-plugin-rebuild",
   "status": "working",
-  "summary": "Rewriting harness-coordinate to the unit model.",
+  "summary": "Rewriting harness-coordinate to the announce-over-room model; semantic overlap is the headline check.",
   "claimed_files": ["theorems-harness/skills/harness-coordinate/SKILL.md"],
   "expected_completion": "this session"
 }
 ```
 
-(`claimed_files` is the tool's field name. Read it as "files my hands are on now,"
-not a lock.)
+(`claimed_files` is the legacy tool field name. Read it as "files my hands are
+on now," not a lock.)
 
-**3. Work, and co-edit on overlap.** Do the work. If your read in beat 1 shows
-another head's footprint on a file you also need, that is not a stop sign, it is
-the parent revision. Read its footprint and read the file on disk, then build your
-change on top of what is there. Held, not clobbered: you extend the latest state,
-you do not revert it to make room for yours. If you think its edit is wrong, that
-is a fork, not a license to silently overwrite: write a `coordination_tension`
-with what you saw and your alternative, and keep moving. The scratchpad is the
-model for this. Many heads append revisions to one document, each on the parent
-before it.
+**3. Work in isolation, watch the guard.** Do the work in your own worktree or
+environment. Watch for semantic-overlap tensions: when your footprint and a peer's
+touch structurally coupled code, the check fires, and that is the signal to read
+their work before you commit to your edit. When a peer's *completed* edit lands on
+code you also need, build on it rather than redoing it or reverting it; held, not
+clobbered. If you think their edit is wrong, that is a fork, not a license to
+overwrite: write a `coordination_tension` with what you saw and your alternative,
+and keep moving. Patch, proof, and lease mechanics are how two isolated trees
+reconcile a concrete artifact; reach for them when there is something to review or
+merge, not to reserve a file.
 
-**4. Close your footprint.** Rewrite your intent with `status: "done"` or
+**4. Close your announcement.** Rewrite your intent with `status: "done"` or
 `"paused"`, and put the handoff in the summary: what changed, what is true now,
 what the next step is. Write a `coordination_reflection` (what you are tracking,
 assuming, leaving open) and a `coordination_decision` for any real architectural
@@ -94,35 +119,30 @@ choice, so the next turn of either head resumes cold with no catch-up.
   "actor": "claude-code",
   "room_id": "harness-plugin-rebuild",
   "status": "done",
-  "summary": "Coordinate skill rewritten to the unit model. Open: spine and execute word-level flips. Redline at COORDINATION-REDESIGN.md.",
+  "summary": "Coordinate skill rewritten to announce-over-room. Open: verify prompt injection and patch any stale references.",
   "claimed_files": [],
   "expected_completion": "handoff complete"
 }
 ```
 
-A stale `working` footprint with files still listed reads to the other head like
-an abandoned hand on the keyboard, so close it even on a short turn.
+A stale `working` announcement with files still listed reads to the other head
+like an abandoned hand on the keyboard, so close it even on a short turn.
 
-## Do not divide the work to avoid overlap
+## Isolation is correct; announce makes it transparent
 
-The instinct to split a shared task into clean lanes (you take the chassis, I take
-the brain) and minimize the interface between them is good engineering for
-independent workers and the wrong move for one unit. It feels virtuous, which is
-exactly why it slips past "do not claim files": splitting on a clean seam does not
-look like avoidance, but it is, because it engineers away the overlap before any
-co-editing can happen. The shared interface between your pieces is the coupling you
-build together, not a seam to shrink so you can work apart. When you split on it,
-each hand writes half of every contract blind to the other half, and you renegotiate
-across a handshake the moment the halves do not meet. That renegotiation across
-separated work is the world-model divergence this whole model exists to avoid.
-
-So on a shared task small enough that one tight loop beats integration, which is
-most tasks here, do not pre-assign lanes. Both hands work the same files in tight
-succession, each reading the other's footprint and building on it. The overlap is
-the point: it is where two heads catch each other's errors. Frequency over fences
-means tighten the loop, not shrink the contact surface. Divide only genuinely large,
-independent surfaces, and treat the urge to minimize the seam as the signal that you
-are about to split work that should stay shared.
+Closeness and isolation are orthogonal. Closer collaboration does not mean shared
+bytes; it means shared awareness over isolated execution. The fence (a worktree or a
+separate environment, patching against a base) stays, because that is what makes
+concurrent work on unmergeable source safe: a clean text merge does not give you a
+correct program. The mistake the fence invites is using it to avoid each other,
+pre-assigning rigid lanes so your hands never meet, which hides the overlap that
+catches errors and lets two halves of one contract drift apart. The fix is not to
+tear down the fence and co-edit the same bytes. The fix is to make the fence
+transparent: announce at high frequency so each head sees what the other is doing,
+read the semantic-overlap tensions the substrate raises over the code graph, and
+build on a peer's completed edit instead of redoing it. Frequency over fences means
+announce more often, not share a working tree. What prevents duplicate work is the
+announce loop plus the guard, not a shared buffer.
 
 ## When to send a mention
 
@@ -136,8 +156,8 @@ head must stop. Two cases:
   specific head should see it now.
 
 Ordinary progress (a file landed, a test passed) needs no mention. Update your
-footprint summary; the other head reads it next turn. Do not wait just because you
-sent a mention: send it, keep working the non-blocked slice, read the reply at
+announcement summary; the other head reads it next turn. Do not wait just because
+you sent a mention: send it, keep working the non-blocked slice, read the reply at
 your next checkpoint. Wait (`mentions_wait`, `timeout_seconds` <= 30) only when
 you cannot proceed without the answer.
 
@@ -160,9 +180,9 @@ heads; a live head drains its own wakes. Frequency over fences.
 
 ## Output discipline
 
-- Record where your hands are in the footprint, not in prose.
+- Record where your hands are in the announcement, not only in prose.
 - `urgency: "block"` only when the other head should stop.
 - Put file paths and repo names in `metadata`, not just the message body.
 - Consume mentions after reading so the same ping does not reappear.
-- Close your footprint at turn-end, every turn.
+- Close your announcement at turn-end, every turn.
 - Mention coordination in your final reply only when it shaped the work.

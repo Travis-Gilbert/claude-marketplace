@@ -1,17 +1,44 @@
 ---
 name: compute_code
-description: Use this skill when the user wants native code discovery, code graph search, or graph-structural code ranking. Prefer the native CodeCrawler-backed `compute_code` MCP tool, which aliases the Theorem `code_search` MCP surface. Fall back to the RustyRed inline graph algorithm MCP tools only when the caller already has an adjacency map or needs pure graph math. User-invocable as `/compute_code`.
+description: Use this skill when the user wants native code discovery, code graph search, or graph-structural code ranking. Prefer the native CodeCrawler-backed `compute_code` MCP tool for reads and `code_ingest` for ingest/reindex/session overlays. Fall back to the RustyRed inline graph algorithm MCP tools only when the caller already has an adjacency map or needs pure graph math. User-invocable as `/compute_code`.
 ---
 
 # compute_code
 
 Routing skill for native Theorem code discovery.
 
-The skill keeps `/compute_code` as the human-facing command while routing to the
-new native MCP-backed code graph. Prefer the `compute_code` MCP tool when it is
-available. It is an alias for the Theorem CodeCrawler-backed `code_search` MCP
-surface, so it can search, explain, recognize, explore, ingest, and reindex code
-through the same native code graph.
+## Ambient loop (default; runs without you)
+
+Code discovery is now ambient: the harness hooks keep the code KG fresh and
+inject a ranked code neighborhood into every prompt, so most discovery needs no
+explicit call. The loop has three server-side parts:
+
+- **Base sync (SessionStart).** The repo's last pushed commit is ingested by URL
+  (keyed on HEAD sha; a warm start at the same HEAD re-ingests nothing). The
+  provenance is mirrored to `.harness/code-kg-manifest.json` (`repo_id`,
+  `repo_url`, `head_sha`).
+- **Session delta (edits).** File edits are queued to
+  `.harness/session-delta-queue` and flushed at the next prompt into
+  `session_reingest`, which overlays your uncommitted edits (additions +
+  tombstones) on the committed base.
+- **Context pack (every prompt).** A `## Code neighborhood` block is injected:
+  PPR-ranked hits over the merged base+delta from the dirty/announcement/prompt
+  seeds, each with `file:line` and a one-line why, plus an impact block ("editing
+  X reaches Y, Z"). Trust this block as PPR-ranked; prefer drilling in by
+  `node_id` (operation `context`/`explore`) over a fresh lexical search.
+
+The loop needs a tenant: set `THEOREM_TENANT_ID` (canonical). With no tenant the
+loop logs "code KG disabled: no tenant" and stays silent; it never falls back to
+a fixture tenant.
+
+## The command is the research surface
+
+`/compute_code` (and the `compute_code` MCP tool) survives as the **explicit
+research** surface: search/explain/explore across tenants and repos, inspect
+indexed inventory, or run explicit graph math. It no longer carries the ambient
+responsibility. Fresh sessions should see one read tool, `compute_code`, and one
+write tool, `code_ingest`; the old `code_search` name is a dispatch-compatible
+alias for existing callers and receipts, not an advertised tool.
 
 Use the older inline graph algorithms only as a fallback when you already have
 an adjacency map in hand or when the task is explicitly about centrality,
@@ -27,7 +54,7 @@ Good fits:
 - "Explain where `native_code_search` lives and what calls it"
 - "Search the code graph for GraphStore persistence"
 - "Explore symbols around this file or node"
-- "Refresh this repo in the native code graph"
+- "Refresh this repo in the native code graph" (route through `code_ingest`)
 - "Rank this supplied adjacency by importance"
 - "Cluster these supplied files by coupling"
 - The agent has built an adjacency map (from tree-sitter, imports, calls) and needs to compute over it
@@ -40,8 +67,8 @@ Not a fit:
 
 ## Preferred MCP path: native CodeCrawler
 
-Call the MCP tool named `compute_code` when it is available. If that alias is not
-visible in the current host, call `code_search` with the same arguments.
+Call the MCP tool named `compute_code` for read operations. Call `code_ingest`
+for ingest, reindex, session reingest, and use receipts.
 
 Operation routing:
 
@@ -52,9 +79,16 @@ Operation routing:
 | Expand surrounding source context | `context` | Use `node_id`, `file_path`, and optional `max_chars`. |
 | Extract symbols from inline text or a file | `recognize` | Use `text` or `file_path`. |
 | Explore call/dependency edges | `explore` | Use `node_id`, `query`, and optional `max_depth`. |
-| Ingest a repo path or URL | `ingest` | Indexes a local path or shallow-cloned URL into the tenant code graph. For large public repos, pass `timeout_ms`, `max_files`, `max_file_bytes`, `include_extensions`, and `exclude_dirs`. `path_prefix` is search filtering only; it does not reduce clone or ingest scope. |
-| Reindex a repo path | `reindex` | Write operation; use only when refreshing a known index. |
-| Record tool-use outcome | `record_use_receipt` | Write operation for learning receipts. |
+| List indexed repos | `list_repos` | Read-only inventory of the tenant's indexed repos with per-repo file/symbol counts, latest generation, and last indexed time. No `job_id`. Use it to answer "is this repo already indexed." |
+
+Write operations use `code_ingest`:
+
+| Intent shape | Operation | Notes |
+|---|---|---|
+| Ingest a repo URL | `ingest` | Remote ingest is URL-only: the server shallow-clones the URL. A local `repo_path` against the remote server is auto-rerouted to its `git origin` URL when possible; true local-path ingest needs the local binding (`THEOREM_HARNESS_DATA_DIR`). Ingest implies `confirmed: true`. |
+| Reindex a repo path | `reindex` | Use only when refreshing a known index. |
+| Overlay local session edits | `session_reingest` | Flushes the session delta queue into the merged code graph. |
+| Record tool-use outcome | `record_use_receipt` | Learning receipt for code tool use. |
 
 Minimal search call:
 
@@ -67,9 +101,38 @@ Minimal search call:
 }
 ```
 
+## Ingest reality (read before ingesting)
+
+The ingest path has hard constraints that are easy to get wrong:
+
+- **Tenant is required.** Code ops are tenant-scoped. Set `THEOREM_TENANT_ID`
+  (canonical; legacy `THEOREMS_HARNESS_TENANT` still resolves) or pass
+  `tenant_slug`. An un-tenanted code call is rejected with `TENANT_REQUIRED`
+  rather than silently searching the `theorem` fixture tenant. The working
+  tenant is `Travis-Gilbert`.
+- **Remote ingest is URL-only.** The MCP server runs remotely (Railway) and
+  cannot see your local filesystem. Pass a repo URL; the server shallow-clones
+  and ingests it. A local `repo_path` against the remote server is auto-rerouted
+  to its `git origin` URL; a local path with no `origin` remote is an explicit
+  error, not a queued-then-dead job.
+- **Local paths need the local binding.** To ingest a path the server can
+  actually read, run the code graph in-process via `THEOREM_HARNESS_DATA_DIR`.
+- **Ingest is the confirmation.** A user-invoked `ingest`/`reindex`
+  sets `confirmed: true` automatically; there is no separate confirm step.
+- **Search filters are `repo_id` and `path_prefix` only.** `repo_id` is an exact
+  match; `path_prefix` is a relative path prefix. Passing `repo_path`/`repo_url`
+  to a *search* is rejected (`INVALID_REQUEST`): they are not search filters, and
+  a "scoped" search with them would silently go global.
+- **See what is indexed with `list_repos`.** `operation: "list_repos"` returns
+  the repos in the tenant with per-repo file/symbol counts and the latest
+  generation. Use it before ingesting to avoid re-indexing.
+- **Ingest result.** Ingest returns the outcome inline (`repo_id`,
+  `files_indexed`, `symbols_indexed`, `generation`). If a `job_id` comes back
+  instead, the ingest is async; poll `ingest_status` with that `job_id`.
+
 ## Fallback path: inline graph algorithms
 
-Use this path only when native `compute_code` / `code_search` is unavailable or
+Use this path only when native `compute_code` / `code_ingest` is unavailable or
 when the caller already supplied an adjacency map and explicitly needs graph
 math.
 
@@ -111,14 +174,14 @@ pointing to the tenant-backed counterpart.
 ## Standard flow
 
 1. **Choose native first.** If the user asks for code discovery, code graph
-   search, symbol context, explanation, or repo indexing, call the MCP
-   `compute_code` tool. If only `code_search` is visible, call `code_search`.
+   search, symbol context, explanation, or code inventory, call the MCP
+   `compute_code` tool.
 
 2. **Choose the operation.** Default to `search`. Use `explain`, `context`,
    `recognize`, or `explore` when the user's wording asks for those directly.
-   Use `ingest` or `reindex` when the task needs a fresh code graph. The
-   runtime keeps bounded fetch and file budgets, but indexing a public or local
-   codebase is not a separate permission ceremony.
+   Use `code_ingest` with `ingest` or `reindex` when the task needs a fresh code
+   graph. The runtime keeps bounded fetch and file budgets, but indexing a
+   public or local codebase is not a separate permission ceremony.
 
 3. **Fallback only for explicit adjacency.** If the task supplies an adjacency
    or asks for centrality/components/communities over a graph, route through the

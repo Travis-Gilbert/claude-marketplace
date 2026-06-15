@@ -1,22 +1,14 @@
 #!/usr/bin/env bash
-# UserPromptSubmit hook. The headline of this plugin.
-# Calls Theseus' orchestrate/prepare before the model turn, synthesizes a
-# Context Brief from the structured response (decision/memory/recall/report),
-# and injects the brief into the prompt via hookSpecificOutput.additionalContext.
-#
-# Body matches OrchestrateRunRequest schema:
-#   { task, mode='plan', actor, repo, budget_tokens, scope }
-# Response keys consumed:
-#   .decision.task_signature, .decision.selected_profile_id,
-#   .decision.selected_tool_ids, .decision.why_selected, .decision.context_plan,
-#   .memory_recall.read_first, .memory_recall.risks, .memory_recall.do_not,
-#   .report.next_actions, .report.checklist
-#
-# Falls open on every error: backend 500, route 404, jq missing, malformed
-# body. The session never breaks because the hook had a bad day.
+# UserPromptSubmit hook. Compose a native Theorem Context Brief and inject it.
+# Fails open: backend errors, missing jq, malformed responses, or missing tokens
+# pass the prompt through unchanged.
+
+set -uo pipefail
 
 # shellcheck disable=SC1091
 source "$(dirname "$0")/lib.sh"
+
+trap 'printf "{\"continue\":true}\n"; exit 0' ERR
 
 theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
@@ -30,23 +22,21 @@ repo_root=$(theorem_repo_root "$input")
 repo_label=$(theorem_repo_label "$repo_root")
 branch=$(theorem_git_branch "$repo_root")
 changed_files_json=$(theorem_changed_files_json "$repo_root")
+tenant=$(theorem_tenant)
 
-# Skip preflight on trivial prompts (acks, single-word replies).
-trimmed=$(echo "$prompt" | tr -d '[:space:]')
+trimmed=$(printf '%s' "$prompt" | tr -d '[:space:]')
 if [ "${#trimmed}" -lt 12 ]; then
   theorem_log "prompt too short for preflight (${#trimmed} chars); skipping"
   printf '{"continue":true}\n'
   exit 0
 fi
 
-# Broadcast current intent into the room substrate. This is deliberately
-# fail-open: prompt handling should not depend on coordination storage.
 intent_body=$(jq -n \
   --arg actor "$actor" \
   --arg repo "$repo_label" \
   --arg branch "$branch" \
   --arg task "$prompt" \
-  --argjson claimed_files "$changed_files_json" \
+  --argjson footprint "$changed_files_json" \
   '{
     actor: $actor,
     repo: $repo,
@@ -54,110 +44,68 @@ intent_body=$(jq -n \
     task: $task,
     summary: $task,
     status: "working",
-    claimed_files: $claimed_files,
+    claimed_files: $footprint,
     expected_completion: "end of current model turn"
   }')
 theorem_native_call "coordination_intent" "$intent_body" >/dev/null 2>&1 || true
 
-# Ensure we have a run id; if SessionStart didn't fire, begin lazily.
 run_id=$(theorem_run_id "$sid")
 if [ -z "$run_id" ]; then
-  begin_body=$(jq -n \
+  run_id="run:${sid//[\/:]/_}"
+  create_payload=$(jq -n \
     --arg sid "$sid" \
     --arg cwd "$cwd" \
     --arg actor "$actor" \
+    --arg repo "$repo_label" \
+    --arg branch "$branch" \
     '{
-    actor: $actor,
-    task: ($actor + " session"),
-    scope: { task_type: "session", external_session_id: $sid, cwd: $cwd, permissions: ["graph_read","code_read","web_browse"] }
-  }')
-  begin_resp=$(theorem_post "/harness/runs/" "$begin_body" 2>/dev/null) || {
-    theorem_warn "harness.begin (lazy) failed; passing prompt through"
+      task: ($actor + " session"),
+      actor: $actor,
+      scope: {
+        task_type: "session",
+        external_session_id: $sid,
+        cwd: $cwd,
+        repo: $repo,
+        branch: $branch,
+        permissions: ["graph_read", "code_read", "web_browse"]
+      }
+    }')
+  theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$create_payload" "session-start:$sid" >/dev/null || {
+    theorem_warn "native harness run begin failed; passing prompt through"
     printf '{"continue":true}\n'
     exit 0
   }
-  run_id=$(echo "$begin_resp" | jq -r '.run.run_id // .run_id // empty')
-  [ -z "$run_id" ] && { theorem_warn "no run_id from begin; passing through"; printf '{"continue":true}\n'; exit 0; }
   theorem_set_run_id "$sid" "$run_id"
 fi
 
-# Compile context for this prompt via orchestrate/prepare.
-# Body MUST match OrchestrateRunRequest schema (see apps/orchestrate/api/harness.py).
-# run_id is NOT a field on the schema; we bind injection to the run via the
-# follow-up /harness/runs/{run_id}/context-injected/ call below.
 prepare_body=$(jq -n \
   --arg task "$prompt" \
-  --arg cwd "$cwd" \
   --arg actor "$actor" \
+  --arg repo "$cwd" \
+  --arg tenant "$tenant" \
   --argjson budget "${THEOREM_BUDGET_TOKENS}" \
   '{
     task: $task,
-    mode: "plan",
     actor: $actor,
-    repo: $cwd,
-    budget_tokens: $budget
-  }')
+    repo: $repo,
+    budget_units: $budget
+  }
+  + (if $tenant == "" then {} else {tenant: $tenant, tenant_slug: $tenant} end)')
 
-artifact_response=$(theorem_post "/orchestrate/prepare/" "$prepare_body" 2>/dev/null)
-if [ -z "$artifact_response" ] || ! echo "$artifact_response" | jq empty 2>/dev/null; then
-  theorem_warn "orchestrate.prepare returned empty or non-JSON; passing prompt through"
+artifact_response=$(theorem_native_json "harness_prepare" "$prepare_body" 2>/dev/null || printf '')
+if [ -z "$artifact_response" ] || ! printf '%s' "$artifact_response" | jq empty 2>/dev/null; then
+  theorem_warn "harness_prepare returned empty or non-JSON; passing prompt through"
   printf '{"continue":true}\n'
   exit 0
 fi
 
-# Synthesize a Context Brief from the structured response.
-# The endpoint returns a planning artifact (decision + memory contract +
-# recall + report), not a pre-rendered markdown body, so we render it here.
-artifact_body=$(echo "$artifact_response" | jq -r '
-  def safe_arr(p): (p // []) | map(tostring);
-  def list_or_dash(arr): if arr == [] then "(none)" else (arr | map("- " + .) | join("\n")) end;
-
-  [
-    "## Theorem Context Brief",
-    "",
-    "**Task:** " + (.decision.task // ""),
-    "**Signature:** `" + (.decision.task_signature // "(none)") + "`",
-    "**Profile:** " + (.decision.selected_profile_id // "(default)"),
-    "",
-    "### Read first",
-    list_or_dash(safe_arr(.memory_recall.read_first)),
-    "",
-    "### Risks",
-    list_or_dash(safe_arr(.memory_recall.risks)),
-    "",
-    "### Do not",
-    list_or_dash(safe_arr(.memory_recall.do_not)),
-    "",
-    "### Next actions",
-    list_or_dash(safe_arr(.report.next_actions)),
-    "",
-    "### Selected tools and rationale",
-    (
-      if (.decision.why_selected // {}) == {} then "(none)"
-      else (.decision.why_selected | to_entries | map("- **" + .key + "**: " + .value) | join("\n"))
-      end
-    ),
-    "",
-    "### Token plan",
-    (
-      if (.decision.context_plan // {}) == {} then "(unspecified)"
-      else (.decision.context_plan | to_entries | map(.key + ": " + (.value|tostring)) | join(" · "))
-      end
-    )
-  ] | join("\n")
-')
-
+artifact_body=$(printf '%s' "$artifact_response" | jq -r '.rendered_markdown // .brief_markdown // .markdown // empty')
 if [ -z "$artifact_body" ]; then
-  theorem_warn "synthesis produced empty brief; passing prompt through"
+  theorem_warn "harness_prepare response missing rendered markdown; passing prompt through"
   printf '{"continue":true}\n'
   exit 0
 fi
 
-# Append baseline orchestration profile postures (engineers-mindset +
-# concise-action). Both are registry-level defaults, on for every run unless
-# the user explicitly opts out. Specs live in references/ENGINEERS_MINDSET.md
-# and references/CONCISE_ACTION.md. The block here is the short form: deferral
-# rules + output shape, kept compact so it does not bloat the brief.
 posture_block=$(cat <<'POSTURE'
 
 
@@ -183,32 +131,65 @@ POSTURE
 )
 artifact_body="${artifact_body}${posture_block}"
 
-# The task signature is the closest thing to an immutable artifact id for a
-# planning prepare; use it as the artifact identifier in the audit trail.
-artifact_id=$(echo "$artifact_response" | jq -r '.decision.task_signature // ""')
+artifact_id=$(printf '%s' "$artifact_response" | jq -r '.signature // .decision_content_hash // .brief.signature // ""')
 
-# Persist audit-trail bundle.
 runs_dir="$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}"
 mkdir -p "$runs_dir"
-echo "$artifact_response" > "$runs_dir/last-artifact.json"
-echo "$artifact_body" > "$runs_dir/last-artifact.md"
-echo "$artifact_response" | jq '.action_rail // {}' > "$runs_dir/last-action-rail.json"
+printf '%s' "$artifact_response" > "$runs_dir/last-artifact.json"
+printf '%s' "$artifact_body" > "$runs_dir/last-artifact.md"
 ln -sf "$runs_dir/last-artifact.md" "$THEOREM_STATE_DIR/current-context.md" 2>/dev/null || true
 ln -sf "$runs_dir/last-artifact.json" "$THEOREM_STATE_DIR/current-artifact.json" 2>/dev/null || true
-ln -sf "$runs_dir/last-action-rail.json" "$THEOREM_STATE_DIR/current-action-rail.json" 2>/dev/null || true
 
-# Mark the artifact as injected on the run timeline. ContextInjectedRequest
-# accepts artifact_id, adapter, target. Skip if we don't have an artifact id.
 if [ -n "$artifact_id" ]; then
-  inject_body=$(jq -n \
+  selected_tools=$(printf '%s' "$artifact_response" | jq -c '[.selected_capabilities[]? | select(.kind == "tool") | (.tool // .name // empty)] | unique' 2>/dev/null || printf '[]')
+  host_payload=$(jq -n \
+    --arg repo "$repo_label" \
+    --arg branch "$branch" \
+    --arg commit_sha "$(theorem_git_head "$repo_root")" \
+    --arg cwd "$cwd" \
+    '{repo: $repo, branch: $branch, commit_sha: $commit_sha, cwd: $cwd}')
+  task_payload=$(jq -n --arg sig "$artifact_id" '{task_signature: $sig}')
+  profile_payload=$(jq -n \
+    --arg sig "$artifact_id" \
+    '{profile_id: "harness_prepare", profile_version: "native", policy_hash: $sig}')
+  toolkit_payload=$(jq -n \
+    --argjson selected_tools "$selected_tools" \
+    '{
+      selected_tools: ($selected_tools + ["harness_prepare", "harness_append_transition", "harness_run"] | unique),
+      selected_plugins: ["theorems-harness"],
+      excluded_tools: [],
+      permission_reasons: {}
+    }')
+  context_plan_payload=$(jq -n \
+    --arg sig "$artifact_id" \
+    --argjson budget "${THEOREM_BUDGET_TOKENS}" \
+    '{budget_tokens: $budget, plan_hash: $sig, candidate_token_count: 1}')
+  context_compiled_payload=$(jq -n \
+    --arg sig "$artifact_id" \
+    --argjson budget "${THEOREM_BUDGET_TOKENS}" \
+    '{
+      artifact_id: $sig,
+      capsule_tokens: 1,
+      budget_tokens: $budget,
+      included_atom_count: 0,
+      excluded_atom_count: 0,
+      token_ledger: {}
+    }')
+  injected_payload=$(jq -n \
     --arg artifact_id "$artifact_id" \
     --arg actor "$actor" \
     '{ artifact_id: $artifact_id, adapter: $actor, target: "cli" }')
-  theorem_post "/harness/runs/${run_id}/context-injected/" "$inject_body" >/dev/null 2>&1 || true
+  acting_payload=$(jq -n --arg actor "$actor" '{adapter: $actor, started_at: (now | todate)}')
+  theorem_append_transition "$run_id" "HOST.OBSERVED" "$actor" "$host_payload" "host-observed:$sid" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "TASK.RESOLVED" "$actor" "$task_payload" "task-resolved:$sid:$artifact_id" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "PROFILE.SELECTED" "$actor" "$profile_payload" "profile-selected:$sid:$artifact_id" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "TOOLKIT.COMPILED" "$actor" "$toolkit_payload" "toolkit-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "CONTEXT.PLANNED" "$actor" "$context_plan_payload" "context-planned:$sid:$artifact_id" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "CONTEXT.COMPILED" "$actor" "$context_compiled_payload" "context-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "CONTEXT.INJECTED" "$actor" "$injected_payload" "context-injected:$sid:$artifact_id" >/dev/null 2>&1 || true
+  theorem_append_transition "$run_id" "AGENT.ACTING" "$actor" "$acting_payload" "agent-acting:$sid:$artifact_id" >/dev/null 2>&1 || true
 fi
 
-# Emit hookSpecificOutput so the host prepends the brief to the user's prompt
-# before the model sees it. This is the inject-first pattern.
 jq -n \
   --arg ctx "$artifact_body" \
   --arg run "$run_id" \

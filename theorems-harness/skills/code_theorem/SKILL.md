@@ -68,4 +68,4 @@ For "tell me about code area X":
 
 ## Pure-graph reads
 
-For raw graph queries on code-related entities (`(:CodeFile)`, `(:CodeMember)`, etc.), call `mcp__rustyred-thg__rustyred_thg_graph_query` / `rustyred_thg_graph_neighbors` directly. This skill's tools are for code-context investigation that combines graph + spec + ML signals, not raw graph traversal.
+For raw graph queries on code-related entities (`(:CodeFile)`, `(:CodeMember)`, etc.), call `mcp__theorems-harness__rustyred_thg_graph_query` / `rustyred_thg_graph_neighbors` directly. This skill's tools are for code-context investigation that combines graph + spec + ML signals, not raw graph traversal.
