@@ -39,6 +39,13 @@
     "tavily": {
       "type": "http",
       "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"
+    },
+    "theorems-harness": {
+      "type": "http",
+      "url": "https://rustyredcore-theorem-production.up.railway.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${THEOREM_HARNESS_API_TOKEN}"
+      }
     }
   }
 }
