@@ -161,6 +161,24 @@ theorem_set_run_id() {
   printf '%s' "$run_id" > "$run_dir/${sid//[\/:]/_}.run_id"
 }
 
+# Inject the resolved tenant into a native-call args object when the caller
+# omitted it. The coordination + memory tools partition by tenant, so a call
+# with no tenant lands in the wrong (or `default`) partition and the heads go
+# invisible to each other -- the exact split-brain that hid Codex from Claude
+# Code. A no-op when no tenant is resolvable (THEOREM_TENANT_ID unset) or when
+# the args already carry a `tenant_slug` / `tenant`.
+theorem_inject_tenant() {
+  local args="$1"
+  local tenant
+  tenant=$(theorem_tenant)
+  [ -n "$tenant" ] || { printf '%s' "$args"; return; }
+  command -v jq >/dev/null 2>&1 || { printf '%s' "$args"; return; }
+  printf '%s' "$args" | jq -c --arg t "$tenant" \
+    'if (type == "object") and ((has("tenant_slug") or has("tenant")) | not)
+       then . + {tenant_slug: $t} else . end' 2>/dev/null \
+    || printf '%s' "$args"
+}
+
 # Native Theorem RustyRed MCP call (JSON-RPC tools/call). The bash twin of the
 # plugin's NativeMcpClient: coordination + memory route here, NOT the Python
 # context backend. $1 = native tool name, $2 = arguments JSON object. Returns the
@@ -170,6 +188,10 @@ theorem_native_call() {
   local tool="$1"
   local args="${2-}"
   [ -n "$args" ] || args='{}'
+  # Tenant-aware: inject the resolved tenant when the caller omitted it, so no
+  # coordination/memory write silently lands in the wrong partition. Single
+  # choke point so this never has to be repeated call-by-call in the hooks.
+  args=$(theorem_inject_tenant "$args")
   local url="${THEOREM_HARNESS_MCP_URL:-${THEOREMS_HARNESS_RUSTYRED_MCP_URL:-${RUSTYRED_THG_MCP_URL:-https://rustyredcore-theorem-production.up.railway.app/mcp}}}"
   local token="${THEOREM_HARNESS_API_TOKEN:-${RUSTYRED_THG_API_TOKEN:-${THEOREMS_HARNESS_THG_API_TOKEN:-${THEOREM_API_KEY:-}}}}"
   local headers=(-H "Content-Type: application/json" -H "Accept: application/json")
