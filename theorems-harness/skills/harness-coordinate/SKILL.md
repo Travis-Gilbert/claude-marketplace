@@ -56,10 +56,24 @@ it is the guard you lead with.
 | Room | `coordination_room` | Durable membership and the task. `status` to read, `start` / `join` to enter. |
 | Presence | `presence` | Short-TTL liveness. Who is fresh right now. |
 | Interrupt | `coordinate` + `mentions` | The block and fork channel. A specific head must see this now: something is broken, or a real disagreement changes the next step. Not the default channel. |
+| Stream | `stream_subscribe` / `stream_read` / `stream_publish` | The ambient event flow. Subscribe once per room, read the cursor delta at turn-start, publish events as you go. The passive replacement for polling the room each turn. |
 | Semantic overlap | code-graph overlap check -> `coordination_tension` | The headline guard. When your announced footprint and a peer's touch structurally coupled code, the substrate raises a tension; read it before you commit to your edit, because it catches runtime disagreement a clean text merge hides. |
 | Fork | `coordination_tension` | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
 | Reconciliation | `multihead_patch` / lease-like records | Isolated mechanics for concrete patch review, proof, and merge reconciliation after overlap is understood. They are not the headline coordination model and not a way to reserve files. |
 | Memory | `coordination_reflection` / `coordination_decision` | Turn-end working memory and architectural choices the next head inherits. |
+
+## Transport: streams carry the ambient flow
+
+The footprint stays the spine, but the ambient event flow moved from polling to
+a subscribed cursor. Subscribe to the room stream once with `stream_subscribe`.
+At turn-start, `stream_read` returns only what was appended since your last
+cursor, so you stop re-reading the whole room every turn. Publish progress and
+events with `stream_publish`. A publish with urgency block or ask and a
+`target_actor` lands on that head's mention and wake path, so the interrupt
+channel rides the same stream. Footprints (`coordination_intent`) and durable
+records (`coordination_record` with type decision, reflection, or tension) are
+unchanged. The stream is how the other heads learn an event happened without
+polling for it.
 
 ## The turn, in four beats
 
@@ -176,7 +190,10 @@ needs only the room.
 head calls it at a checkpoint, but it cannot wake a suspended turn by itself, and
 it holds an MCP thread until it returns. Keep waits short and prefer checkpoints
 over listeners. The wake courier (`theorem-receiver` wake mode) only spawns asleep
-heads; a live head drains its own wakes. Frequency over fences.
+heads; a live head drains its own wakes. Frequency over fences. A subscribed
+head reads the cursor delta at its next checkpoint, so most coordination needs no
+wait at all. Reserve `mentions_wait` for the case where you cannot proceed
+without the answer, and let everything else arrive on the next `stream_read`.
 
 ## Output discipline
 

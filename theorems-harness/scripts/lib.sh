@@ -121,10 +121,18 @@ theorem_changed_files_json() {
     printf '[]'
     return
   fi
-  git -C "$repo_root" status --porcelain 2>/dev/null \
-    | awk '{print $NF}' \
-    | jq -R . \
-    | jq -s '.[0:50]' 2>/dev/null || printf '[]'
+  local files_json
+  files_json=$(
+    git -C "$repo_root" status --porcelain 2>/dev/null \
+      | awk '{print $NF}' \
+      | jq -R . \
+      | jq -s '.[0:50]' 2>/dev/null
+  ) || files_json='[]'
+  files_json=$(printf '%s' "$files_json" | jq -c 'if type == "array" then . else [] end' 2>/dev/null || printf '[]')
+  if [[ -z "$files_json" ]]; then
+    files_json='[]'
+  fi
+  printf '%s' "$files_json"
 }
 
 theorem_state_dir() {

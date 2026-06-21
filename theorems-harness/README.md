@@ -107,6 +107,26 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 #   "theorems-harness@codex-marketplace": true
 ```
 
+### Skill-only bootstrap
+
+For a fresh agent that does not have the marketplace plugin enabled yet, install
+the harness skill bundle directly into both Claude Code and Codex:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Travis-Gilbert/claude-marketplace/main/theorems-harness/scripts/install-harness-skills.sh | bash
+```
+
+From a local checkout:
+
+```bash
+./scripts/install-harness-skills.sh
+./scripts/install-harness-skills.sh --bundle full
+```
+
+The default `core` bundle installs `/harness`, coordination, context refresh,
+code discovery, encode, research, peer review, and execute skills. Use
+`--claude-only` or `--codex-only` for one host.
+
 ## Install (Codex)
 
 1. Enable the plugin in Codex.

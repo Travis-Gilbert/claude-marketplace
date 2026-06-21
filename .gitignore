@@ -3,6 +3,20 @@
 # Plugin refs/ directories contain shallow clones of upstream repos.
 # They're populated by each plugin's install.sh, not committed.
 */refs/*/
+/refs/
 
 # Graphify scratch outputs and staging dirs.
 graphify-out/
+
+# Local scratch / shallow clones / unrelated working copies (not plugin sources)
+/d3/
+/plan-pro/
+/civic-atlas-design/
+
+# macOS Finder duplicate copies ("... 2/")
+* 2/
+
+# Harness local state, build artifacts, editor backups
+.theorem/
+*.zip
+*.bak

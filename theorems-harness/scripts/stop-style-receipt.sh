@@ -110,10 +110,23 @@ if [[ -z "$pack_status" ]]; then
   pack_status="shadow"
 fi
 
-receipt=$(printf '%s' "$final_message" | "$prose_check_bin" --register plain --status "$pack_status")
+receipt=$(
+  printf '%s' "$final_message" \
+    | "$prose_check_bin" --register plain --status "$pack_status" 2>/dev/null \
+    || printf ''
+)
+receipt=$(printf '%s' "$receipt" | jq -c 'select(type == "object")' 2>/dev/null || printf '')
+if [[ -z "$receipt" ]]; then
+  printf '{"continue":true,"suppressOutput":true}\n'
+  exit 0
+fi
 hard_axis_failed=$(printf '%s' "$receipt" | jq -r '
   ((.fidelity.preserved // true) | not) or ((.em_dash_count // 0) > 0)
-')
+' 2>/dev/null || printf 'false')
+case "$hard_axis_failed" in
+  true|false) ;;
+  *) hard_axis_failed=false ;;
+esac
 soft_axis_failed=$(printf '%s' "$receipt" | jq -r '
   ((.clutter_hits // []) | length > 0)
   or ((.passive_rate // 0) > 0.10)
@@ -121,7 +134,11 @@ soft_axis_failed=$(printf '%s' "$receipt" | jq -r '
   or ((.sentence_mean // 0) < 12)
   or ((.sentence_mean // 0) > 18)
   or ((.sentence_stdev // 0) < 4)
-')
+' 2>/dev/null || printf 'false')
+case "$soft_axis_failed" in
+  true|false) ;;
+  *) soft_axis_failed=false ;;
+esac
 action="receipt_only"
 case "$pack_status:$hard_axis_failed" in
   advisory:true)

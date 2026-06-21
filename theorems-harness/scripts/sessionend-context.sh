@@ -9,6 +9,10 @@ source "$(dirname "$0")/lib.sh"
 theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
+input_json=$(printf '%s' "$input" | jq -c . 2>/dev/null || printf '{}')
+if [[ -z "$input_json" ]]; then
+  input_json='{}'
+fi
 sid=$(theorem_session_id "$input")
 tenant_id=$(theorem_tenant)
 cwd=$(theorem_resolve_cwd "$input")
@@ -19,8 +23,12 @@ repo_root=$(theorem_repo_root "$input")
 repo_label=$(theorem_repo_label "$repo_root")
 branch=$(theorem_git_branch "$repo_root")
 changed_files_json=$(theorem_changed_files_json "$repo_root")
+changed_files_json=$(printf '%s' "$changed_files_json" | jq -c 'if type == "array" then . else [] end' 2>/dev/null || printf '[]')
+if [[ -z "$changed_files_json" ]]; then
+  changed_files_json='[]'
+fi
 reflection_summary=$(
-  echo "$input" | jq -r '
+  printf '%s' "$input_json" | jq -r '
     .summary // .result.summary // .result // .message // .transcript // ""
   ' 2>/dev/null | tr '\n' ' ' | cut -c1-500
 )
@@ -32,7 +40,7 @@ event_body=$(jq -n \
   --arg actor "$actor" \
   --arg session_id "$sid" \
   --arg run_id "$run_id" \
-  --argjson payload "$input" \
+  --argjson payload "$input_json" \
   '{
     actor: $actor,
     record_type: "event",

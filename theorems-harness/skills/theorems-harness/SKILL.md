@@ -104,6 +104,47 @@ final claims.
 Compatibility commands such as `/execute` may remain installed, but new work
 should prefer `/harness` plus adaptive routing.
 
+## Querying the multi-model store
+
+RustyRed is one store with several access methods behind a single query surface,
+not several databases. Treat retrieval as a choice of predicate roles, not a
+choice of tools.
+
+Two predicate roles:
+
+- Filters narrow a set and compose by intersection: scalar equals, range,
+  prefix; time range; geo within; text contains; graph reachable-from.
+- Rankers score and order and compose by fusion: vector similarity (knn), text
+  relevance (BM25), graph proximity (PPR). A ranker is never collapsed into a
+  filter. Its scores carry through.
+
+Current routing, until the planner-unify spec lands:
+
+- Scalar, time, and join predicates go through `relational_query`, which costs
+  access methods, intersects with roaring bitmaps, hash-joins, and returns a
+  `PlanTrace`.
+- Vector, geo, text, and graph-expand go through the single-modality tools:
+  `vector_search`, `spatial_radius` and `spatial_bbox`, `fulltext_search`,
+  `graph_neighbors` and the PPR tools.
+- Do not pass knn, geo, text, or expand predicates to `relational_query` yet.
+  The planner does not back them. It full-scans and returns unranked or
+  unfiltered rows with no error. Route those predicates to the tools above.
+
+After the unify spec lands:
+
+- `relational_query` becomes the single entry for compound cross-modal
+  retrieval. One call can fuse knn, geo, time, text, and expand under a fusion
+  policy, RRF by default.
+- Read the `PlanTrace` as the receipt: which access method fired per predicate,
+  candidate set size, the kNN strategy (exact over candidates, or filtered
+  HNSW), and the fusion kind. Read it the way you would read an EXPLAIN.
+
+Carry this model: cost picks the cheapest method only among interchangeable ways
+to evaluate the same filter. It never trades a ranking for a cheaper boolean. If
+a result set looks like it lost similarity ordering or dropped recall, that is
+the symptom of a ranker being treated as a filter. Report it as a bug, do not
+treat it as expected.
+
 ## Tools Owned (Theorem MCP, Form-B Short Names)
 
 | Verb | Purpose |
@@ -172,6 +213,18 @@ The durable model is room digest plus interrupt mailbox: membership, intents,
 reflections, decisions, tensions, events, continuity packs, and pending mentions
 survive head sleep; short-TTL presence only says who is fresh. Full protocol:
 `skills/harness-coordinate/SKILL.md`.
+
+Ambient coordination now flows over per-room streams. Subscribe once with
+`stream_subscribe`, and at turn-start call `stream_read` to pull only the events
+appended since your cursor, which replaces re-reading the whole room.
+`stream_read` with advance consumes the window so the same events do not
+reappear. Publish events with `stream_publish`; a publish with urgency block or
+ask and a `target_actor` also pings that head through the mention and wake path,
+so the interrupt channel rides the same stream. claude.ai still does not hold a
+live listener, so the model is subscribe, then read the cursor delta at each
+turn-start, not a long-running socket. `coordination_context` is still a valid
+one-call orientation read; prefer `stream_read` once you are subscribed, since
+it is the cursor-delta version of the same thing.
 
 ## Hook Enforcement Layer
 
