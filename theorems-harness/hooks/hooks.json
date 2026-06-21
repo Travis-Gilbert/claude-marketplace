@@ -25,6 +25,20 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/inject-harness-directives.sh",
             "timeout": 5,
             "statusMessage": "Injecting harness directives"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionstart-writing-engineering.sh",
+            "timeout": 5,
+            "statusMessage": "Arming writing engineering mode"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/scripts/ponytail-activate.js\" || exit 0",
+            "timeout": 5,
+            "statusMessage": "Loading ponytail mode"
           }
         ]
       }
@@ -66,6 +80,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/subagent-suggest.sh",
             "timeout": 10,
             "statusMessage": "Suggesting subagents"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/scripts/ponytail-mode-tracker.js\" || exit 0",
+            "timeout": 5,
+            "statusMessage": "Tracking ponytail mode"
           }
         ]
       }
@@ -181,6 +202,13 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/stop-style-receipt.sh",
             "timeout": 10,
             "statusMessage": "Recording writing style receipt"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/stop-design-receipt.sh",
+            "timeout": 15,
+            "statusMessage": "Recording design engineering receipt"
           },
           {
             "type": "command",

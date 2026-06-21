@@ -1,11 +1,28 @@
 ---
 name: design-engineering
-description: "Use when designing, implementing, reviewing, debugging, or encoding design systems, CSS, design tokens, accessible components, APG fixtures, typography, motion, layout grids, or data visualization UI."
+description: "Use when the user says design engineering, design mode, token audit, CSS audit, APG check, UI accessibility check, or invokes /design-engineering; and when designing, implementing, reviewing, debugging, or encoding design systems, CSS, design tokens, accessible components, APG fixtures, typography, motion, layout grids, or data visualization UI. Persistent for the active design task until normal mode/design engineering off."
 ---
 
 # Design Engineering
 
 Use this skill for design-system implementation, CSS review, design-token repair, accessible component work, APG fixture preparation, typography and layout checks, motion review, and data visualization UI correctness.
+
+## Activation
+
+- Activate on explicit phrases: "design engineering", "design mode", "token
+  audit", "CSS audit", "APG check", "UI accessibility check", or
+  `/design-engineering`.
+- Also activate automatically for tasks that edit or review CSS, design tokens,
+  APG fixtures, accessible components, typography, motion, layout grids, or data
+  visualization UI.
+- Off on "normal mode", "stop design engineering", or "design engineering off".
+
+## Persistence
+
+ACTIVE FOR THE CURRENT DESIGN TASK once active. Apply the workflow and validation
+defaults to all design-facing edits, reviews, and reports until the task ends or
+the user turns it off. Do not drift into visual-only judgment when a checker can
+prove the axis. Still active if unsure and the work touches design artifacts.
 
 ## Core Posture
 

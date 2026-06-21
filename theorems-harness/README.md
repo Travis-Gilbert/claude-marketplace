@@ -4,7 +4,7 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 ## What's shared (both hosts read this)
 
-- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/graph-version/`, `skills/symbolic/`, `skills/dispatch/`, `skills/browser-web/`, `skills/curiosity/`, `skills/session-offload/`
+- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/graph-version/`, `skills/symbolic/`, `skills/dispatch/`, `skills/browser-web/`, `skills/curiosity/`, `skills/session-offload/`, `skills/writing-engineering/`, `skills/design-engineering/`, `skills/rust-engineering/`, `skills/ponytail/`, `skills/ponytail-review/`, `skills/ponytail-audit/`, `skills/ponytail-debt/`, `skills/ponytail-gain/`, `skills/ponytail-help/`
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -23,7 +23,7 @@ encode durable lessons only when they are high signal.
 
 | Layer | Role |
 |---|---|
-| Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, and `/compute_code` |
+| Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, `/compute_code`, `/writing-engineering`, `/design-engineering`, `/ponytail`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`, `/ponytail-gain`, and `/ponytail-help` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
 | Native MCP | Single remote HTTP `theorems-harness` server for graph reads, algorithms, code discovery, code ingest, harness run lifecycle, memory, coordination, and skill-pack surfaces |
 | SDK | Typed client helpers used by scripts and compatibility utilities; not a separate user-facing command layer |
@@ -51,8 +51,8 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 
 | Path | Purpose |
 |---|---|
-| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run, loads codebase/coordination context, and injects the standing harness frame; UserPromptSubmit writes live coordination intent, prepares context, emits checklist contracts, injects ambition/curiosity directives, and suggests subagents; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop gates checklist completion, writes a coordination reflection, then Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
-| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. Codex also reads the same `.harness/checklist.json` contract and coordination mirror. |
+| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run, loads codebase/coordination context, arms writing-engineering, loads Ponytail's default mode, and injects the standing harness frame; UserPromptSubmit writes live coordination intent, prepares context, emits checklist contracts, injects ambition/curiosity directives, suggests subagents, and tracks Ponytail mode changes; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop gates checklist completion, records writing and design engineering receipts, writes a coordination reflection, then Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
+| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. Codex also reads the same `.harness/checklist.json` contract and coordination mirror, records the same writing/design Stop receipts, and loads/tracks Ponytail mode when Node.js is on the hook PATH. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
 | `.mcp.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | Register the single remote HTTP MCP server named `theorems-harness`. There is no bundled Node MCP server or local proxy. |
@@ -91,6 +91,7 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | `THEOREM_HARNESS_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Primary native Theorem MCP URL used by hook scripts. |
 | `THEOREM_HARNESS_API_TOKEN` | empty | Optional Bearer token for native Theorem RustyRed MCP writes. |
 | `THEOREM_ACTOR` | host actor | Optional actor override for MCP coordination tools. When omitted, the MCP server defaults to `codex` in Codex-hosted plugin runs and `claude-code` otherwise, so mention reads do not fall back to the API-key actor. |
+| `THEOREM_PROSE_CHECK_BIN` / `THEOREM_DESIGN_CHECK_BIN` | empty | Optional explicit checker binary paths for writing and design engineering receipts. When unset, hooks search `PATH`, `~/.cargo/bin`, plugin `bin/`, and repo-local Cargo target paths. |
 | `THEOREMS_HARNESS_THG_API_TOKEN` | empty | Optional Bearer token for RustyRed-THG direct graph mirrors. |
 | `THEOREMS_HARNESS_RUSTYRED_MCP_URL` / `RUSTYRED_THG_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Compatibility fallback URL for hook scripts when `THEOREM_HARNESS_MCP_URL` is unset. |
 | `THEOREM_BUDGET_TOKENS` | `4000` | Default Context Artifact budget |
@@ -99,6 +100,14 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | `THEOREM_PEER_REVIEW_BASE` | empty | Optional base ref/commit used by `scripts/peer-review-request.sh` when preparing a peer-review packet. Defaults to upstream merge-base or `HEAD`. |
 | `THEOREM_PEER_REVIEW_ACTOR` | host actor | Optional actor override for peer-review packets. |
 | `THEOREM_PEER_REVIEW_TARGET` | other main agent | Optional target override for peer-review packets. |
+| `PONYTAIL_DEFAULT_MODE` | `full` | Optional Ponytail default mode for each new session: `lite`, `full`, `ultra`, or `off`. Config file fallback is `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). |
+
+Ponytail's lifecycle hooks are tiny Node.js scripts imported from
+`DietrichGebert/ponytail` at commit
+`6da37bfa7d0282522c7785759f4d2f1544015354`. If `node` is not on the
+non-interactive hook PATH, the hooks fail open and the skills/commands still
+remain available. Attribution and license live in
+`references/PONYTAIL-INTEGRATION.md` and `references/PONYTAIL-LICENSE`.
 
 ## Install (Claude Code)
 

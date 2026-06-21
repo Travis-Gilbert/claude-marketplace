@@ -29,6 +29,11 @@ if [ -n "$existing" ]; then
 fi
 
 run_id="run:${sid//[\/:]/_}"
+# Tenant must ride inside the run scope. The server stamps registry-scoped run
+# status (writing_engineering_status and peers) from scope.tenant_slug and falls
+# back to the empty "default" tenant when it is absent -- which resolves the
+# prose pack to shadow even though it is published advisory for the real tenant.
+tenant=$(theorem_tenant)
 payload=$(jq -n \
   --arg sid "$sid" \
   --arg cwd "$cwd" \
@@ -36,10 +41,11 @@ payload=$(jq -n \
   --arg repo "$repo_label" \
   --arg branch "$branch" \
   --arg head "$head_sha" \
+  --arg tenant "$tenant" \
   '{
     actor: $actor,
     task: ($actor + " session"),
-    scope: {
+    scope: ({
       task_type: "session",
       external_session_id: $sid,
       cwd: $cwd,
@@ -47,7 +53,7 @@ payload=$(jq -n \
       branch: $branch,
       commit_sha: $head,
       permissions: ["graph_read", "code_read", "web_browse"]
-    }
+    } + (if ($tenant | length) > 0 then {tenant_slug: $tenant} else {} end))
   }')
 
 theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$payload" "session-start:$sid" >/dev/null || {

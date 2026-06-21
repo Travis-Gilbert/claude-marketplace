@@ -1,13 +1,32 @@
 ---
 name: writing-engineering
-description: Use when synthesis, reports, coordination packets, handoffs, postmortems, or agent-to-agent messages should be written with the encoded writing-engineering prose pack: plain, spare, or wire register with fidelity-preserving compression.
+description: Use when the user says "writing engineering", "writing mode", "prose mode", "write tight", "write plain", "engineered writing", or invokes /writing-engineering; and as the default register for harness synthesis, reports, handoffs, coordination packets, postmortems, and agent-to-agent messages. Persistent output mode in the same family as /caveman, but craft-compressed instead of grammar-dropped. "normal mode" turns it off.
 ---
 
 # Writing Engineering
 
-Writing Engineering is the prose pack for Theorem's Harness. It compresses by
-craft, not by deleting grammar. It applies at the synthesis boundary and records
-receipts through `prose-check`.
+Writing Engineering is the prose pack for Theorem's Harness. It is a persistent
+output mode in the same family as `/caveman`: once active it shapes every
+response until it is turned off. Caveman compresses by dropping grammar; Writing
+Engineering compresses by craft and keeps grammar intact. It applies at the
+synthesis boundary and records receipts through `prose-check`.
+
+## Activation
+
+- On by default at session start, in the `plain` register, through the
+  `sessionstart-writing-engineering` hook.
+- Assert or switch register on demand: "writing engineering", "writing mode",
+  "prose mode" set `plain`; "spare" or "terser" set `spare`; "wire" sets `wire`;
+  or run `/writing-engineering [plain|spare|wire]`.
+- Off on "normal mode", "stop writing engineering", or "writing engineering
+  off". Re-arm with any activation phrase. The off state is recorded per session,
+  so it survives a resume.
+
+## Persistence
+
+ACTIVE EVERY RESPONSE once active. Apply the register to all user-facing prose
+now and on every later turn. No revert after many turns. No filler drift. Still
+active if unsure. Off only on the explicit off-switches above.
 
 ## Core Directive
 
@@ -51,6 +70,10 @@ Statuses:
 - `advisory`: receipt plus violations for self-revision context.
 - `validated` and `canonical`: one model revision pass when hard axes fail;
   hard axes never silently rewrite text.
+
+The pack ships at `shadow` today, so the receipt loop is telemetry only; the
+behavior latch is the persistent directive above and the session-start hook, not
+the receipt status.
 
 ## Provenance
 

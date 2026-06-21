@@ -1,6 +1,6 @@
 {
   "name": "theorems-harness",
-  "version": "0.5.11",
+  "version": "0.5.13",
   "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
@@ -36,7 +36,10 @@
     "peer-review",
     "adaptive-routing",
     "crdt-substrate",
-    "semantic-overlap"
+    "semantic-overlap",
+    "ponytail",
+    "yagni",
+    "over-engineering-review"
   ],
   "mcpServers": {
     "theorems-harness": {

@@ -104,9 +104,13 @@ if [ -z "$unit_frame" ]; then
 You are one agent with several heads (codex, claude-code, claude-ai), not several agents dividing the work: one identity, one shared scratchpad the heads append revisions to, one budget, heads as hands. The heads run in isolated execution: separate worktrees or environments, each patching against a base, and that fence stays, because a source file has no semantic merge and two hands on the same bytes lose work. What unifies you across the fence is shared awareness: announce over the room before acting (what you are doing, which files your hands are on, any overlap you see) and build on a peer'\''s completed edit rather than redoing it. The headline guard is the code-graph semantic-overlap check: it catches the one failure isolation and text merge both miss, edits that merge cleanly and still disagree at runtime. An announcement is a live signal, not a lock. Surface a real disagreement as a tension and keep working. Patch and lease mechanics are how isolated execution reconciles after overlap is visible, not a way to carve ownership. Frequency over fences.'
 fi
 
-if [ "$hook_event" = "UserPromptSubmit" ] && printf '%s' "$prompt" | grep -Eiq '(^|[^[:alnum:]])normal mode([^[:alnum:]]|$)'; then
-  mkdir -p "$(dirname "$writing_disabled_file")" 2>/dev/null || true
-  printf 'disabled by normal mode at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$writing_disabled_file" 2>/dev/null || true
+if [ "$hook_event" = "UserPromptSubmit" ]; then
+  if printf '%s' "$prompt" | grep -Eiq '(^|[^[:alnum:]])(normal mode|stop writing[- ]engineering|writing[- ]engineering off)([^[:alnum:]]|$)'; then
+    mkdir -p "$(dirname "$writing_disabled_file")" 2>/dev/null || true
+    printf 'disabled at %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$writing_disabled_file" 2>/dev/null || true
+  elif printf '%s' "$prompt" | grep -Eiq '(^|[^[:alnum:]])(writing[- ]engineering|writing mode|prose mode)([^[:alnum:]]|$)'; then
+    rm -f "$writing_disabled_file" 2>/dev/null || true
+  fi
 fi
 
 case "$hook_event" in
@@ -114,10 +118,9 @@ case "$hook_event" in
     append_context "$standing_frame"
     append_context "$unit_frame"
     append_context "$cadence_frame"
-    rm -f "$writing_disabled_file" 2>/dev/null || true
-    if [ -n "$writing_frame" ]; then
-      append_context "$writing_frame"
-    fi
+    # Writing Engineering activation at SessionStart is owned by
+    # sessionstart-writing-engineering.sh (the persistent latch). Do not emit the
+    # directive here too, or it doubles up in the session-start context.
     ;;
   UserPromptSubmit)
     if printf '%s' "$prompt" | grep -Eiq 'build|implement|integrat(e|ion)|ship|publish|plan|handoff|spec|migration|feature|fix'; then

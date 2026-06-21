@@ -40,8 +40,14 @@ find_prose_check() {
     command -v prose-check
     return
   fi
+  local plugin_root
+  plugin_root=$(theorem_plugin_root)
   for candidate in \
+    "$HOME/.cargo/bin/prose-check" \
+    "$plugin_root/bin/prose-check" \
+    "$repo_root/rustyredcore_THG/target/release/prose-check" \
     "$repo_root/rustyredcore_THG/target/debug/prose-check" \
+    "$repo_root/target/release/prose-check" \
     "$repo_root/target/debug/prose-check"
   do
     if [[ -x "$candidate" ]]; then
