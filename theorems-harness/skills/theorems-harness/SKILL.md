@@ -6,8 +6,24 @@ description: Theorem's Harness default plugin skill. Use when the user invokes /
 # Theorem's Harness
 
 Theorem's Harness is the public product layer for grounded agent work. The SDK
-is plumbing, MCP is the tool bus, hooks provide ambient session support, and
-skills/commands are the behavior contract that agents actually inhabit.
+is plumbing, GraphQL MCP is the preferred tool bus, hooks provide ambient
+session support, and skills/commands are the behavior contract that agents
+actually inhabit.
+
+When `graphql_query`, `graphql_mutate`, and `graphql_introspect` are available,
+use them as the primary Harness MCP API. Start with `graphql_introspect` when the
+schema is not already in context, then use GraphQL for memory, coordination,
+jobs, graph, code, and run surfaces. Use legacy flat tools only when GraphQL is
+unavailable, the session is intentionally on a local/dev flat-tool server, or
+you are diagnosing flat-tool compatibility.
+
+Host UIs may display Harness tools with plugin-qualified labels such as
+`Theorem's Harness Recall`, `theorems-harness recall`, or
+`mcp__codex_apps__theorems_harness._recall`. Treat those labels as
+routing/display names for the native MCP verbs (`recall`, `remember`, `encode`),
+not as a different memory system. In user-facing reports, prefer product
+language like "Harness recall", "Harness encode", or "Harness memory" unless the
+wire-level identifier matters.
 
 The core change: `/harness` is not a request to force one narrow mode. It is the
 operator saying "use the harness for this session or task." After that, the

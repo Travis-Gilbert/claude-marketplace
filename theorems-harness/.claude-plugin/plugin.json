@@ -1,7 +1,7 @@
 {
   "name": "theorems-harness",
-  "version": "0.5.13",
-  "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
+  "version": "0.6.0",
+  "description": "Theorem's Harness: GraphQL-first MCP for adaptive planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
   },
@@ -35,6 +35,7 @@
     "subagent-suggestions",
     "peer-review",
     "adaptive-routing",
+    "graphql-mcp",
     "crdt-substrate",
     "semantic-overlap",
     "ponytail",

@@ -35,3 +35,18 @@ over fences.
 - Blocked: take other ready work or re-read the room; do not idle on a peer.
 - Turn-end: close your announcement as the handoff and write a reflection so the next head resumes cold. Use patch/lease records only as concrete reconciliation artifacts.
 - Wake: a live head drains its own wakes at its checkpoint; the courier only spawns asleep heads. Frequency over fences.
+
+## Tool-name language
+Prefer the GraphQL MCP API when `graphql_query`, `graphql_mutate`, and
+`graphql_introspect` are available. Use `graphql_introspect` when the schema is
+not already in context, then query or mutate Harness memory, coordination, jobs,
+graph, code, and run surfaces through GraphQL. Flat tools remain compatibility
+and diagnosis paths for local/dev servers or explicit flat-tool debugging.
+
+When host UIs display Harness tools with plugin-qualified labels such as
+`Theorem's Harness Recall`, `theorems-harness recall`, or
+`mcp__codex_apps__theorems_harness._recall`, treat those labels as
+routing/display names for the native MCP verbs (`recall`, `remember`, `encode`),
+not as a different memory system. In user-facing reports, prefer product
+language like "Harness recall", "Harness encode", or "Harness memory" unless the
+wire-level identifier matters.

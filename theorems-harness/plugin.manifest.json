@@ -2,8 +2,8 @@
   "schema_version": 1,
   "plugin": {
     "name": "theorems-harness",
-    "version": "0.5.13",
-    "description": "Theorem's Harness: adaptive session routing for planning, context, coordination, execution, validation, memory, and learning.",
+    "version": "0.6.0",
+    "description": "Theorem's Harness: GraphQL-first MCP for adaptive planning, context, coordination, execution, validation, memory, and learning.",
     "author": {
       "name": "Travis Gilbert"
     },
@@ -37,6 +37,7 @@
       "subagent-suggestions",
       "peer-review",
       "adaptive-routing",
+      "graphql-mcp",
       "crdt-substrate",
       "semantic-overlap",
       "ponytail",
@@ -81,6 +82,7 @@
             "Use Theorem's Harness as the default command for planning, implementation, debugging, review, context preparation, validation, coordination, memory, and execution reporting.",
             "Treat /harness as session/task opt-in, not as a forced narrow mode. Choose the best capability mix, reroute at checkpoints, and keep moving unless a real blocker requires user input.",
             "When available, use harness_route to inspect the recommended capability mix before or during a run.",
+            "For Harness MCP calls, prefer the GraphQL transport when graphql_query, graphql_mutate, and graphql_introspect are listed. Use introspection to discover the schema, then query or mutate memory, coordination, jobs, graph, code, and run surfaces through GraphQL. Use legacy flat tools only when GraphQL is unavailable, an explicitly local/dev server exposes only flat tools, or you are diagnosing a flat-tool compatibility issue.",
             "When the user requests a planning handoff or the work is complex enough to benefit from planner-review plus bounded implementation delegation, use /harness mode=plan handoff=spark and keep the planner in-thread to review what was built.",
             "For multi-head work, announce over the shared native room first: read the room at turn-start, announce your current move with coordination_intent, keep working in isolated execution, and build on completed peer edits. The semantic-overlap guard is the headline conflict detector because it catches code-graph conflicts that git text merge and the room cannot show.",
             "The Harness delegates internally to observe, theorize, plan, execute, diagnose, coordinate, context refresh, research, validation, peer review, memory, SDK harness product awareness, Redis harness agents, and other installed specialists.",
@@ -92,6 +94,7 @@
             "For CRDT substrate work, keep Rust runtime changes in the Theorem/RustyRed repositories and use the native RustyRed MCP/backend as the executable source of truth. The plugin marketplace package distributes prompts, hooks, skills, and MCP proxy wiring; it does not automatically mirror uncommitted Rust code into installed sessions.",
             "When coordination_intent announcements semantically overlap on the code graph, treat emitted semantic-overlap tensions as awareness signals rather than locks. Resolve the tension in the room and keep the announcement write nonblocking.",
             "At the end of multi-agent work, run peer-review before commit, PR, or launch-ready reporting: create a review packet, ask the other frontier model to inspect the diff, reconcile findings, then validate.",
+            "When host UIs display Harness tools with plugin-qualified labels such as Theorem's Harness Recall or mcp__codex_apps__theorems_harness._recall, treat those labels as routing/display names for the native MCP verbs recall, remember, and encode. Use product language like Harness recall or Harness memory in user-facing reports unless the wire-level tool identifier matters.",
             "Use encode for high-signal feedback, solutions, and postmortems. Agents may auto-trigger encode when a durable lesson emerges, while keeping secrets out of stored memory.",
             "Ponytail is embedded as an advisory skill pack: use /ponytail and the ponytail-* skills when the user asks for lazy mode, simplest solution, YAGNI, over-engineering review, deletion audit, or shortcut/debt ledgers. Keep Ponytail's safety boundary: do not cut validation, data-loss handling, security, accessibility, hardware calibration, or explicit user requirements."
           ]

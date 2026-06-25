@@ -13,8 +13,8 @@ A change to any of these flows to both hosts on next install / sync. There is no
 ## Adaptive slash/skill surface
 
 `theorems-harness` packages Theorem's Harness, which is the user-visible
-product layer. Slash commands and skills live here; the SDK and MCP surfaces sit
-underneath it.
+product layer. Slash commands and skills live here; the GraphQL MCP API is the
+preferred tool bus, and the SDK sits underneath as typed helper plumbing.
 
 `/harness` is an opt-in to harness behavior for the active task, not a narrow
 mode selector. The agent should pick the best capability mix, reroute at
@@ -25,7 +25,7 @@ encode durable lessons only when they are high signal.
 |---|---|
 | Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, `/compute_code`, `/writing-engineering`, `/design-engineering`, `/ponytail`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`, `/ponytail-gain`, and `/ponytail-help` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
-| Native MCP | Single remote HTTP `theorems-harness` server for graph reads, algorithms, code discovery, code ingest, harness run lifecycle, memory, coordination, and skill-pack surfaces |
+| GraphQL MCP | Single remote HTTP `theorems-harness` server for graph reads, algorithms, code discovery, code ingest, harness run lifecycle, memory, coordination, and skill-pack surfaces |
 | SDK | Typed client helpers used by scripts and compatibility utilities; not a separate user-facing command layer |
 
 The older `theorem-context-sdk/claude-code` plugin is legacy host-adapter
@@ -62,7 +62,32 @@ The `mcpServers` field registers one server, `theorems-harness`, pointing at
 Node MCP and the separate RustyRed proxy are removed; hooks call native tools
 through `theorem_native_call`.
 
-The native MCP advertises these launch-facing tools through `tools/list`:
+## GraphQL MCP surface
+
+Version `0.6.0` is the GraphQL-first plugin contract. When `tools/list` exposes
+`graphql_query`, `graphql_mutate`, and `graphql_introspect`, agents should use
+`graphql_introspect` to discover the schema and then read or write memory,
+coordination, jobs, graph, code, and run surfaces through GraphQL. On servers
+with `graphql_default_surface` enabled, flat tools already covered by GraphQL
+may be hidden from `tools/list`.
+
+Flat tools remain a compatibility and diagnosis path. Use them only when a
+local/dev server does not expose GraphQL yet, a host session is intentionally
+testing legacy flat-tool behavior, or GraphQL itself is the suspected failure
+surface.
+
+The transport endpoint does not change for hosted users: Claude Code, Claude.ai,
+and Codex plugin installs all point at the remote Railway MCP unless a developer
+intentionally overrides `THEOREM_HARNESS_MCP_URL` for local work.
+
+The MCP may advertise these launch-facing tools through `tools/list`:
+
+Host UIs may show these tools with a plugin or app prefix, for example
+`theorems-harness recall`, `Theorem's Harness Recall`, or
+`mcp__codex_apps__theorems_harness._recall`. Treat that prefix as the host's
+routing/display label, not as a different memory system. In user-facing reports,
+prefer the product language ("Harness recall", "Harness encode", "Harness
+memory") and include the wire-level identifier only when it matters.
 
 - Context and runs: `harness_prepare`, `harness_append_transition`, `harness_run`, `harness_kg_status`
 - Code: `compute_code` for reads and `code_ingest` for ingest/reindex/session overlay writes. The old `code_search` name is dispatch-compatible only; it is not advertised.
