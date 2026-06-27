@@ -51,11 +51,17 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 
 | Path | Purpose |
 |---|---|
-| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run, loads codebase/coordination context, arms writing-engineering, loads Ponytail's default mode, and injects the standing harness frame; UserPromptSubmit writes live coordination intent, prepares context, emits checklist contracts, injects ambition/curiosity directives, suggests subagents, and tracks Ponytail mode changes; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop gates checklist completion, records writing and design engineering receipts, writes a coordination reflection, then Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
-| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. Codex also reads the same `.harness/checklist.json` contract and coordination mirror, records the same writing/design Stop receipts, and loads/tracks Ponytail mode when Node.js is on the hook PATH. |
+| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run, loads codebase/coordination context, arms writing-engineering, loads Ponytail's default mode, and injects the standing harness frame; UserPromptSubmit writes live coordination intent, prepares context, emits checklist contracts, injects ambition/curiosity directives, suggests subagents, and tracks Ponytail mode changes; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop gates checklist completion, records repo hygiene, changed-language, writing, and design receipts, writes a coordination reflection, then Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
+| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. Codex also reads the same `.harness/checklist.json` contract and coordination mirror, records repo hygiene plus changed-language Stop receipts, records the same writing/design Stop receipts, and loads/tracks Ponytail mode when Node.js is on the hook PATH. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
 | `.mcp.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | Register the single remote HTTP MCP server named `theorems-harness`. There is no bundled Node MCP server or local proxy. |
+
+Every lifecycle event also writes a local hook-doctor receipt to
+`.theorem/hook-doctor/events.jsonl`. Stop review receipts land in
+`.theorem/review/latest-repo-hygiene.json` and
+`.theorem/review/latest-language-checks.json` before any best-effort remote
+append, so a remote MCP outage no longer makes hook execution invisible.
 
 The `mcpServers` field registers one server, `theorems-harness`, pointing at
 `https://rustyredcore-theorem-production.up.railway.app/mcp`. The old local
@@ -121,6 +127,11 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | `THEOREMS_HARNESS_RUSTYRED_MCP_URL` / `RUSTYRED_THG_MCP_URL` | `https://rustyredcore-theorem-production.up.railway.app/mcp` | Compatibility fallback URL for hook scripts when `THEOREM_HARNESS_MCP_URL` is unset. |
 | `THEOREM_BUDGET_TOKENS` | `4000` | Default Context Artifact budget |
 | `THEOREM_ACTION_RAIL` | `record` | One of `off`, `record`, `enforce` |
+| `THEOREM_REVIEW_MODE` | `advisory` | Shared Stop review mode for repo hygiene and language checks. Use `enforce` to block on hard failures, or `shadow` for receipt-only mode. |
+| `THEOREM_REPO_HYGIENE_MODE` / `THEOREM_LANGUAGE_REVIEW_MODE` | `advisory` | Per-hook overrides when `THEOREM_REVIEW_MODE` is unset. |
+| `THEOREM_REVIEW_LANGUAGE_CHECKS` | `1` | Set to `0` to skip changed-language review checks. Defaults cover Rust, JavaScript, TypeScript, CSS, Python, C, C++, Java, SQL, and C#. |
+| `THEOREM_REVIEW_RUN_TESTS` | `0` | Set to `1` to include project test commands in the changed-language review pass. |
+| `THEOREM_REPO_HYGIENE_LARGE_FILE_BYTES` | `5242880` | Size threshold for large untracked-file hygiene warnings. |
 | `THEOREM_DEBUG` | `0` | Set to `1` to log hook activity to stderr |
 | `THEOREM_PEER_REVIEW_BASE` | empty | Optional base ref/commit used by `scripts/peer-review-request.sh` when preparing a peer-review packet. Defaults to upstream merge-base or `HEAD`. |
 | `THEOREM_PEER_REVIEW_ACTOR` | host actor | Optional actor override for peer-review packets. |

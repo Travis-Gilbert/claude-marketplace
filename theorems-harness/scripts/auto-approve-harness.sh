@@ -23,7 +23,14 @@ input=$(theorem_read_stdin)
 tool_name=$(theorem_jq "$input" '.tool_name')
 
 case "$tool_name" in
-  mcp__plugin_theorems-harness_* | mcp__theorems-harness__*)
+  mcp__plugin_theorems-harness_* | \
+  mcp__plugin_theorems_harness_* | \
+  mcp__theorems-harness__* | \
+  mcp__theorems_harness__* | \
+  mcp__theorems_harness.* | \
+  mcp__codex_apps__theorems-harness__* | \
+  mcp__codex_apps__theorems_harness__* | \
+  mcp__codex_apps__theorems_harness.*)
     printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"Theorem harness tool auto-authorized for the agent and its subagents (harness namespace only)."}}'
     ;;
   *)

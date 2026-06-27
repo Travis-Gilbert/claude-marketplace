@@ -8,6 +8,13 @@
           {
             "type": "command",
             "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-doctor.sh SessionStart",
+            "timeout": 5,
+            "statusMessage": "Recording hook receipt"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/begin-run.sh",
             "timeout": 15,
             "statusMessage": "Starting theorem harness run"
@@ -46,6 +53,13 @@
     "UserPromptSubmit": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-doctor.sh UserPromptSubmit",
+            "timeout": 5,
+            "statusMessage": "Recording hook receipt"
+          },
           {
             "type": "command",
             "shell": "bash",
@@ -93,7 +107,18 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__plugin_theorems-harness_.*|mcp__theorems-harness__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-doctor.sh PreToolUse",
+            "timeout": 5,
+            "statusMessage": "Recording hook receipt"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__plugin_theorems[-_]harness_.*|mcp__theorems[-_]harness(__|[._]).*|mcp__codex_apps__theorems[-_]harness(__|[._]).*",
         "hooks": [
           {
             "type": "command",
@@ -125,6 +150,17 @@
       }
     ],
     "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-doctor.sh PostToolUse",
+            "timeout": 5,
+            "statusMessage": "Recording hook receipt"
+          }
+        ]
+      },
       {
         "matcher": "Bash|Edit|Write|NotebookEdit",
         "hooks": [
@@ -192,9 +228,30 @@
           {
             "type": "command",
             "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hook-doctor.sh Stop",
+            "timeout": 5,
+            "statusMessage": "Recording hook receipt"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/checklist-gate.sh",
             "timeout": 10,
             "statusMessage": "Checking harness checklist"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/repo-hygiene-receipt.sh",
+            "timeout": 25,
+            "statusMessage": "Reviewing repository hygiene"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/review-checks.sh",
+            "timeout": 60,
+            "statusMessage": "Running changed-language review checks"
           },
           {
             "type": "command",

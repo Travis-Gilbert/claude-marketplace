@@ -53,6 +53,30 @@ theorem_warn() {
   printf '[theorem] %s\n' "$*" >&2
 }
 
+theorem_now_iso() {
+  date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
+theorem_now_stamp() {
+  date -u +"%Y%m%dT%H%M%SZ"
+}
+
+theorem_review_dir() {
+  local repo_root="$1"
+  local dir
+  dir="$repo_root/.theorem/review"
+  mkdir -p "$dir" 2>/dev/null || true
+  printf '%s' "$dir"
+}
+
+theorem_hook_doctor_dir() {
+  local repo_root="$1"
+  local dir
+  dir="$repo_root/.theorem/hook-doctor"
+  mkdir -p "$dir" 2>/dev/null || true
+  printf '%s' "$dir"
+}
+
 # Read the JSON payload Claude Code writes to stdin for hooks.
 # Echoes the JSON; caller can pipe through jq.
 theorem_read_stdin() {
