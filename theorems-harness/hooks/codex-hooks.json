@@ -94,16 +94,6 @@
     ],
     "PreToolUse": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/hook-doctor.sh\" PreToolUse",
-            "timeout": 5,
-            "statusMessage": "Recording hook receipt"
-          }
-        ]
-      },
-      {
         "matcher": "mcp__plugin_theorems[-_]harness_.*|mcp__theorems[-_]harness(__|[._]).*|mcp__codex_apps__theorems[-_]harness(__|[._]).*",
         "hooks": [
           {
@@ -111,23 +101,6 @@
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/auto-approve-harness.sh\"",
             "timeout": 5,
             "statusMessage": "Authorizing harness tool"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|exec_command|functions.exec_command|apply_patch|functions.apply_patch|Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/enforce-action-rail.sh\"",
-            "timeout": 5,
-            "statusMessage": "Checking theorem action rail"
-          },
-          {
-            "type": "command",
-            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/pretool-context.sh\"",
-            "timeout": 10,
-            "statusMessage": "Loading pre-tool context"
           }
         ]
       }
