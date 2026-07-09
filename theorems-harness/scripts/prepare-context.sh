@@ -70,11 +70,7 @@ if [ -z "$run_id" ]; then
         permissions: ["graph_read", "code_read", "web_browse"]
       }
     }')
-  theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$create_payload" "session-start:$sid" >/dev/null || {
-    theorem_warn "native harness run begin failed; passing prompt through"
-    printf '{"continue":true}\n'
-    exit 0
-  }
+  (theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$create_payload" "session-start:$sid" >/dev/null 2>&1 || true) &
   theorem_set_run_id "$sid" "$run_id"
 fi
 

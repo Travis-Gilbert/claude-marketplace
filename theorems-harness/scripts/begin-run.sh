@@ -56,11 +56,7 @@ payload=$(jq -n \
     } + (if ($tenant | length) > 0 then {tenant_slug: $tenant} else {} end))
   }')
 
-theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$payload" "session-start:$sid" >/dev/null || {
-  theorem_warn "native harness.begin failed; continuing without run binding"
-  printf '{"continue":true,"suppressOutput":true}\n'
-  exit 0
-}
+(theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$payload" "session-start:$sid" >/dev/null 2>&1 || true) &
 
 theorem_set_run_id "$sid" "$run_id"
 theorem_log "began run $run_id for session $sid"
