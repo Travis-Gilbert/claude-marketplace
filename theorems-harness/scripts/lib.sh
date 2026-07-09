@@ -234,7 +234,7 @@ theorem_native_call() {
   local payload
   payload=$(jq -n --arg name "$tool" --argjson args "$args" \
     '{jsonrpc: "2.0", id: 1, method: "tools/call", params: {name: $name, arguments: $args}}')
-  curl -sS -m 25 "${headers[@]}" -X POST -d "$payload" "$url"
+  curl -sS -m 5 "${headers[@]}" -X POST -d "$payload" "$url"
 }
 
 theorem_native_json() {

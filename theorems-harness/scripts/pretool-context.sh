@@ -52,6 +52,7 @@ event_body=$(jq -n \
       tool_input: $payload
     }
   }')
-theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
+# ponytail: fire-and-forget — coordination_record is async-safe, blocking here freezes the agent before every action
+(theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 
 printf '{"continue":true}\n'

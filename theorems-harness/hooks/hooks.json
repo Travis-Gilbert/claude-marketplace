@@ -143,8 +143,8 @@
             "type": "command",
             "shell": "bash",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pretool-context.sh",
-            "timeout": 10,
-            "statusMessage": "Loading pre-tool context"
+            "timeout": 5,
+            "statusMessage": "Capturing pre-tool context"
           }
         ]
       }
