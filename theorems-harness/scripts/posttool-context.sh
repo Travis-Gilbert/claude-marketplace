@@ -51,6 +51,6 @@ event_body=$(jq -n \
       references: ($references.references // [])
     }
   }')
-theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
+(theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 
 printf '{"continue":true}\n'

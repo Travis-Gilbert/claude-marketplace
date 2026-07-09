@@ -128,6 +128,25 @@
             "statusMessage": "Authorizing harness tool"
           }
         ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/enforce-action-rail.sh",
+            "timeout": 5,
+            "statusMessage": "Checking theorem action rail"
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pretool-context.sh",
+            "timeout": 5,
+            "statusMessage": "Capturing pre-tool context"
+          }
+        ]
       }
     ],
     "PostToolUse": [
