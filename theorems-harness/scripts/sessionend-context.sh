@@ -48,8 +48,7 @@ event_body=$(jq -n \
     title: "SessionEnd",
     metadata: { session_id: $session_id, harness_run_id: $run_id, outcome: $payload }
   }')
-theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
-
+(theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 reflection_args=$(jq -n \
   --arg actor "$actor" \
   --arg repo "$repo_label" \
@@ -70,6 +69,5 @@ reflection_args=$(jq -n \
       branch: $branch
     }
   }')
-theorem_native_call "coordination_record" "$reflection_args" >/dev/null 2>&1 || true
-
+(theorem_native_call "coordination_record" "$reflection_args" >/dev/null 2>&1 || true) &
 printf '{"continue":true}\n'

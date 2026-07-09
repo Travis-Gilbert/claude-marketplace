@@ -190,7 +190,7 @@ append_args=$(jq -n \
     idempotency_key: $key,
     payload: $payload
   }')
-theorem_native_call "harness_append_transition" "$append_args" >/dev/null 2>&1 || true
+(theorem_native_call "harness_append_transition" "$append_args" >/dev/null 2>&1 || true) &
 
 if [[ "$pack_status" == "advisory" && "$soft_axis_failed" == "true" ]]; then
   violations=$(printf '%s' "$receipt" | jq -r '

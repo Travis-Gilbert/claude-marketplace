@@ -401,7 +401,7 @@ if [ -n "$run_id" ]; then
       idempotency_key: $key,
       payload: $payload
     }')
-  theorem_native_call "harness_append_transition" "$append_args" >/dev/null 2>&1 || true
+  (theorem_native_call "harness_append_transition" "$append_args" >/dev/null 2>&1 || true) &
 fi
 
 if [ "$hard_axis_failed" = "true" ] && [ "$mode" = "enforce" ]; then
