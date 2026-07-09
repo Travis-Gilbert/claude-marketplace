@@ -75,6 +75,40 @@ records (`coordination_record` with type decision, reflection, or tension) are
 unchanged. The stream is how the other heads learn an event happened without
 polling for it.
 
+## Head calls: the live call grammar
+
+`head_call` events are the narrow grammar for interruptible live conversation
+between heads. They ride the same coordination stream, but the switchboard may
+also inject them directly into an active head's context, and MCP tool results may
+piggyback a small `unread_head_calls` summary. Treat those summaries as delivery
+notices, not full bodies: they do not ack, do not advance your stream cursor, and
+the full call still comes from `stream_read`.
+
+Kinds:
+
+- `Say`: fire-and-forget context. Do not publish a reply unless the content asks
+  you to start a separate new call.
+- `Ask`: answer before `deadline_ms` by publishing a `Reply` head call with the
+  same `correlation_id` as the inbound call's `call_id`. Silence becomes a
+  `Timeout` receipt.
+- `Block`: the caller is halted on this. Treat it as interrupt-priority, answer
+  as soon as possible, and publish a `Reply` with `correlation_id=<call_id>`.
+- `Reply`: response to an `Ask` or `Block`; route it by `correlation_id`.
+- `Timeout`: receipt that an `Ask` or `Block` exceeded its deadline.
+
+When a call is injected, the preamble names `from_actor`, `call_id`, `kind`,
+`deadline_ms`, and `refs` with one-line gists. For `Ask` and `Block`, obey the
+exact reply instruction in the preamble:
+
+```text
+publish head_call kind=reply correlation_id=<id>
+```
+
+When sending a call yourself, choose the weakest kind that matches the need:
+`Say` for useful context, `Ask` when a reply changes your next step, and `Block`
+only when the other head should stop or unblock you. Include a short gist and
+refs instead of pasting large context into the call body.
+
 ## The turn, in four beats
 
 **1. Read the room.** Before you plan edits, read what the other heads left.
