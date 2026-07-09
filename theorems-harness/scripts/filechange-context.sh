@@ -25,6 +25,6 @@ event_body=$(jq -n \
     title: "FileTouch",
     metadata: { session_id: $session_id, path: $path, file_event: $payload }
   }')
-theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
+(theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 
 printf '{"continue":true}\n'

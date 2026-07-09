@@ -54,8 +54,7 @@ event_body=$(jq -n \
       file_tree_sample: $files
     }
   }')
-theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true
-
+(theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 # --- AM7: code-KG base sync (Loop 1) ---
 # The base graph is the repo at its last pushed commit, ingested server-side by
 # URL (the only path that works remotely). Freshness is keyed on HEAD sha: a warm

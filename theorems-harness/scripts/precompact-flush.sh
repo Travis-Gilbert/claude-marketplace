@@ -52,6 +52,6 @@ payload=$(jq -n \
     }
   }')
 
-theorem_native_call "remember" "$payload" >/dev/null 2>&1 || true
+(theorem_native_call "remember" "$payload" >/dev/null 2>&1 || true) &
 
 printf '{"continue":true}\n'

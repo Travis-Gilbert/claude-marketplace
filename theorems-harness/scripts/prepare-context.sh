@@ -47,7 +47,7 @@ intent_body=$(jq -n \
     claimed_files: $footprint,
     expected_completion: "end of current model turn"
   }')
-theorem_native_call "coordination_intent" "$intent_body" >/dev/null 2>&1 || true
+(theorem_native_call "coordination_intent" "$intent_body" >/dev/null 2>&1 || true) &
 
 run_id=$(theorem_run_id "$sid")
 if [ -z "$run_id" ]; then
@@ -180,14 +180,14 @@ if [ -n "$artifact_id" ]; then
     --arg actor "$actor" \
     '{ artifact_id: $artifact_id, adapter: $actor, target: "cli" }')
   acting_payload=$(jq -n --arg actor "$actor" '{adapter: $actor, started_at: (now | todate)}')
-  theorem_append_transition "$run_id" "HOST.OBSERVED" "$actor" "$host_payload" "host-observed:$sid" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "TASK.RESOLVED" "$actor" "$task_payload" "task-resolved:$sid:$artifact_id" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "PROFILE.SELECTED" "$actor" "$profile_payload" "profile-selected:$sid:$artifact_id" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "TOOLKIT.COMPILED" "$actor" "$toolkit_payload" "toolkit-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "CONTEXT.PLANNED" "$actor" "$context_plan_payload" "context-planned:$sid:$artifact_id" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "CONTEXT.COMPILED" "$actor" "$context_compiled_payload" "context-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "CONTEXT.INJECTED" "$actor" "$injected_payload" "context-injected:$sid:$artifact_id" >/dev/null 2>&1 || true
-  theorem_append_transition "$run_id" "AGENT.ACTING" "$actor" "$acting_payload" "agent-acting:$sid:$artifact_id" >/dev/null 2>&1 || true
+  (theorem_append_transition "$run_id" "HOST.OBSERVED" "$actor" "$host_payload" "host-observed:$sid" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "TASK.RESOLVED" "$actor" "$task_payload" "task-resolved:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "PROFILE.SELECTED" "$actor" "$profile_payload" "profile-selected:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "TOOLKIT.COMPILED" "$actor" "$toolkit_payload" "toolkit-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "CONTEXT.PLANNED" "$actor" "$context_plan_payload" "context-planned:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "CONTEXT.COMPILED" "$actor" "$context_compiled_payload" "context-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "CONTEXT.INJECTED" "$actor" "$injected_payload" "context-injected:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  (theorem_append_transition "$run_id" "AGENT.ACTING" "$actor" "$acting_payload" "agent-acting:$sid:$artifact_id" >/dev/null 2>&1 || true) &
 fi
 
 jq -n \

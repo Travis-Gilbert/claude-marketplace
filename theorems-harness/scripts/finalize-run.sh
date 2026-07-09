@@ -32,7 +32,7 @@ outcome_payload=$(jq -n \
     external_session_id: $sid,
     finalized_at: (now | todate)
   }')
-theorem_append_transition "$run_id" "OUTCOME.RECORDED" "$actor" "$outcome_payload" "session-outcome:$sid" >/dev/null 2>&1 || true
+(theorem_append_transition "$run_id" "OUTCOME.RECORDED" "$actor" "$outcome_payload" "session-outcome:$sid" >/dev/null 2>&1 || true) &
 
 close_payload=$(jq -n \
   --arg host "$host" \

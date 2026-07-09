@@ -141,7 +141,7 @@ record_args=$(jq -n \
       checklist: $checklist
     }
   }')
-theorem_native_call "coordination_record" "$record_args" >/dev/null 2>&1 || true
+(theorem_native_call "coordination_record" "$record_args" >/dev/null 2>&1 || true) &
 
 rm -f "$source_file"
 

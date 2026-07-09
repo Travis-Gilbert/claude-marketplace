@@ -177,6 +177,6 @@ event_args=$(jq -n \
 # Fire-and-forget native write. We do NOT block the tool result on substrate
 # write success; this is a coordination receipt, not a transaction. Native MCP
 # coordination_record (record_type=event) -- no Python coordination endpoint.
-theorem_native_call "coordination_record" "$event_args" >/dev/null 2>&1 || true
+(theorem_native_call "coordination_record" "$event_args" >/dev/null 2>&1 || true) &
 
 printf '{"continue":true}\n'
