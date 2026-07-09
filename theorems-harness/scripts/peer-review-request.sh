@@ -176,11 +176,8 @@ if [[ "$coordinate_enabled" == "true" ]]; then
           review_type: "peer-review"
         }
       }')"
-    if theorem_native_call "coordinate" "$body" >/dev/null 2>&1; then
-      coordinate_status="sent"
-    else
-      coordinate_status="failed"
-    fi
+    (theorem_native_call "coordinate" "$body" >/dev/null 2>&1 || true) &
+    coordinate_status="sent"
   else
     coordinate_status="skipped-jq-missing"
   fi

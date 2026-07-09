@@ -72,7 +72,7 @@ if [ "${#files[@]}" -gt 0 ]; then
     reingest_extra=$(jq -n --arg repo "$repo_id" --arg sess "$sid" --arg head "$head_sha" \
       --argjson files "$files_json" \
       '{repo_id: $repo, session_id: $sess, base_commit_sha: $head, files: $files}')
-    theorem_code_call "session_reingest" "$reingest_extra" >/dev/null 2>&1 || true
+    (theorem_code_call "session_reingest" "$reingest_extra" >/dev/null 2>&1 || true) &
   fi
   : > "$queue" 2>/dev/null || true
 fi

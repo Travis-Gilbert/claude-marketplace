@@ -38,7 +38,7 @@ while IFS= read -r nid; do
   [ -n "$nid" ] || continue
   recv=$(jq -n --arg repo "$repo_id" --arg node "$nid" --arg out "$outcome" \
     '{repo_id: $repo, node_id: $node, action: "context_pack", outcome: $out}')
-  theorem_code_call "record_use_receipt" "$recv" >/dev/null 2>&1 || true
+  (theorem_code_call "record_use_receipt" "$recv" >/dev/null 2>&1 || true) &
   count=$((count + 1))
   [ "$count" -ge 50 ] && break
 done <<< "$offered_ids"
