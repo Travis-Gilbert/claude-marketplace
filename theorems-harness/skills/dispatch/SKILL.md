@@ -16,6 +16,11 @@ mode:
 - **The launchers** (`spawn_session` / `spawn_handoff_session`): start an
   executing head locally now.
 
+Neither is the plan substrate. A Plan (`plan` verb) is the durable multi-task
+work graph heads claim from and transition; the job board is the local
+hand-a-CLI-a-task loop. A job may carry a `plan_id` in its payload so the
+spawned head claims from the right plan, but jobs do not replace plan tasks.
+
 What actually runs a submitted job is `theorem-receiver`: an outbound-only loop
 that reads pending jobs, starts one exactly once (it writes a `start_session_ref`
 note so the same job is never double-launched), and spawns the locally

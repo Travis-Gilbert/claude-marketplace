@@ -16,7 +16,11 @@ for users who explicitly want implementation.
 ## Operating Posture
 
 - Start from source code and current repo state, not from the plan alone.
-- Infer the smallest useful checklist when none exists.
+- When a durable Plan exists, it is the reconciliation target: claim tasks from
+  it, transition them, and let `.harness/checklist.json` stay a projection.
+  Reference the plan by id; do not re-encode its content elsewhere.
+- Infer the smallest useful checklist when no plan exists. A one-off fix does
+  not need a Plan node.
 - Keep the checklist alive, but right-size it. One tiny fix does not need a
   ceremony-heavy report; risky or multi-step work does.
 - Validate the behavior through the most public practical seam.
@@ -28,6 +32,8 @@ for users who explicitly want implementation.
 
 Accept any of these:
 
+- a plan id on the plan substrate (claim from it with `plan claim` or
+  `multihead_next` scoped by `plan_id`)
 - a planning artifact or SPEC file
 - an explicit checklist
 - a bug report, failing test, runtime trace, or deploy failure
@@ -45,7 +51,7 @@ Choose the shape that fits the risk:
 | Shape | Use when | Output |
 |---|---|---|
 | `direct` | One or two files, obvious behavior, low risk. | Concise summary plus validation. |
-| `checklist` | Multi-step or cross-module work. | Stable checklist reconciliation. |
+| `checklist` | Multi-step or cross-module work. | Plan-task reconciliation when a plan exists; stable checklist reconciliation otherwise. |
 | `diagnostic` | Failure cause is unknown. | Reproduction, hypotheses, fix, regression proof. |
 | `production` | Deploy, SDK, data, auth, billing, storage, or public launch impact. | Production gate review plus rollback/risk notes. |
 | `visual` | UI, renderer, graph/canvas, animation, or screenshot-sensitive flow. | UI Visual Milestone and Do Not Downgrade evidence. |
@@ -73,7 +79,9 @@ For each bounded item:
 3. Make the smallest coherent change.
 4. Run focused validation.
 5. Simplify the changed code without changing behavior.
-6. Update the checklist or internal status.
+6. Update status: for plan-backed work, transition the task on the substrate
+   (`patch_proposed` → `verifying` → `done`; run `plan prove` for the declared
+   proof); otherwise update the checklist or internal status.
 7. Re-route if the evidence changes the mode.
 
 This loop can pass briefly through planning or diagnosis. That is not failure;
@@ -116,8 +124,12 @@ available.
 Right-size the report:
 
 - For small direct work: summarize the change and validation in a few lines.
-- For checklist work: reconcile each checklist row as done, partial, blocked,
-  skipped, failed, or not-run.
+- For plan-backed work: reconcile each plan task by its substrate id. The done
+  transition is engine-refused unless dependencies are done, the verify
+  sibling's receipt is submitted, and the declared proof passed (R3/R4/R5) —
+  a refusal is a finding to report, not an obstacle to narrate around.
+- For checklist work without a plan: reconcile each row as done, partial,
+  blocked, skipped, failed, or not-run.
 - For production or multi-agent work: include validation, residual risk,
   rollback/recovery notes, and peer-review status.
 - For UI visual work: include Runtime complete, Product complete, Vision
@@ -166,7 +178,9 @@ Never report "done" unless the evidence supports it.
 
 - Do not silently rewrite checklist scope; add new rows or mark changed scope.
 - Do not continue applying workarounds after the third same-layer failure; pause
-  and diagnose the layer.
+  and diagnose the layer. For plan-backed work, read `plan analyze` /
+  `converge` — refinement churn on the same task is the same signal,
+  quantified.
 - Do not treat implementation as complete when tests, simplification, or
   reporting are still material.
 - Do not claim visual Product complete from typecheck or nonblank rendering

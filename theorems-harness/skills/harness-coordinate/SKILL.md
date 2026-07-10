@@ -60,6 +60,7 @@ it is the guard you lead with.
 | Semantic overlap | code-graph overlap check -> `coordination_tension` | The headline guard. When your announced footprint and a peer's touch structurally coupled code, the substrate raises a tension; read it before you commit to your edit, because it catches runtime disagreement a clean text merge hides. |
 | Fork | `coordination_tension` | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
 | Reconciliation | `multihead_patch` / lease-like records | Isolated mechanics for concrete patch review, proof, and merge reconciliation after overlap is understood. They are not the headline coordination model and not a way to reserve files. |
+| Plan fan-out | `plan claim` / `multihead_next` with `plan_id` | When a durable Plan backs the work, heads claim tasks from the plan, not from a coordination record, and `plan_id` scopes routing to that plan's task subgraph. The room injects a bound plan digest automatically — reference the plan by id/digest and never re-encode its content into records, messages, or reflections. |
 | Memory | `coordination_reflection` / `coordination_decision` | Turn-end working memory and architectural choices the next head inherits. |
 
 ## Transport: streams carry the ambient flow

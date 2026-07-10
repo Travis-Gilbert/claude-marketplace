@@ -175,7 +175,7 @@ treat it as expected.
 | `harness_step` | Record a step inside an open run. |
 | `harness_search` | Search inside the run, recording tool-call and observation steps. |
 | `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
-| `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path. |
+| `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path; `provider_search` reaches live GitHub/GitLab code search. |
 | `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
 | `harness_context` | Compile the context artifact for the current run. |
 | `harness_patch` | Propose a patch to the harness belief state. |
@@ -183,6 +183,7 @@ treat it as expected.
 | `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
 | `harness_fork` | Fork a run at a given step to explore an alternative. |
 | `harness_compare` | Compare two runs. |
+| `query_data` / `retrieve_memory` / `turn_start` / `evidence_bundle` | Data API membrane: records query, memory-oriented retrieval, turn-start work-queue packet, and cited handoff bundles. |
 | `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
 | `encode` | Record feedback, solutions, and postmortems with outcome metadata. |
 | `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
