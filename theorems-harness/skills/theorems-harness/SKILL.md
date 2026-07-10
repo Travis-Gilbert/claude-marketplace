@@ -76,6 +76,10 @@ Use these as abilities inside one run, not as competing products:
 - If the user asks for a plan, spec, migration, checklist, or multi-session
   strategy, start with `plan`; allow a bounded execution handoff only when the
   first slice is obvious or requested.
+- Plan-shaped work routes through the durable plan substrate: `plan create` is
+  the canonical act, heads claim and transition tasks on the plan, and plans
+  are referenced by id/digest — never re-encoded into coordination records,
+  messages, or reflections.
 - If the user asks for research, evidence, graph search, code discovery, or
   current external facts, start with `research` or `compile_context`.
 - If the user asks for review or a second model's view, start with
@@ -175,7 +179,8 @@ treat it as expected.
 | `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
 | `harness_context` | Compile the context artifact for the current run. |
 | `harness_patch` | Propose a patch to the harness belief state. |
-| `harness_replay` | Get the full event timeline of a run. |
+| `plan` | Create and operate durable graph-backed plans: create, add_task, refine, claim, transition, prove, spawn/submit verify, render, import, query, what_changed, analyze, converge, replay. |
+| `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
 | `harness_fork` | Fork a run at a given step to explore an alternative. |
 | `harness_compare` | Compare two runs. |
 | `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
@@ -248,8 +253,9 @@ The plugin hook layer makes the highest-risk harness disciplines deterministic:
 
 - `SessionStart` and build-shaped `UserPromptSubmit` events inject the ambition
   frame so plans do not shrink the request before execution begins.
-- Handoff-shaped prompts emit `.harness/checklist.json` and mirror it into the
-  coordination substrate as the shared contract.
+- Handoff-shaped prompts emit `.harness/checklist.json` as a projection of the
+  plan; the hook still mirrors it into a coordination record only until the
+  Stop gate reads the plan substrate directly. The plan is the contract.
 - `Stop` blocks completion only while checklist items remain unresolved without
   verification evidence or a concrete deferral reason.
 - `PostToolUse` records action, context, and coordination events without
