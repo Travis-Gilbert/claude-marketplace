@@ -22,6 +22,20 @@ DEV_DIR="$(cd "$(dirname "$0")" && pwd)"
 MARKETPLACE="$HOME/.claude/plugins/marketplaces/local-desktop-app-uploads"
 REGISTRY="$HOME/.claude/plugins/installed_plugins.json"
 SETTINGS="$HOME/.claude/settings.json"
+# Backups live OUTSIDE any marketplace dir. A backup left as
+# `<marketplace>/<name>.backup.*` is itself discoverable during slash-command
+# resolution — the orphan-plugin trap in CLAUDE.md. Keep them out of the scan path.
+BACKUP_DIR="$HOME/.claude/plugins/.sync-backups"
+
+# Extra marketplace clones that also host these plugins (e.g. the desktop app's
+# own channel). We only re-point a plugin here if the marketplace ALREADY hosts
+# it — we never inject a plugin into an unrelated marketplace. This keeps every
+# channel that serves a plugin pointed at the live repo, so a desktop-app
+# agent-mode session cannot materialize a stale frozen copy. See CLAUDE.md
+# "Slash Command Resolution and the Orphan Plugin Trap".
+EXTRA_MARKETPLACES=(
+    "$HOME/.claude/plugins/marketplaces/codex-marketplace"
+)
 
 # Colors
 GREEN='\033[0;32m'
@@ -212,6 +226,34 @@ with open(registry_path, 'w') as f:
 }
 
 # ─────────────────────────────────────────────
+# Re-point any extra marketplace that already hosts this plugin at the repo.
+# Only touches marketplaces where the plugin already exists; backs up real dirs.
+# ─────────────────────────────────────────────
+sync_extra_marketplaces() {
+    local name="$1"
+    local plugin_dir="$2"
+
+    for mp in "${EXTRA_MARKETPLACES[@]}"; do
+        local target="$mp/$name"
+        # Skip marketplaces that do not already host this plugin.
+        [[ -e "$target" || -L "$target" ]] || continue
+
+        if [[ -L "$target" ]]; then
+            [[ "$(readlink "$target")" == "$plugin_dir" ]] && continue
+            rm "$target"
+        elif [[ -d "$target" ]]; then
+            mkdir -p "$BACKUP_DIR"
+            local backup="$BACKUP_DIR/$(basename "$mp")__$name.$(date +%Y%m%d%H%M%S)"
+            mv "$target" "$backup"
+            echo -e "    ${YELLOW}↻${NC} $name — $(basename "$mp"): copy backed up ($(basename "$backup"))"
+        fi
+
+        ln -s "$plugin_dir" "$target"
+        echo -e "    ${GREEN}✓${NC} $name — $(basename "$mp"): re-pointed at repo"
+    done
+}
+
+# ─────────────────────────────────────────────
 # Sync a single plugin
 # ─────────────────────────────────────────────
 sync_plugin() {
@@ -236,6 +278,7 @@ sync_plugin() {
             # Already symlinked correctly — just update timestamp
             update_timestamp "$name" "$version"
             echo -e "  ${GREEN}✓${NC} $name ($version) — already linked"
+            sync_extra_marketplaces "$name" "$plugin_dir"
             return 0
         else
             # Symlink points elsewhere — update it
@@ -243,8 +286,9 @@ sync_plugin() {
             echo -e "  ${YELLOW}↻${NC} $name — updating symlink (was: $current_link)"
         fi
     elif [[ -d "$target" ]]; then
-        # Physical directory exists — back it up and replace with symlink
-        local backup="$target.backup.$(date +%Y%m%d%H%M%S)"
+        # Physical directory exists — back it up (outside the scan path) and symlink
+        mkdir -p "$BACKUP_DIR"
+        local backup="$BACKUP_DIR/local-desktop-app-uploads__$name.$(date +%Y%m%d%H%M%S)"
         mv "$target" "$backup"
         echo -e "  ${YELLOW}↻${NC} $name — replacing copy with symlink (backup: $(basename "$backup"))"
     fi
@@ -267,6 +311,9 @@ sync_plugin() {
     if [[ "$enable_result" == "enabled" ]]; then
         echo -e "  ${GREEN}✓${NC} $name — enabled in settings.json"
     fi
+
+    # Keep any other marketplace that hosts this plugin pointed at the repo too.
+    sync_extra_marketplaces "$name" "$plugin_dir"
 }
 
 # ─────────────────────────────────────────────
