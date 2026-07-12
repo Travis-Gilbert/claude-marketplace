@@ -101,8 +101,14 @@ fi
 
 source_hash=$(shasum -a 256 "$source_file" | awk '{print $1}')
 created_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-checklist_file="$cwd/.harness/checklist.json"
-mkdir -p "$cwd/.harness"
+session_id=$(theorem_session_id "$input")
+plan_id=$(theorem_plan_id "$input")
+plan_slug=$(theorem_jq "$input" '.plan_slug // .planSlug // .checklist_slug // .checklistSlug')
+if [ -z "$plan_slug" ]; then
+  plan_slug=$(printf '%s' "$prompt" | sed -n '/[^[:space:]]/ { s/^[#[:space:]]*//; p; q; }')
+fi
+checklist_file=$(theorem_named_checklist_path "$cwd" "$plan_slug" "$plan_id" "$source_hash")
+mkdir -p "$cwd/.harness/checklists"
 
 checklist_json=$(jq -n \
   --arg created_at "$created_at" \
@@ -110,6 +116,9 @@ checklist_json=$(jq -n \
   --arg source_hash "$source_hash" \
   --arg repo "$repo_label" \
   --arg branch "$branch" \
+  --arg session_id "$session_id" \
+  --arg plan_id "$plan_id" \
+  --arg plan_slug "$(theorem_checklist_slug "$plan_slug")" \
   --argjson items "$items_json" \
   '{
     schema_version: 1,
@@ -119,9 +128,20 @@ checklist_json=$(jq -n \
     source_hash: $source_hash,
     repo: $repo,
     branch: $branch,
+    session_id: $session_id,
+    plan_id: $plan_id,
+    plan_slug: $plan_slug,
+    projection: {
+      kind: "plan_checklist",
+      plan_bound: ($plan_id != ""),
+      canonical_source: (if $plan_id == "" then "handoff source" else "native plan substrate" end)
+    },
     items: $items
   }')
-printf '%s\n' "$checklist_json" > "$checklist_file"
+checklist_tmp="$checklist_file.tmp.$$"
+printf '%s\n' "$checklist_json" > "$checklist_tmp"
+mv "$checklist_tmp" "$checklist_file"
+theorem_bind_checklist "$cwd" "$session_id" "$checklist_file" "$plan_id"
 
 record_args=$(jq -n \
   --arg actor "$actor" \

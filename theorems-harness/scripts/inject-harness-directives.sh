@@ -38,7 +38,7 @@ ${block}"
 
 standing_frame='## Harness hooks standing frame
 - Treat handoff deliverables as current scope, not as optional future work.
-- Use `.harness/checklist.json` as the local checklist contract when present.
+- Use the checklist projection bound to this session under `.harness/checklists/`; `.harness/checklist.json` is a legacy fallback.
 - Complete each checklist item by verification evidence or a concrete deferral reason.
 - Be ambitious about scope and capability; be cautious only about irreversible or harmful actions.'
 

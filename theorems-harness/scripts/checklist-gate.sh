@@ -12,11 +12,10 @@ trap 'printf "{\"continue\":true}\n"; exit 0' ERR
 theorem_require_jq || { printf '{"continue":true}\n'; exit 0; }
 
 input=$(theorem_read_stdin)
-cwd=$(theorem_resolve_cwd "$input")
-checklist_file="$cwd/.harness/checklist.json"
+checklist_file=$(theorem_resolve_checklist "$input")
 block_reasons=()
 
-if [ -f "$checklist_file" ]; then
+if [ -n "$checklist_file" ] && [ -f "$checklist_file" ]; then
   unresolved=$(
     jq -c '
       def text_nonempty(value):
