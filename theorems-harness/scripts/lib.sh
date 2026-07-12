@@ -307,6 +307,126 @@ theorem_init_harness_dir() {
   printf '%s' "$dir"
 }
 
+# Convert a user-facing plan name or content id into a portable checklist file
+# component. Checklist paths are never accepted directly from a model response;
+# the hook constructs them beneath .harness/checklists.
+theorem_checklist_slug() {
+  local value="${1:-plan}"
+  local slug
+  slug=$(printf '%s' "$value" \
+    | tr '[:upper:]' '[:lower:]' \
+    | tr -cs '[:alnum:]_-' '-' \
+    | sed -E 's/^-+//; s/-+$//; s/-+/-/g' \
+    | cut -c1-64)
+  [ -n "$slug" ] || slug='plan'
+  printf '%s' "$slug"
+}
+
+theorem_plan_id() {
+  local stdin_blob="${1:-}"
+  local plan_id
+  plan_id=$(theorem_jq "$stdin_blob" '.plan_id // .planId // .plan.id')
+  printf '%s' "${plan_id:-${THEOREM_PLAN_ID:-}}"
+}
+
+theorem_checklist_binding_file() {
+  local cwd="$1"
+  local session_id="$2"
+  local session_key
+  session_key=$(printf '%s' "$session_id" | shasum -a 256 | awk '{print substr($1, 1, 24)}')
+  printf '%s/.harness/session-plan-bindings/%s.json' "$cwd" "$session_key"
+}
+
+theorem_bind_checklist() {
+  local cwd="$1"
+  local session_id="$2"
+  local checklist_file="$3"
+  local plan_id="${4:-}"
+  local checklist_dir="$cwd/.harness/checklists"
+  case "$checklist_file" in
+    *'..'*) theorem_warn "refusing checklist binding with traversal components"; return 1 ;;
+    "$checklist_dir"/*.json) ;;
+    *) theorem_warn "refusing checklist binding outside $checklist_dir"; return 1 ;;
+  esac
+
+  local binding_file binding_dir tmp_file
+  binding_file=$(theorem_checklist_binding_file "$cwd" "$session_id")
+  binding_dir=$(dirname "$binding_file")
+  mkdir -p "$binding_dir"
+  tmp_file="$binding_file.tmp.$$"
+  jq -n \
+    --arg session_id "$session_id" \
+    --arg plan_id "$plan_id" \
+    --arg checklist "$(basename "$checklist_file")" \
+    --arg bound_at "$(theorem_now_iso)" \
+    '{session_id: $session_id, plan_id: $plan_id, checklist: $checklist, bound_at: $bound_at}' \
+    > "$tmp_file"
+  mv "$tmp_file" "$binding_file"
+}
+
+theorem_named_checklist_path() {
+  local cwd="$1"
+  local plan_slug="$2"
+  local plan_id="$3"
+  local fallback_id="$4"
+  local safe_slug safe_id
+  safe_slug=$(theorem_checklist_slug "$plan_slug")
+  safe_id=$(theorem_checklist_slug "${plan_id:-$fallback_id}")
+  safe_id=$(printf '%s' "$safe_id" | cut -c1-40)
+  printf '%s/.harness/checklists/%s--%s.json' "$cwd" "$safe_slug" "$safe_id"
+}
+
+# Resolve the checklist owned by this hook session. A session binding wins,
+# followed by an explicit plan id and finally the legacy global projection.
+# This preserves old repositories while preventing active plans from sharing a
+# single mutable checklist.
+theorem_resolve_checklist() {
+  local stdin_blob="${1:-}"
+  local cwd session_id checklist_dir binding_file checklist_name candidate plan_id safe_id explicit
+  cwd=$(theorem_resolve_cwd "$stdin_blob")
+  checklist_dir="$cwd/.harness/checklists"
+
+  explicit=$(theorem_jq "$stdin_blob" '.checklist_path // .checklistPath')
+  explicit="${explicit:-${THEOREM_CHECKLIST_PATH:-}}"
+  if [ -n "$explicit" ]; then
+    case "$explicit" in
+      *'..'*) theorem_log "ignoring checklist path with traversal components" ;;
+      "$cwd/.harness/checklist.json"|"$checklist_dir"/*.json)
+        [ -f "$explicit" ] && { printf '%s' "$explicit"; return; }
+        ;;
+      *) theorem_log "ignoring checklist path outside this repository's .harness directory" ;;
+    esac
+  fi
+
+  session_id=$(theorem_session_id "$stdin_blob")
+  binding_file=$(theorem_checklist_binding_file "$cwd" "$session_id")
+  if [ -f "$binding_file" ]; then
+    checklist_name=$(jq -r '.checklist // empty' "$binding_file" 2>/dev/null || true)
+    case "$checklist_name" in
+      ''|*/*|*'..'*) ;;
+      *)
+        candidate="$checklist_dir/$checklist_name"
+        [ -f "$candidate" ] && { printf '%s' "$candidate"; return; }
+        ;;
+    esac
+    return
+  fi
+
+  plan_id=$(theorem_plan_id "$stdin_blob")
+  if [ -n "$plan_id" ]; then
+    if [ -d "$checklist_dir" ]; then
+      safe_id=$(theorem_checklist_slug "$plan_id")
+      safe_id=$(printf '%s' "$safe_id" | cut -c1-40)
+      candidate=$(find "$checklist_dir" -maxdepth 1 -type f -name "*--$safe_id.json" -print 2>/dev/null | sort | head -n 1)
+      [ -n "$candidate" ] && { printf '%s' "$candidate"; return; }
+    fi
+    return
+  fi
+
+  candidate="$cwd/.harness/checklist.json"
+  [ -f "$candidate" ] && printf '%s' "$candidate"
+}
+
 # Call a compute-code operation over native MCP with the tenant injected. Echoes
 # the inner tool-result JSON text (unwrapped from the JSON-RPC envelope), or
 # empty on error / missing tenant. $1 = operation, $2 = extra args JSON object.
