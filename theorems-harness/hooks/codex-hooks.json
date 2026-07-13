@@ -20,7 +20,7 @@
           {
             "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/sessionstart-codebase.sh\"",
-            "timeout": 10,
+            "timeout": 15,
             "statusMessage": "Loading codebase context"
           },
           {
