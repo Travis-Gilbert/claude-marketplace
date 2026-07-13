@@ -101,9 +101,9 @@ elif [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
           submit_response=$(THEOREM_NATIVE_TIMEOUT_SECONDS=3 theorem_code_call "$op" "$submit_extra" 2>/dev/null || printf '')
           submit_payload=$(printf '%s' "$submit_response" | theorem_code_payload || printf '{}')
           if printf '%s' "$submit_payload" | jq -e '
+            ((.job_id? // .job.id? // "") | tostring | length) > 0 or
             .submitted == true or
-            (.state? | IN("queued", "submitted", "running")) or
-            (.status? == "ok" and (.job_id? // "") != "")
+            ((.state? // .status? // .job.state? // .job.status? // "") | IN("queued", "submitted", "running"))
           ' >/dev/null 2>&1; then
             jq -n \
               --arg repo_id "$repo_id" \
@@ -112,7 +112,7 @@ elif [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
               --arg operation "$op" \
               --arg submitted_at "$submitted_at" \
               --arg job_id "$(printf '%s' "$submit_payload" | jq -r '.job_id // .job.id // empty')" \
-              --arg state "$(printf '%s' "$submit_payload" | jq -r '.state // .job.state // "submitted"')" \
+              --arg state "$(printf '%s' "$submit_payload" | jq -r '.state // .status // .job.state // .job.status // "submitted"')" \
               '{
                 schema_version: 2,
                 repo_id: $repo_id,
@@ -146,6 +146,24 @@ elif [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
         theorem_log "code KG $op already claimed for this session entry"
       fi
     elif [[ "$status_known" == "true" ]]; then
+      harness_dir=$(theorem_init_harness_dir "$repo_root")
+      manifest="$harness_dir/code-kg-manifest.json"
+      observed_at=$(theorem_now_iso)
+      jq -n \
+        --arg repo_id "$repo_id" \
+        --arg repo_url "$origin_url" \
+        --arg head "$head_now" \
+        --arg observed_at "$observed_at" \
+        '{
+          schema_version: 2,
+          repo_id: $repo_id,
+          repo_url: $repo_url,
+          observed_head_sha: $head,
+          operation: "context_pack",
+          server_status: {status: "current", observed_at: $observed_at},
+          certifies_indexed: false
+        }' > "$manifest.tmp.$$" 2>/dev/null \
+        && mv "$manifest.tmp.$$" "$manifest" 2>/dev/null || true
       budget_tokens="${THEOREM_CONTEXT_BUDGET_TOKENS:-2000}"
       [[ "$budget_tokens" =~ ^[0-9]+$ ]] || budget_tokens=2000
       pack_extra=$(jq -n \

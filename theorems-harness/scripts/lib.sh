@@ -227,6 +227,10 @@ theorem_native_call() {
   local url="${THEOREM_HARNESS_MCP_URL:-${THEOREMS_HARNESS_RUSTYRED_MCP_URL:-${RUSTYRED_THG_MCP_URL:-https://rustyredcore-theorem-production.up.railway.app/mcp}}}"
   local token="${THEOREM_HARNESS_API_TOKEN:-${RUSTYRED_THG_API_TOKEN:-${THEOREMS_HARNESS_THG_API_TOKEN:-${THEOREM_API_KEY:-}}}}"
   local timeout="${THEOREM_NATIVE_TIMEOUT_SECONDS:-5}"
+  case "$timeout" in
+    ''|*[!0-9]*) timeout=5 ;;
+    0) timeout=5 ;;
+  esac
   local headers=(-H "Content-Type: application/json" -H "Accept: application/json")
   if [ -n "$token" ]; then
     headers+=(-H "Authorization: Bearer ${token}")
@@ -481,10 +485,10 @@ theorem_code_context_is_managed() {
   esac
 }
 
-# Claim one submit attempt across co-installed plugin surfaces. The short time
-# bucket deduplicates hooks from the same session entry while allowing a later
-# clear/resume to retry. A local claim is routing metadata only; it never says
-# that ingestion completed.
+# Claim one submit attempt across co-installed plugin surfaces. The stable key
+# is paired with an explicit expiry so hooks that straddle a clock bucket cannot
+# both submit. A local claim is routing metadata only; it never says that
+# ingestion completed.
 theorem_code_submit_claim() {
   local tenant="$1"
   local session_id="$2"
@@ -492,12 +496,33 @@ theorem_code_submit_claim() {
   local head_sha="$4"
   [ -n "$session_id" ] || return 0
 
-  local bucket root key claim_dir
-  bucket="${THEOREM_CODE_CONTEXT_CLAIM_BUCKET:-$(( $(date +%s) / 30 ))}"
+  local root key claim_dir expiry_file now ttl expires_at stale_dir
   root="${THEOREM_CODE_CONTEXT_CLAIM_ROOT:-${TMPDIR:-/tmp}/theorem-code-context-claims}"
-  key=$(printf '%s\n%s\n%s\n%s\n%s\n' "$tenant" "$session_id" "$repo_id" "$head_sha" "$bucket" \
+  now="${THEOREM_CODE_CONTEXT_NOW_EPOCH:-$(date +%s)}"
+  ttl="${THEOREM_CODE_CONTEXT_CLAIM_TTL_SECONDS:-30}"
+  case "$now" in ''|*[!0-9]*) now=$(date +%s) ;; esac
+  case "$ttl" in ''|*[!0-9]*|0) ttl=30 ;; esac
+  expires_at=$((now + ttl))
+  key=$(printf '%s\n%s\n%s\n%s\n' "$tenant" "$session_id" "$repo_id" "$head_sha" \
     | shasum -a 256 | awk '{print $1}') || return 1
   claim_dir="$root/$key"
+  expiry_file="$claim_dir/expires_at"
   mkdir -p "$root" 2>/dev/null || return 1
-  mkdir "$claim_dir" 2>/dev/null
+  if mkdir "$claim_dir" 2>/dev/null; then
+    printf '%s\n' "$expires_at" > "$expiry_file" 2>/dev/null || { rm -rf "$claim_dir"; return 1; }
+    return 0
+  fi
+
+  local current_expiry=""
+  [[ -f "$expiry_file" ]] && current_expiry=$(cat "$expiry_file" 2>/dev/null || printf '')
+  case "$current_expiry" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  (( current_expiry <= now )) || return 1
+
+  stale_dir="${claim_dir}.expired.$$.${RANDOM:-0}"
+  mv "$claim_dir" "$stale_dir" 2>/dev/null || return 1
+  rm -rf "$stale_dir"
+  mkdir "$claim_dir" 2>/dev/null || return 1
+  printf '%s\n' "$expires_at" > "$expiry_file" 2>/dev/null || { rm -rf "$claim_dir"; return 1; }
 }

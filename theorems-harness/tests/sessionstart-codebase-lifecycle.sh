@@ -8,6 +8,7 @@ repo="$fixture/private-fixture"
 mock_bin="$fixture/bin"
 request_log="$fixture/requests.jsonl"
 claim_root="$fixture/claims"
+timeout_log="$fixture/timeouts.log"
 cleanup() {
   if [[ "${KEEP_FIXTURE:-0}" == "1" ]]; then
     printf 'fixture preserved at %s\n' "$fixture" >&2
@@ -36,6 +37,10 @@ while (($#)); do
   case "$1" in
     -d)
       payload="$2"
+      shift 2
+      ;;
+    -m)
+      printf '%s\n' "$2" >> "${THEOREM_TEST_TIMEOUT_LOG:-/dev/null}"
       shift 2
       ;;
     *)
@@ -88,7 +93,17 @@ if [[ "$operation" == "ingest" || "$operation" == "reindex" ]]; then
   if [[ "${THEOREM_TEST_SUBMIT:-ok}" == "fail" ]]; then
     printf '%s\n' '{"jsonrpc":"2.0","error":{"code":-32000,"message":"submission rejected"}}'
   else
-    jq -cn --arg op "$operation" '{jsonrpc:"2.0",result:{content:[{type:"text",text:({submitted:true,state:"queued",job_id:("job-"+$op)}|tojson)}]}}'
+    case "${THEOREM_TEST_SUBMIT_SHAPE:-standard}" in
+      job-only)
+        jq -cn --arg op "$operation" '{jsonrpc:"2.0",result:{content:[{type:"text",text:({job_id:("job-"+$op)}|tojson)}]}}'
+        ;;
+      nested-job)
+        jq -cn --arg op "$operation" '{jsonrpc:"2.0",result:{content:[{type:"text",text:({job:{id:("job-"+$op),status:"queued"}}|tojson)}]}}'
+        ;;
+      standard)
+        jq -cn --arg op "$operation" '{jsonrpc:"2.0",result:{content:[{type:"text",text:({submitted:true,state:"queued",job_id:("job-"+$op)}|tojson)}]}}'
+        ;;
+    esac
   fi
   exit 0
 fi
@@ -105,6 +120,7 @@ export THEOREM_CODE_CONTEXT_OWNER="plugin"
 export THEOREM_CODE_CONTEXT_CLAIM_ROOT="$claim_root"
 export THEOREM_TEST_REQUEST_LOG="$request_log"
 export THEOREM_TEST_HEAD="$head_sha"
+export THEOREM_TEST_TIMEOUT_LOG="$timeout_log"
 
 invoke_hook() {
   local session_id="$1"
@@ -134,14 +150,23 @@ wait_for_manifest_status() {
 
 reset_case() {
   : > "$request_log"
+  : > "$timeout_log"
   rm -rf "$claim_root" "$repo/.harness"
-  unset THEOREM_TEST_STATUS_SHAPE THEOREM_TEST_PACK_SHAPE THEOREM_TEST_SUBMIT
+  unset \
+    THEOREM_TEST_STATUS \
+    THEOREM_TEST_STATUS_SHAPE \
+    THEOREM_TEST_PACK_SHAPE \
+    THEOREM_TEST_SUBMIT \
+    THEOREM_TEST_SUBMIT_SHAPE \
+    THEOREM_CODE_CONTEXT_NOW_EPOCH \
+    THEOREM_CODE_CONTEXT_CLAIM_TTL_SECONDS \
+    THEOREM_NATIVE_TIMEOUT_SECONDS
 }
 
 # Unknown repository: one async ingest receipt, no context read, and the private
 # URL is preserved without being promoted to freshness truth.
 reset_case
-export THEOREM_TEST_STATUS=unknown THEOREM_CODE_CONTEXT_CLAIM_BUCKET=unknown
+export THEOREM_TEST_STATUS=unknown THEOREM_CODE_CONTEXT_NOW_EPOCH=1000
 invoke_hook unknown-session >/dev/null
 wait_for_manifest_status accepted
 test "$(operation_count ingest)" = "1"
@@ -159,7 +184,7 @@ jq -e --arg head "$head_sha" '
 reset_case
 mkdir -p "$repo/.harness"
 jq -cn --arg head "$head_sha" '{head_sha:$head,certifies_indexed:true}' > "$repo/.harness/code-kg-manifest.json"
-export THEOREM_TEST_STATUS=changed THEOREM_TEST_STATUS_SHAPE=structured THEOREM_CODE_CONTEXT_CLAIM_BUCKET=changed
+export THEOREM_TEST_STATUS=changed THEOREM_TEST_STATUS_SHAPE=structured THEOREM_CODE_CONTEXT_NOW_EPOCH=1000
 invoke_hook changed-session >/dev/null
 wait_for_manifest_status accepted
 test "$(operation_count reindex)" = "1"
@@ -174,22 +199,43 @@ printf '%s' "$current_output" | jq -e '.hookSpecificOutput.additionalContext | c
 jq -e 'select(.operation == "context_pack") | (.arguments | has("repo_url") | not)' "$request_log" >/dev/null
 test "$(operation_count ingest)" = "0"
 test "$(operation_count reindex)" = "0"
+jq -e --arg head "$head_sha" '
+  .repo_id == "private-fixture" and
+  .repo_url == "git@github.com:Travis-Gilbert/private-fixture.git" and
+  .observed_head_sha == $head and
+  .server_status.status == "current" and
+  .certifies_indexed == false
+' "$repo/.harness/code-kg-manifest.json" >/dev/null
+
+# A durable job identity alone is sufficient acknowledgement, including the
+# nested job shape returned by some MCP facades.
+reset_case
+export THEOREM_TEST_STATUS=unknown THEOREM_TEST_SUBMIT_SHAPE=job-only THEOREM_CODE_CONTEXT_NOW_EPOCH=1000
+invoke_hook job-only-session >/dev/null
+wait_for_manifest_status accepted
+test "$(jq -r '.submission.job_id' "$repo/.harness/code-kg-manifest.json")" = "job-ingest"
+
+reset_case
+export THEOREM_TEST_STATUS=unknown THEOREM_TEST_SUBMIT_SHAPE=nested-job THEOREM_CODE_CONTEXT_NOW_EPOCH=1000
+invoke_hook nested-job-session >/dev/null
+wait_for_manifest_status accepted
+test "$(jq -r '.submission.state' "$repo/.harness/code-kg-manifest.json")" = "queued"
 
 # A failed submission records failure but never certifies indexing. A later
 # session-entry bucket retries; co-installed hooks in one bucket submit once.
 reset_case
-export THEOREM_TEST_STATUS=unknown THEOREM_TEST_SUBMIT=fail THEOREM_CODE_CONTEXT_CLAIM_BUCKET=failed
+export THEOREM_TEST_STATUS=unknown THEOREM_TEST_SUBMIT=fail THEOREM_CODE_CONTEXT_NOW_EPOCH=1000
 invoke_hook retry-session >/dev/null
 wait_for_manifest_status failed
 test "$(jq -r '.certifies_indexed' "$repo/.harness/code-kg-manifest.json")" = "false"
 
-export THEOREM_TEST_SUBMIT=ok THEOREM_CODE_CONTEXT_CLAIM_BUCKET=retry
+export THEOREM_TEST_SUBMIT=ok THEOREM_CODE_CONTEXT_NOW_EPOCH=1031
 invoke_hook retry-session >/dev/null
 wait_for_manifest_status accepted
 test "$(operation_count ingest)" = "2"
 
 reset_case
-export THEOREM_TEST_STATUS=unknown THEOREM_TEST_SUBMIT=ok THEOREM_CODE_CONTEXT_CLAIM_BUCKET=dedup
+export THEOREM_TEST_STATUS=unknown THEOREM_TEST_SUBMIT=ok THEOREM_CODE_CONTEXT_NOW_EPOCH=1000
 invoke_hook duplicate-session >/dev/null
 invoke_hook duplicate-session >/dev/null
 wait_for_manifest_status accepted
@@ -198,9 +244,15 @@ test "$(operation_count ingest)" = "1"
 # Transport/status failures fail open and never guess that "unknown" means an
 # ingest is required.
 reset_case
-export THEOREM_TEST_STATUS=unavailable THEOREM_CODE_CONTEXT_CLAIM_BUCKET=unavailable
+export THEOREM_TEST_STATUS=unavailable
 invoke_hook unavailable-session >/dev/null
 test "$(operation_count ingest)" = "0"
 test "$(operation_count reindex)" = "0"
+
+# Invalid native timeout input falls back before it reaches curl.
+reset_case
+THEOREM_NATIVE_TIMEOUT_SECONDS=not-a-number \
+  bash -c 'source "$PLUGIN_ROOT/scripts/lib.sh"; theorem_native_call coordination_context "{}" >/dev/null'
+grep -qx '5' "$timeout_log"
 
 printf 'sessionstart codebase lifecycle: ok\n'
