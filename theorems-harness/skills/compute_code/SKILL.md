@@ -13,10 +13,12 @@ Code discovery is now ambient: the harness hooks keep the code KG fresh and
 inject a ranked code neighborhood into every prompt, so most discovery needs no
 explicit call. The loop has three server-side parts:
 
-- **Base sync (SessionStart).** The repo's last pushed commit is ingested by URL
-  (keyed on HEAD sha; a warm start at the same HEAD re-ingests nothing). The
-  provenance is mirrored to `.harness/code-kg-manifest.json` (`repo_id`,
-  `repo_url`, `head_sha`).
+- **Base sync (SessionStart).** Server-side `kg_status` is the only freshness
+  authority. Unknown repos enqueue `ingest`; indexed repos whose `head_sha`
+  differs enqueue `reindex`; a matching indexed SHA reads `context_pack`
+  without `repo_url`, so the read path cannot trigger synchronous ensure work.
+  `.harness/code-kg-manifest.json` is only a submission/job receipt and always
+  carries `certifies_indexed: false`.
 - **Session delta (edits).** File edits are queued to
   `.harness/session-delta-queue` and flushed at the next prompt into
   `session_reingest`, which overlays your uncommitted edits (additions +
@@ -126,9 +128,9 @@ The ingest path has hard constraints that are easy to get wrong:
 - **See what is indexed with `list_repos`.** `operation: "list_repos"` returns
   the repos in the tenant with per-repo file/symbol counts and the latest
   generation. Use it before ingesting to avoid re-indexing.
-- **Ingest result.** Ingest returns the outcome inline (`repo_id`,
-  `files_indexed`, `symbols_indexed`, `generation`). If a `job_id` comes back
-  instead, the ingest is async; poll `ingest_status` with that `job_id`.
+- **Ingest result.** Production ingest/reindex returns a queued `job_id`; poll
+  `ingest_status` until it is terminal. A submission receipt is not evidence
+  that the graph is indexed—confirm with a later tenant-scoped `kg_status`.
 
 ## Fallback path: inline graph algorithms
 

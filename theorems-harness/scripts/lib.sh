@@ -226,6 +226,7 @@ theorem_native_call() {
   args=$(theorem_inject_tenant "$args")
   local url="${THEOREM_HARNESS_MCP_URL:-${THEOREMS_HARNESS_RUSTYRED_MCP_URL:-${RUSTYRED_THG_MCP_URL:-https://rustyredcore-theorem-production.up.railway.app/mcp}}}"
   local token="${THEOREM_HARNESS_API_TOKEN:-${RUSTYRED_THG_API_TOKEN:-${THEOREMS_HARNESS_THG_API_TOKEN:-${THEOREM_API_KEY:-}}}}"
+  local timeout="${THEOREM_NATIVE_TIMEOUT_SECONDS:-5}"
   local headers=(-H "Content-Type: application/json" -H "Accept: application/json")
   if [ -n "$token" ]; then
     headers+=(-H "Authorization: Bearer ${token}")
@@ -234,7 +235,7 @@ theorem_native_call() {
   local payload
   payload=$(jq -n --arg name "$tool" --argjson args "$args" \
     '{jsonrpc: "2.0", id: 1, method: "tools/call", params: {name: $name, arguments: $args}}')
-  curl -sS -m 5 "${headers[@]}" -X POST -d "$payload" "$url"
+  curl -sS -m "$timeout" "${headers[@]}" -X POST -d "$payload" "$url"
 }
 
 theorem_native_json() {
@@ -432,7 +433,8 @@ theorem_resolve_checklist() {
 # empty on error / missing tenant. $1 = operation, $2 = extra args JSON object.
 theorem_code_call() {
   local operation="$1"
-  local extra="${2:-{}}"
+  local extra="${2-}"
+  [ -n "$extra" ] || extra='{}'
   local tenant
   tenant=$(theorem_tenant)
   if [ -z "$tenant" ]; then
@@ -442,7 +444,7 @@ theorem_code_call() {
   command -v jq >/dev/null 2>&1 || return 1
   local args
   args=$(jq -n --arg op "$operation" --arg tenant "$tenant" --argjson extra "$extra" \
-    '$extra + {operation: $op, tenant_slug: $tenant}') || return 1
+    '$extra + {operation: $op, tenant: $tenant, tenant_id: $tenant, tenant_slug: $tenant}') || return 1
   local tool="compute_code"
   case "$operation" in
     ingest|reindex|session_reingest|record_use_receipt)
@@ -450,4 +452,52 @@ theorem_code_call() {
       ;;
   esac
   theorem_native_json "$tool" "$args"
+}
+
+# Normalize the response variants returned by direct RustyRed, theorem-grpc,
+# and facade MCP routes. Callers still validate operation-specific fields; this
+# helper only removes transport/result wrappers.
+theorem_code_payload() {
+  jq -c '
+    def unwrap:
+      if type != "object" then {}
+      elif (has("indexed") or has("code_map") or has("markdown") or has("submitted") or has("job_id")) then .
+      elif (.output? | type) == "object" then .output | unwrap
+      elif (.result? | type) == "object" then .result | unwrap
+      elif (.data? | type) == "object" then .data | unwrap
+      else .
+      end;
+    unwrap
+  ' 2>/dev/null
+}
+
+# The installed ~/.theorem hook is the canonical code-context owner when host
+# configuration declares it. Plugins continue their other SessionStart work but
+# must not issue a second kg_status/ingest/context_pack lifecycle.
+theorem_code_context_is_managed() {
+  case "${THEOREM_CODE_CONTEXT_OWNER:-${THEOREM_CODE_CONTEXT_MANAGED:-}}" in
+    1|true|yes|installed|theorem) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Claim one submit attempt across co-installed plugin surfaces. The short time
+# bucket deduplicates hooks from the same session entry while allowing a later
+# clear/resume to retry. A local claim is routing metadata only; it never says
+# that ingestion completed.
+theorem_code_submit_claim() {
+  local tenant="$1"
+  local session_id="$2"
+  local repo_id="$3"
+  local head_sha="$4"
+  [ -n "$session_id" ] || return 0
+
+  local bucket root key claim_dir
+  bucket="${THEOREM_CODE_CONTEXT_CLAIM_BUCKET:-$(( $(date +%s) / 30 ))}"
+  root="${THEOREM_CODE_CONTEXT_CLAIM_ROOT:-${TMPDIR:-/tmp}/theorem-code-context-claims}"
+  key=$(printf '%s\n%s\n%s\n%s\n%s\n' "$tenant" "$session_id" "$repo_id" "$head_sha" "$bucket" \
+    | shasum -a 256 | awk '{print $1}') || return 1
+  claim_dir="$root/$key"
+  mkdir -p "$root" 2>/dev/null || return 1
+  mkdir "$claim_dir" 2>/dev/null
 }

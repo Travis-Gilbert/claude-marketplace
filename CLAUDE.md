@@ -29,7 +29,7 @@ Three gates must all be satisfied for a plugin to load:
 | ml-pro | 1.0.0 | `ml-pro/` |
 | django-engine-pro | 1.0.0 | `django-engine-pro/` |
 | next-pro | 1.0.0 | `next-pro/` |
-| theorems-harness | 0.8.0 | `theorems-harness/` |
+| theorems-harness | 0.8.2 | `theorems-harness/` |
 | app-forge | 1.0.0 | `app-forge/` |
 | swift-pro | 1.0.0 | `swift-pro/` |
 | vie-design | 2.0.0 | `vie-design/` |

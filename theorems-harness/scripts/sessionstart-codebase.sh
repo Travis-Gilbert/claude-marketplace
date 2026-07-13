@@ -56,37 +56,115 @@ event_body=$(jq -n \
   }')
 (theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 # --- AM7: code-KG base sync (Loop 1) ---
-# The base graph is the repo at its last pushed commit, ingested server-side by
-# URL (the only path that works remotely). Freshness is keyed on HEAD sha: a warm
-# start at the same HEAD fires zero ingests; a commit-then-restart fires one
-# reindex. Never blocks (async); fails open. Replaces the retired Django
-# /code/ingest/stream/ call, which could never see the local filesystem.
-if [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
+# Server kg_status is the sole freshness authority. Local receipts record a
+# submission route/job only and are never read to certify that a graph exists.
+code_context=""
+if theorem_code_context_is_managed; then
+  theorem_log "code context owned by installed Theorem SessionStart hook"
+elif [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
   origin_url=$(git -C "$repo_root" remote get-url origin 2>/dev/null || printf '')
   head_now=$(theorem_git_head "$repo_root")
-  harness_dir=$(theorem_init_harness_dir "$repo_root")
-  manifest="$harness_dir/code-kg-manifest.json"
-  if [[ -z "$origin_url" ]]; then
-    theorem_log "local-only repo, base sync skipped"
+  repo_id="$repo_label"
+  raw_session_id=$(theorem_jq "$input" '.session_id')
+
+  if [[ -z "$origin_url" || -z "$head_now" ]]; then
+    theorem_log "local-only or uncommitted repo, code KG base sync skipped"
   else
-    prev_head=""
-    [ -f "$manifest" ] && prev_head=$(jq -r '.head_sha // empty' "$manifest" 2>/dev/null)
-    if [[ -n "$head_now" && "$prev_head" == "$head_now" ]]; then
-      theorem_log "code KG base at HEAD $head_now; no ingest"
-    else
-      # repo_id is derived the same way the server does (last URL segment), so
-      # the manifest is usable immediately, before the async ingest completes.
-      repo_slug=$(basename "$origin_url"); repo_slug="${repo_slug%.git}"
-      repo_id="repo:${repo_slug}"
-      op="ingest"; [ -n "$prev_head" ] && op="reindex"
-      jq -n --arg repo_id "$repo_id" --arg repo_url "$origin_url" --arg head "$head_now" \
-        --arg op "$op" \
-        '{repo_id: $repo_id, repo_url: $repo_url, head_sha: $head, operation: $op}' \
-        > "$manifest" 2>/dev/null || true
-      (
-        ingest_extra=$(jq -n --arg url "$origin_url" '{repo_url: $url, confirmed: true}')
-        theorem_code_call "$op" "$ingest_extra" >/dev/null 2>&1 || true
-      ) &
+    status_extra=$(jq -n --arg repo_id "$repo_id" --arg sha "$head_now" \
+      '{repo_id: $repo_id, sha: $sha}')
+    status_response=$(THEOREM_NATIVE_TIMEOUT_SECONDS=3 theorem_code_call "kg_status" "$status_extra" 2>/dev/null || printf '')
+    status_payload=$(printf '%s' "$status_response" | theorem_code_payload || printf '{}')
+    status_known=$(printf '%s' "$status_payload" | jq -r 'has("indexed")' 2>/dev/null || printf 'false')
+    indexed=$(printf '%s' "$status_payload" | jq -r 'if .indexed == true then "true" else "false" end' 2>/dev/null || printf 'false')
+    indexed_head=$(printf '%s' "$status_payload" | jq -r '.head_sha // .headSha // empty' 2>/dev/null || printf '')
+
+    op=""
+    if [[ "$status_known" != "true" ]]; then
+      theorem_log "code KG status unavailable; failing open without submission"
+    elif [[ "$indexed" != "true" ]]; then
+      op="ingest"
+    elif [[ -z "$indexed_head" || "$indexed_head" != "$head_now" ]]; then
+      op="reindex"
+    fi
+
+    if [[ -n "$op" ]]; then
+      if theorem_code_submit_claim "$tenant_id" "$raw_session_id" "$repo_id" "$head_now"; then
+        harness_dir=$(theorem_init_harness_dir "$repo_root")
+        manifest="$harness_dir/code-kg-manifest.json"
+        (
+          submit_extra=$(jq -n \
+            --arg repo_id "$repo_id" \
+            --arg repo_url "$origin_url" \
+            --arg sha "$head_now" \
+            '{repo_id: $repo_id, repo_url: $repo_url, sha: $sha, confirmed: true}')
+          submitted_at=$(theorem_now_iso)
+          submit_response=$(THEOREM_NATIVE_TIMEOUT_SECONDS=3 theorem_code_call "$op" "$submit_extra" 2>/dev/null || printf '')
+          submit_payload=$(printf '%s' "$submit_response" | theorem_code_payload || printf '{}')
+          if printf '%s' "$submit_payload" | jq -e '
+            .submitted == true or
+            (.state? | IN("queued", "submitted", "running")) or
+            (.status? == "ok" and (.job_id? // "") != "")
+          ' >/dev/null 2>&1; then
+            jq -n \
+              --arg repo_id "$repo_id" \
+              --arg repo_url "$origin_url" \
+              --arg head "$head_now" \
+              --arg operation "$op" \
+              --arg submitted_at "$submitted_at" \
+              --arg job_id "$(printf '%s' "$submit_payload" | jq -r '.job_id // .job.id // empty')" \
+              --arg state "$(printf '%s' "$submit_payload" | jq -r '.state // .job.state // "submitted"')" \
+              '{
+                schema_version: 2,
+                repo_id: $repo_id,
+                repo_url: $repo_url,
+                requested_head_sha: $head,
+                operation: $operation,
+                submission: {status: "accepted", submitted_at: $submitted_at, job_id: $job_id, state: $state},
+                certifies_indexed: false
+              }' > "$manifest.tmp.$$" 2>/dev/null \
+              && mv "$manifest.tmp.$$" "$manifest" 2>/dev/null || true
+          else
+            jq -n \
+              --arg repo_id "$repo_id" \
+              --arg repo_url "$origin_url" \
+              --arg head "$head_now" \
+              --arg operation "$op" \
+              --arg submitted_at "$submitted_at" \
+              '{
+                schema_version: 2,
+                repo_id: $repo_id,
+                repo_url: $repo_url,
+                requested_head_sha: $head,
+                operation: $operation,
+                submission: {status: "failed", submitted_at: $submitted_at},
+                certifies_indexed: false
+              }' > "$manifest.tmp.$$" 2>/dev/null \
+              && mv "$manifest.tmp.$$" "$manifest" 2>/dev/null || true
+          fi
+        ) &
+      else
+        theorem_log "code KG $op already claimed for this session entry"
+      fi
+    elif [[ "$status_known" == "true" ]]; then
+      budget_tokens="${THEOREM_CONTEXT_BUDGET_TOKENS:-2000}"
+      [[ "$budget_tokens" =~ ^[0-9]+$ ]] || budget_tokens=2000
+      pack_extra=$(jq -n \
+        --arg repo_id "$repo_id" \
+        --arg sha "$head_now" \
+        --arg session_id "$raw_session_id" \
+        --arg prompt_text "${THEOREM_CONTEXT_TASK:-}" \
+        --argjson budget_tokens "$budget_tokens" \
+        '{
+          repo_id: $repo_id,
+          sha: $sha,
+          session_id: $session_id,
+          prompt_text: $prompt_text,
+          task: $prompt_text,
+          budget_tokens: $budget_tokens
+        }')
+      pack_response=$(THEOREM_NATIVE_TIMEOUT_SECONDS=3 theorem_code_call "context_pack" "$pack_extra" 2>/dev/null || printf '')
+      pack_payload=$(printf '%s' "$pack_response" | theorem_code_payload || printf '{}')
+      code_context=$(printf '%s' "$pack_payload" | jq -r '.markdown // .code_map // empty' 2>/dev/null || printf '')
     fi
   fi
 elif [[ -z "$tenant_id" ]]; then
@@ -244,6 +322,16 @@ if [[ -n "$session_response" ]]; then
           else "" end)
       end
   ' 2>/dev/null || printf '')
+fi
+
+if [[ -n "$code_context" ]]; then
+  if [[ -n "$additional_context" ]]; then
+    additional_context="$code_context
+
+$additional_context"
+  else
+    additional_context="$code_context"
+  fi
 fi
 
 if [[ -n "$additional_context" ]]; then
