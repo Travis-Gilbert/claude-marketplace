@@ -55,7 +55,7 @@ One tool, `plan`, with an `action` argument:
 | Action | Purpose |
 |---|---|
 | `create` | Mint the Plan node, its tasks, and their substrate ids. The canonical act. |
-| `add_task` / `refine` | Add a task; split a claimed task into children that retain plan membership. |
+| `add_task` / `add_tasks` / `refine` | Add one task, atomically bootstrap up to 100 declarative tasks in one graph commit, or split a claimed task into children that retain plan membership. Prefer `add_tasks` for initial or resumed multi-task bootstrap; exact matches are idempotent and any conflict refuses the whole batch. |
 | `claim` | Acquire or release a leased claim on a plan task. |
 | `transition` | Move a task (`patch_proposed`, `verifying`, `done`, `failed`, `pending` also work as direct actions). Refusals are durable, replay-visible events. |
 | `prove` | Run a task's declared proof command and persist the receipt. |
