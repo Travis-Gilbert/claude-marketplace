@@ -1,6 +1,6 @@
 {
   "name": "theorems-harness",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Theorem's Harness: GraphQL-first MCP for adaptive planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"

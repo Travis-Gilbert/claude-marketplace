@@ -53,7 +53,7 @@ full_skills=(
 )
 
 # These names were installed by earlier Harness releases but are intentionally
-# absent from 0.9.0. Hosts discover skills by directory, so leaving the old
+# absent from 0.9.x. Hosts discover skills by directory, so leaving the old
 # directories behind would keep retired interfaces callable after an upgrade.
 retired_skills=(
     "code_theorem"
