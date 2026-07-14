@@ -20,6 +20,11 @@ for users who explicitly want implementation.
   it, transition them, and let the session-bound
   `.harness/checklists/<plan-slug>--<plan-id>.json` stay a projection. Reference
   the plan by id; do not re-encode its content elsewhere.
+- Use the Plan substrate's enforceable happy path exactly: `claim` ->
+  `patch_proposed` -> `spawn_verify` -> `submit_verify` -> `prove` -> `done`.
+  Assign `spawn_verify` to a reviewer distinct from both the task author and
+  the active claimant. Do not insert the compatibility `verifying` transition
+  into this sequence: `spawn_verify` accepts only a `patch_proposed` target.
 - Infer the smallest useful checklist when no plan exists. A one-off fix does
   not need a Plan node.
 - Keep the checklist alive, but right-size it. One tiny fix does not need a
@@ -80,10 +85,36 @@ For each bounded item:
 3. Make the smallest coherent change.
 4. Run focused validation.
 5. Simplify the changed code without changing behavior.
-6. Update status: for plan-backed work, transition the task on the substrate
-   (`patch_proposed` → `verifying` → `done`; run `plan prove` for the declared
-   proof); otherwise update the checklist or internal status.
+6. Update status: for plan-backed work, propose the patch, have the assigned
+   independent reviewer spawn and submit the verify sibling, run `plan prove`
+   against the final reviewed patch, then request `done`. Otherwise update the
+   checklist or internal status.
 7. Re-route if the evidence changes the mode.
+
+### Plan-backed task protocol
+
+Use the canonical `plan` tool for every step; do not fall back to the flat
+`multihead_*` tools for a Plan-owned task.
+
+1. `plan(action: "claim", plan_id, task_id, actor, ...)`
+2. Implement and validate the bounded change while the claim is live.
+3. `plan(action: "patch_proposed", plan_id, task_id, actor, ...)`
+4. Choose an independent reviewer, then
+   `plan(action: "spawn_verify", plan_id, task_id, reviewer)`.
+5. The assigned reviewer attempts at least one falsification mode and submits
+   at least one command through `plan(action: "submit_verify", ..., actor,
+   attempted_failure_modes, commands_run, defect_found)`.
+6. After the final edit and accepted review receipt, run
+   `plan(action: "prove", ...)`. Prefer the declared proof command. For an
+   externally executed proof, submit `proof_status`, `proof_receipt_ref`,
+   `proof_digest`, and `commands_run`; `commands_run` must include the declared
+   command. `proof_digest` binds the external proof output, not the source
+   patch. The current Plan contract has no patch/base digest field, so do not
+   claim the engine proves patch freshness; rerun and resubmit evidence after
+   any later edit.
+7. `plan(action: "done", plan_id, task_id, actor, ...)`. Treat an R3, R4, or R5
+   refusal as evidence that dependencies, independent verification, or proof
+   remain incomplete.
 
 This loop can pass briefly through planning or diagnosis. That is not failure;
 it is execution staying honest.
@@ -129,6 +160,9 @@ Right-size the report:
   transition is engine-refused unless dependencies are done, the verify
   sibling's receipt is submitted, and the declared proof passed (R3/R4/R5) —
   a refusal is a finding to report, not an obstacle to narrate around.
+- Report who performed the independent review and which falsification attempt
+  and commands support its receipt. Do not describe self-review by the task
+  author or active claimant as satisfying the Plan verify gate.
 - For checklist work without a plan: reconcile each row as done, partial,
   blocked, skipped, failed, or not-run.
 - For production or multi-agent work: include validation, residual risk,

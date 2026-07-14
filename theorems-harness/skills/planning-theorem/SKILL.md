@@ -57,9 +57,9 @@ One tool, `plan`, with an `action` argument:
 | `create` | Mint the Plan node, its tasks, and their substrate ids. The canonical act. |
 | `add_task` / `add_tasks` / `refine` | Add one task, atomically bootstrap up to 100 declarative tasks in one graph commit, or split a claimed task into children that retain plan membership. Prefer `add_tasks` for initial or resumed multi-task bootstrap; exact matches are idempotent and any conflict refuses the whole batch. |
 | `claim` | Acquire or release a leased claim on a plan task. |
-| `transition` | Move a task (`patch_proposed`, `verifying`, `done`, `failed`, `pending` also work as direct actions). Refusals are durable, replay-visible events. |
-| `prove` | Run a task's declared proof command and persist the receipt. |
-| `spawn_verify` / `submit_verify` | Open and submit the adversarial verify sibling for a task. |
+| `transition` | Move a task (`patch_proposed`, `verifying`, `done`, `failed`, `pending` also work as direct actions). `verifying` is a compatibility state, not a step in the enforceable verify happy path. Refusals are durable, replay-visible events. |
+| `prove` | Run a task's declared proof command and persist the receipt. External receipts require `proof_status`, `proof_receipt_ref`, `proof_digest`, and `commands_run`; the digest binds proof output, not the patch. |
+| `spawn_verify` / `submit_verify` | Open and submit the adversarial verify sibling for a `patch_proposed` task. The assigned reviewer must differ from the task author and active claimant; submission requires a falsification attempt and command. |
 | `render` | Emit the deterministic projection (markdown + JSON contract). |
 | `import` | Lift a legacy checklist projection into a Plan. |
 | `query` | Bounded canned queries: `next_actionable`, `frontier`, `blocked_set`, `progress`, `stale_claims`, `verify_debt`. |
@@ -110,9 +110,10 @@ Theorem repo, not in prose summaries of it.
 5. Render the file projection where the hook layer still needs it (see Plan
    Contract below).
 6. Record explicit non-goals and deferrals only with surfaced consent.
-7. Execution reconciles mechanically, not by prose: heads claim from the plan
-   and move tasks through CLAIM -> PATCH -> VERIFY as task transitions. There
-   is nothing to define per-plan here anymore.
+7. Execution reconciles mechanically, not by prose. The enforceable sequence is
+   `claim` -> `patch_proposed` -> `spawn_verify` -> `submit_verify` -> `prove`
+   -> `done`. `spawn_verify` must name a reviewer distinct from the task author
+   and active claimant. There is nothing to define per-plan here anymore.
 8. If `handoff=spark` is requested, select the first bounded slice, define
    write/validation scope, delegate it, and stay in-thread to review.
 
@@ -138,11 +139,18 @@ enumerated deliverable list:
   injects a room-bound plan digest automatically and rejects digest
   re-encoding. Board-as-decision-records was a workaround; it is retired.
 
-Completion is a substrate predicate, not an honor rule. The done transition is
-refused unless every dependency is done, the verify sibling's receipt is
-submitted, and the declared proof command has a passing receipt. Refusals land
-in the replay. A task without a proof command or verify sibling still needs an
-honest concrete deferral reason before the plan closes.
+Completion is a substrate predicate, not an honor rule. After a task is claimed
+and its patch is proposed, an independent reviewer spawns and submits the verify
+sibling, then the final patch receives its declared proof before `done` is
+requested. The done transition is refused unless every dependency is done, the
+verify sibling's receipt is submitted, and the declared proof command has a
+passing receipt. For externally run proofs, preserve `proof_receipt_ref`,
+`proof_digest`, and `commands_run` and ensure the declared command appears in
+that command list. The current Plan contract does not expose a patch/base digest
+field, so `proof_digest` must not be described as patch identity or engine-level
+freshness; evidence must be rerun after later edits. Refusals land in the replay.
+A task without a proof command or verify sibling still needs an honest concrete
+deferral reason before the plan closes.
 
 ## Multi-Head Execution
 

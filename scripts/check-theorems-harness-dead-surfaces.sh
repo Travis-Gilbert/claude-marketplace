@@ -59,6 +59,23 @@ done
 [[ -f "$PLUGIN_ROOT/commands/replay-last-run.md" ]] || fail "real replay-last-run command is missing"
 [[ -f "$PLUGIN_ROOT/skills/practice-system/SKILL.md" ]] || fail "replacement practice system is missing"
 
+readonly PLAN_SEQUENCE='claim.*patch_proposed.*spawn_verify.*submit_verify.*prove.*done'
+for teaching in \
+  "$PLUGIN_ROOT/skills/execute/SKILL.md" \
+  "$PLUGIN_ROOT/skills/planning-theorem/SKILL.md" \
+  "$PLUGIN_ROOT/skills/theorems-harness/SKILL.md"; do
+  tr '\n' ' ' < "$teaching" | grep -Eq "$PLAN_SEQUENCE" \
+    || fail "Plan lifecycle teaching is incomplete or out of order: ${teaching#$REPO_ROOT/}"
+done
+
+grep -Fq 'reviewer distinct from' "$PLUGIN_ROOT/skills/execute/SKILL.md" \
+  || fail "execute skill does not require an independent Plan reviewer"
+
+if tr '\n' ' ' < "$PLUGIN_ROOT/skills/execute/SKILL.md" \
+  | grep -Eq 'patch_proposed.{0,80}(->|→).{0,80}verifying.{0,80}(->|→).{0,80}done'; then
+  fail "active teaching still routes Plan tasks through the incompatible verifying sequence"
+fi
+
 "$PLUGIN_ROOT/tests/install-harness-upgrade.sh"
 
 printf 'theorems-harness dead surfaces: clean\n'
