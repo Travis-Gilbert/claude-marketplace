@@ -1,6 +1,6 @@
 ---
 name: theorems-harness
-description: Theorem's Harness default plugin skill. Use when the user invokes /harness or asks for grounded planning, implementation, debugging, review, context preparation, validation, reporting, cross-agent coordination, typed memory, encode, run lifecycle, replay, fork/compare, fractal search, code search, or harness-backed agent work.
+description: Theorem's Harness default plugin skill. Use when the user invokes /harness or asks for grounded planning, implementation, debugging, review, context preparation, validation, reporting, cross-agent coordination, typed memory, encode, run lifecycle, replay, fractal search, code search, or harness-backed agent work.
 ---
 
 # Theorem's Harness
@@ -113,13 +113,20 @@ final claims.
 
 - Primary command: `/harness`
 - Utility commands:
-  - `/context-refresh` for narrow context refresh only.
   - `/coordinate` for cross-agent presence, mentions, waits, and handoffs.
   - `/peer-review` for cross-frontier-model diff review before commit, PR, or
     launch-ready reporting.
   - `/encode` for feedback, solution, or postmortem memory.
   - `/research` for direct fractal expansion / gap-frontier discovery.
   - `/compute_code` for native CodeCrawler-backed code discovery, with graph-structural ranking fallback.
+  - `/replay-last-run` for deterministic replay and integrity inspection of the
+    most recent eligible run.
+  - `/writing-engineering` for prose checks, including the integrated 1918
+    Elements of Style ruleset.
+
+The source-attributed practice system is ambient behavior rather than another
+slash command. It binds planning, execution, verification, review, and
+run-to-run learning into the active Harness run.
 
 Compatibility commands such as `/execute` may remain installed, but new work
 should prefer `/harness` plus adaptive routing.
@@ -171,18 +178,15 @@ treat it as expected.
 |---|---|
 | `harness_route` | Choose the next capability mix for a task or checkpoint. |
 | `harness_toolkit` | Compile or inspect the task toolkit from task type, permissions, and scope before a run. |
-| `harness_begin` | Open a new harness run. |
 | `harness_step` | Record a step inside an open run. |
 | `harness_search` | Search inside the run, recording tool-call and observation steps. |
 | `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
 | `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path; `provider_search` reaches live GitHub/GitLab code search. |
 | `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
-| `harness_context` | Compile the context artifact for the current run. |
 | `harness_patch` | Propose a patch to the harness belief state. |
 | `plan` | Create and operate durable graph-backed plans: create, add_task, refine, claim, transition, prove, spawn/submit verify, render, import, query, what_changed, analyze, converge, replay. |
 | `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
-| `harness_fork` | Fork a run at a given step to explore an alternative. |
-| `harness_compare` | Compare two runs. |
+| `replay_last_run` | Select the latest eligible Harness run or an explicit run, replay its event ledger without side effects, and return typed integrity evidence. |
 | `query_data` / `retrieve_memory` / `turn_start` / `evidence_bundle` | Data API membrane: records query, memory-oriented retrieval, turn-start work-queue packet, and cited handoff bundles. |
 | `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
 | `encode` | Record feedback, solutions, and postmortems with outcome metadata. |

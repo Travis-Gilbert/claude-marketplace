@@ -52,7 +52,7 @@ event_body=$(jq -n \
       tool_input: $payload
     }
   }')
-# ponytail: fire-and-forget — coordination_record is async-safe, blocking here freezes the agent before every action
+# Fire-and-forget: coordination_record is async-safe; blocking here freezes the agent before every action.
 (theorem_native_call "coordination_record" "$event_body" >/dev/null 2>&1 || true) &
 
 printf '{"continue":true}\n'

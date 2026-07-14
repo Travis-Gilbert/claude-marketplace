@@ -13,6 +13,8 @@ Run the theorems-harness:compute_code skill against the user's input.
 5. Stream the route choice + one-line justification before showing results, so the user can see whether the routing matched their intent.
 6. Return ranked results with provenance: route, operation or algorithm, query/seed, top-K node list, and receipt or graph evidence when returned.
 
-If the agent determines the question is a pure exact-string lookup (use `Grep`), a request for Theseus's pre-ingested code knowledge (use `code_theorem`), or an adjacency exceeding the inline budget (use the tenant-backed counterpart), the skill explicitly defers rather than forcing a mismatched algorithm.
+If the agent determines the question is a pure exact-string lookup (use `Grep`)
+or an adjacency exceeds the inline budget (use the tenant-backed counterpart),
+the skill explicitly defers rather than forcing a mismatched algorithm.
 
 Orchestrate may also invoke this skill internally if it identifies a code-search subtask whose answer benefits from graph-structural ranking; either entrypoint reaches the same routing logic.

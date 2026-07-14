@@ -248,10 +248,9 @@ Do NOT return:
 
 - It does not build the code graph itself. The skill consumes an adjacency.
   Code-graph extraction is handled by native CodeCrawler ingestion/reindexing.
-- It does not deduplicate against `code_theorem`. They are complementary:
-  `code_theorem` reads Theseus's pre-ingested code knowledge; `compute_code`
-  now routes to Theorem's native code graph first and computes structurally over
-  arbitrary adjacency only when using the fallback path.
+- It does not replace exact local text search. Use the host's native search for
+  literal lookups; use `compute_code` for native code-graph discovery and the
+  structural fallback over an explicit adjacency.
 
 ## References
 

@@ -22,13 +22,9 @@ const DEFAULT_NATIVE_MCP_URL = "https://rustyredcore-theorem-production.up.railw
 
 const VERB_FAMILIES = Object.freeze({
   harness_replay: "run",
-  harness_begin: "run",
   harness_step: "run",
   harness_search: "run",
-  harness_context: "run",
   harness_patch: "run",
-  harness_fork: "run",
-  harness_compare: "run",
   harness_toolkit: "run",
   multihead_run: "run",
   multihead_task: "run",

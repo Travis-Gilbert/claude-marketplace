@@ -18,7 +18,9 @@ User asks about graph structure / similarity / traversal:
 - "Vector search the knowledge graph for X with k=5."
 - "What labels and edge types exist in this graph?"
 
-Not for: code-context investigation (use `code_theorem` or `compute_code`), code ingest/reindex (use `code_ingest`), or harness run state (use `harness_run` / `harness_append_transition`).
+Not for: code-context investigation (use `compute_code`), code ingest/reindex
+(use `code_ingest`), or harness run state (use the typed run query/replay
+surface).
 
 ## Tools owned (theorems-harness MCP, native Rust)
 

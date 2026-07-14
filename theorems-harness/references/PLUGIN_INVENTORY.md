@@ -11,11 +11,13 @@ narrow entrypoints, but they are not separate products.
 | Skill | Public role | Orchestrate role | Compatibility |
 |---|---|---|---|
 | `theorems-harness` | Default adaptive command | Owns observe, route, plan, coordinate, delegate, execute, validate, report, learn | Canonical |
-| `context-refresh` | Public utility command | Calls `orchestrate_refresh` when an injected artifact is stale | Keep available |
+| `practice-system` | Ambient practice graph | Binds planning, execution, verification, review, and run-to-run learning to the active Harness run | Canonical |
 | `harness-coordinate` | Public utility command | Teaches room digest, intent/reflection writes, presence, @mentions-as-interrupts, waits, and handoff protocol | Keep available |
 | `peer-review` | Public and agent-triggerable command | Requests cross-frontier-model review before commit, PR, or launch-ready reporting | Keep available |
 | `research` | Public utility command | Runs fractal expansion, gap-frontier discovery, and code-symbol discovery | Keep available |
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
+| `replay-last-run` | Public audit utility | Selects the latest eligible run, deterministically replays it, and returns typed integrity evidence | Canonical |
+| `writing-engineering` | Public writing utility | Applies Writing Engineering with the 1918 Elements rules integrated into one ruleset and receipt | Canonical |
 | `theorize` | Internal phase skill | Internal `theorize` mode | Keep available |
 | `planning-theorem` | Internal phase skill | Internal `plan` mode | Keep available |
 | `execute` | Compatibility command / internal capability | Bounded implementation loop with validation and rerouting | Keep available |
@@ -74,12 +76,13 @@ Default adaptive product command:
 
 Utility commands:
 
-- `/context-refresh`
 - `/coordinate`
 - `/peer-review`
 - `/research`
 - `/encode`
 - `/compute_code`
+- `/replay-last-run`
+- `/writing-engineering`
 
 Internal capability language:
 
@@ -114,6 +117,7 @@ Internal capability language:
 - `LEARNINGS.md`
 - `ORCHESTRATE_REPORTING.md`
 - `PLAN_TEMPLATE.md`
+- `PLANNED-CAPABILITY-PLUGIN-IDEAS.md`
 - `PRODUCTION_GATES.md`
 - `PROFILES.md`
 - `REFS_AUDIT.md`
@@ -126,9 +130,10 @@ Internal capability language:
 
 ## Compatibility Risks
 
-- Host environments that enumerate all skills may still show the compatibility
-  skills. The default prompt and routing docs make `/harness` the preferred
-  surface without deleting old commands.
+- Host environments may retain an installed-cache copy of removed skills until
+  the plugin is refreshed. Source and generated manifests intentionally omit
+  `show-context`, `context-refresh`, `code_theorem`, and Ponytail; none has an
+  alias.
 - Redis/harness writeback is environment-sensitive. Orchestrate must report
   writeback as proven or deferred per run.
 - The default harness SDK client and tenant-scoped THG product client remain

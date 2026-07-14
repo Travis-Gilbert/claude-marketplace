@@ -1,6 +1,6 @@
 ---
 name: writing-engineering
-description: Use when the user says "writing engineering", "writing mode", "prose mode", "write tight", "write plain", "engineered writing", or invokes /writing-engineering; and as the default register for harness synthesis, reports, handoffs, coordination packets, postmortems, and agent-to-agent messages. Persistent output mode in the same family as /caveman, but craft-compressed instead of grammar-dropped. "normal mode" turns it off.
+description: This skill should be used when the user says "writing engineering", "writing mode", "prose mode", "write tight", "write plain", "engineered writing", or invokes /writing-engineering; and at Harness synthesis, report, handoff, coordination, and postmortem boundaries. It includes the pinned 1918 Elements of Style ruleset inside the existing Writing Engineering pack. "normal mode" turns it off.
 ---
 
 # Writing Engineering
@@ -63,6 +63,9 @@ At synthesis and report boundaries, `prose-check` records:
   em-dash axes
 - code spans and clarity-break spans excluded from scoring
 - content hash of the pack payload
+- ruleset version and pinned Elements of Style provenance
+- complete boundary/project/user/session register override chain
+- labeled EOS-10 through EOS-13 findings and accepted exact-span exceptions
 
 Statuses:
 
@@ -71,13 +74,15 @@ Statuses:
 - `validated` and `canonical`: one model revision pass when hard axes fail;
   hard axes never silently rewrite text.
 
-The pack ships at `shadow` today, so the receipt loop is telemetry only; the
-behavior latch is the persistent directive above and the session-start hook, not
-the receipt status.
+The pack publishes at `advisory`. Imported Elements findings remain soft axes;
+fidelity and em-dash behavior retain their existing hard-axis treatment.
+Disabled or malformed policy emits a refused Writing Engineering receipt rather
+than silently disappearing.
 
 ## Provenance
 
-Distilled from Strunk 1918, Orwell's six rules, AP wire economy conventions,
-Bryson-style redundant-pair rules, Zinsser clutter principles, and
-Theorem-specific harness output pairs. Public-domain and distilled-rule sources
-are used as rules; protected prose samples are stylometry only.
+The pinned 1918 catalog extends this pack rather than creating a parallel
+Elements capability. Read `references/elements-of-style-1918.md` for all 18
+rules, enforcement modes, source hashes, override precedence, and exception
+policy. Other distilled sources remain part of the pre-existing Writing
+Engineering corpus; protected prose samples are stylometry only.
