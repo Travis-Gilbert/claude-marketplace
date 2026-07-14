@@ -184,7 +184,7 @@ treat it as expected.
 | `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path; `provider_search` reaches live GitHub/GitLab code search. |
 | `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
 | `harness_patch` | Propose a patch to the harness belief state. |
-| `plan` | Create and operate durable graph-backed plans: create, add_task/add_tasks, refine, claim, transition, prove, spawn/submit verify, render, import, query, what_changed, analyze, converge, replay. `add_tasks` atomically resumes or bootstraps up to 100 declarative tasks and refuses the full batch on a definition conflict. |
+| `plan` | Create and operate durable graph-backed plans: create, add_task, add_tasks, refine, claim, transition, prove, spawn/submit verify, render, import, query, what_changed, analyze, converge, replay. `add_tasks` atomically resumes or bootstraps up to 100 declarative tasks and refuses the full batch on a definition conflict. |
 | `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
 | `replay_last_run` | Select the latest eligible Harness run or an explicit run, replay its event ledger without side effects, and return typed integrity evidence. |
 | `query_data` / `retrieve_memory` / `turn_start` / `evidence_bundle` | Data API membrane: records query, memory-oriented retrieval, turn-start work-queue packet, and cited handoff bundles. |
