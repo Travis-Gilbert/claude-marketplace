@@ -74,8 +74,10 @@ Statuses:
 - `validated` and `canonical`: one model revision pass when hard axes fail;
   hard axes never silently rewrite text.
 
-The pack publishes at `advisory`. Imported Elements findings remain soft axes;
-fidelity and em-dash behavior retain their existing hard-axis treatment.
+The pack publishes at `advisory` when the current run carries a
+`writing_engineering_status`; the stop hook falls back to `shadow` when that
+run detail is absent. Imported Elements findings remain soft axes; fidelity and
+em-dash behavior retain their existing hard-axis treatment.
 Disabled or malformed policy emits a refused Writing Engineering receipt rather
 than silently disappearing.
 

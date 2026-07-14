@@ -84,7 +84,7 @@ A refused result has `status: "refused"`, a typed `code`, and a human-readable
 
 Report the refusal as evidence. Do not summarize a divergent ledger as a valid
 run. Name the first divergent sequence and field when present, along with the
-`replay_receipt_hash`.
+`replay_receipt_hash` when present.
 
 ## Boundaries
 
