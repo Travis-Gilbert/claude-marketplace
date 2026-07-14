@@ -77,7 +77,8 @@ Use these as abilities inside one run, not as competing products:
   strategy, start with `plan`; allow a bounded execution handoff only when the
   first slice is obvious or requested.
 - Plan-shaped work routes through the durable plan substrate: `plan create` is
-  the canonical act. Execute each task through `claim` -> `patch_proposed` ->
+  the canonical act. Execute each task through `claim` -> `patch_proposed`
+  (with the exact `patch_digest`) ->
   `spawn_verify` -> `submit_verify` -> `prove` -> `done`, with the verify
   sibling assigned to a reviewer distinct from the author and claimant. Plans
   are referenced by id/digest — never re-encoded into coordination records,
@@ -186,7 +187,7 @@ treat it as expected.
 | `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path; `provider_search` reaches live GitHub/GitLab code search. |
 | `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
 | `harness_patch` | Propose a patch to the harness belief state. |
-| `plan` | Create and operate durable graph-backed plans: create, add_task, add_tasks, refine, claim, transition, spawn_verify, submit_verify, prove, render, inspect, migrate_task_ids, import, query, what_changed, analyze, converge, replay. The task happy path is claim -> patch_proposed -> spawn_verify -> submit_verify -> prove -> done; `add_tasks` atomically resumes or bootstraps up to 100 declarative tasks and refuses the full batch on a definition conflict. |
+| `plan` | Create and operate durable graph-backed plans: create, add_task, add_tasks, refine, claim, transition, spawn_verify, submit_verify, prove, render, inspect, migrate_task_ids, import, query, what_changed, analyze, converge, replay. The task happy path is claim -> patch_proposed (with `patch_digest`) -> spawn_verify -> submit_verify -> prove -> done; `add_tasks` atomically resumes or bootstraps up to 100 declarative tasks and refuses the full batch on a definition conflict. |
 | `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
 | `replay_last_run` | Select the latest eligible Harness run or an explicit run, replay its event ledger without side effects, and return typed integrity evidence. |
 | `query_data` / `retrieve_memory` / `turn_start` / `evidence_bundle` | Data API membrane: records query, memory-oriented retrieval, turn-start work-queue packet, and cited handoff bundles. |

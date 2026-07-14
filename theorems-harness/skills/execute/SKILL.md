@@ -98,7 +98,8 @@ Use the canonical `plan` tool for every step; do not fall back to the flat
 
 1. `plan(action: "claim", plan_id, task_id, actor, ...)`
 2. Implement and validate the bounded change while the claim is live.
-3. `plan(action: "patch_proposed", plan_id, task_id, actor, ...)`
+3. Compute the content hash of the exact patch being handed to review, then
+   `plan(action: "patch_proposed", plan_id, task_id, actor, patch_digest, ...)`.
 4. Choose an independent reviewer, then
    `plan(action: "spawn_verify", plan_id, task_id, reviewer)`.
 5. The assigned reviewer attempts at least one falsification mode and submits
@@ -108,10 +109,10 @@ Use the canonical `plan` tool for every step; do not fall back to the flat
    `plan(action: "prove", ...)`. Prefer the declared proof command. For an
    externally executed proof, submit `proof_status`, `proof_receipt_ref`,
    `proof_digest`, and `commands_run`; `commands_run` must include the declared
-   command. `proof_digest` binds the external proof output, not the source
-   patch. The current Plan contract has no patch/base digest field, so do not
-   claim the engine proves patch freshness; rerun and resubmit evidence after
-   any later edit.
+   command. `proof_digest` binds the external proof output; `patch_digest`
+   separately identifies the source patch. The engine binds both proof and
+   verification receipts to the current patch generation and clears them when
+   a newer patch is proposed, so rerun and resubmit evidence after any edit.
 7. `plan(action: "done", plan_id, task_id, actor, ...)`. Treat an R3, R4, or R5
    refusal as evidence that dependencies, independent verification, or proof
    remain incomplete.
