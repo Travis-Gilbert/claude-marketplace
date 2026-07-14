@@ -30,6 +30,19 @@ function policy(options = {}) {
 
 {
   const routePolicy = policy({
+    bindingDataDir: "/tmp/theorem-secret-path",
+    nativeMcpUrl: "https://native.example/mcp",
+  });
+  const selection = routePolicy.select({ verb: "replay_last_run" });
+
+  assert.equal(selection.family, "run");
+  assert.equal(selection.route, ROUTES.NATIVE_MCP);
+  assert.equal(selection.receipt.server, "https://native.example/mcp");
+  assert.equal(selection.receipt.dataDir, null);
+}
+
+{
+  const routePolicy = policy({
     env: { THEOREM_CONTEXT_TENANT_SLUG: "travis-gilbert" },
   });
   const selection = routePolicy.select({ verb: "recall" });
