@@ -17,7 +17,7 @@ dry_run=false
 core_skills=(
     "theorems-harness"
     "harness-coordinate"
-    "context-refresh"
+    "practice-system"
     "compute_code"
     "encode"
     "research"
@@ -29,9 +29,7 @@ full_skills=(
     "ambition"
     "browser-web"
     "claudeai-session-writer"
-    "code_theorem"
     "compute_code"
-    "context-refresh"
     "curiosity"
     "design-engineering"
     "dispatch"
@@ -42,16 +40,31 @@ full_skills=(
     "harness-coordinate"
     "peer-review"
     "planning-theorem"
+    "practice-system"
     "replay-last-run"
     "research"
     "rust-engineering"
     "session-offload"
-    "show-context"
     "surface-idea"
     "symbolic"
     "theorems-harness"
     "theorize"
     "writing-engineering"
+)
+
+# These names were installed by earlier Harness releases but are intentionally
+# absent from 0.9.0. Hosts discover skills by directory, so leaving the old
+# directories behind would keep retired interfaces callable after an upgrade.
+retired_skills=(
+    "code_theorem"
+    "context-refresh"
+    "ponytail"
+    "ponytail-audit"
+    "ponytail-debt"
+    "ponytail-gain"
+    "ponytail-help"
+    "ponytail-review"
+    "show-context"
 )
 
 usage() {
@@ -216,12 +229,34 @@ install_skill() {
     fi
 }
 
+remove_retired_skills() {
+    local target_root=$1
+    local skill target_dir
+
+    [[ -n "$target_root" ]] || fail "skill target directory must not be empty"
+    for skill in "${retired_skills[@]}"; do
+        target_dir="$target_root/$skill"
+        [[ -e "$target_dir" || -L "$target_dir" ]] || continue
+        log "remove retired skill $skill -> $target_dir"
+        if [[ "$dry_run" == false ]]; then
+            rm -rf -- "$target_dir"
+        fi
+    done
+}
+
 if [[ "$install_claude" == false && "$install_codex" == false ]]; then
     fail "no target selected"
 fi
 
 log "Source: $source_ref"
 log "Bundle: $bundle (${#skills[@]} skills)"
+
+if [[ "$install_claude" == true ]]; then
+    remove_retired_skills "$claude_dir"
+fi
+if [[ "$install_codex" == true ]]; then
+    remove_retired_skills "$codex_dir"
+fi
 
 for skill in "${skills[@]}"; do
     if [[ "$install_claude" == true ]]; then

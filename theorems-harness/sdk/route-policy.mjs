@@ -21,14 +21,11 @@ const DEFAULT_TENANT = "default";
 const DEFAULT_NATIVE_MCP_URL = "https://rustyredcore-theorem-production.up.railway.app/mcp";
 
 const VERB_FAMILIES = Object.freeze({
+  replay_last_run: "run",
   harness_replay: "run",
-  harness_begin: "run",
   harness_step: "run",
   harness_search: "run",
-  harness_context: "run",
   harness_patch: "run",
-  harness_fork: "run",
-  harness_compare: "run",
   harness_toolkit: "run",
   multihead_run: "run",
   multihead_task: "run",
@@ -167,6 +164,10 @@ export class HarnessRoutePolicy {
     if (family === "theseus-engine") return ROUTES.THESEUS_ENGINE;
 
     if (verb.startsWith("multihead_")) {
+      return ROUTES.NATIVE_MCP;
+    }
+
+    if (verb === "replay_last_run") {
       return ROUTES.NATIVE_MCP;
     }
 

@@ -1,6 +1,6 @@
 {
   "name": "theorems-harness",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Theorem's Harness: GraphQL-first MCP for adaptive planning, context, coordination, execution, validation, memory, and learning.",
   "author": {
     "name": "Travis Gilbert"
@@ -38,9 +38,9 @@
     "graphql-mcp",
     "crdt-substrate",
     "semantic-overlap",
-    "ponytail",
-    "yagni",
-    "over-engineering-review"
+    "practice-graph",
+    "episodic-memory",
+    "verified-workflow"
   ],
   "mcpServers": "./.mcp.json",
   "skills": "./skills/",
@@ -64,7 +64,7 @@
       "Prefer Harness GraphQL tools when available; use legacy flat tools only for fallback or compatibility diagnosis.",
       "For complex planning handoffs, use /harness mode=plan handoff=spark and keep planner review in-thread.",
       "For multi-head work, announce in the shared room, state footprint, and resolve semantic-overlap tensions there.",
-      "Harness may delegate to observe, theorize, plan, execute, diagnose, coordinate, refresh context, research, validate, and review.",
+      "Harness may delegate to observe, theorize, plan, execute, diagnose, coordinate, research, validate, and review.",
       "Use stable checklist IDs when they reduce risk; do not claim done unless validation supports it.",
       "For UI projects, track Runtime, Product, and Vision completion; compare screenshots and run Do Not Downgrade gates.",
       "For Redis, THG product, RESP/Valkey, TheoremContextClient, or HotGraph changes, consult the relevant specialist.",
@@ -75,7 +75,7 @@
       "Before commit, PR, or launch-ready reports after multi-agent work, run peer-review and reconcile findings.",
       "Treat plugin-qualified Harness tool labels as routing names; use product language unless wire IDs matter.",
       "Use encode for high-signal feedback, solutions, and postmortems; keep secrets out of stored memory.",
-      "Use /ponytail for simplest-solution, YAGNI, over-engineering, deletion, and debt/gain reviews; never cut safety."
+      "Apply the source-attributed practice graph for specification, planning, test-first execution, debugging, review, and evidence-before-completion; use subagents when the host exposes a suitable model and the work decomposes cleanly."
     ]
   }
 }

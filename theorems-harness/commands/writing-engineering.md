@@ -31,5 +31,7 @@ Then:
 
 This is the explicit on-ramp for the same mode the
 `sessionstart-writing-engineering` hook arms by default each session. The
-`prose-check` receipt loop runs at `shadow` (telemetry only), so the behavior
-comes from this directive, not from the receipt status.
+`prose-check` receipt loop runs at `advisory` when the current run carries a
+`writing_engineering_status`; the stop hook falls back to `shadow` when that
+detail is absent. The pinned 1918 Elements ruleset remains inside the same
+Writing Engineering receipt.

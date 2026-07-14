@@ -10,12 +10,15 @@ revise that choice as evidence changes.
 | Surface | Role |
 |---|---|
 | `/harness` / `theorems-harness` | Default opt-in. The agent observes, routes, acts, validates, remembers, and reports through the harness. |
-| `/context-refresh` | Narrow context artifact refresh. |
 | `/coordinate` | Room digest, intent/reflection writes, presence, mentions, waits, and handoffs. |
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
 | `/encode` | Durable feedback, solution, or postmortem write. |
 | `/compute_code` | Native CodeCrawler-backed code discovery, with graph-structural ranking fallback. |
+
+Context compilation is ambient. Inspect or refresh it only through a registered
+typed context capability; the retired `/context-refresh` command is not an
+alias for an unregistered tool.
 
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.

@@ -15,13 +15,66 @@ input=$(theorem_read_stdin)
 sid=$(theorem_session_id "$input")
 cwd=$(theorem_resolve_cwd "$input")
 THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
+run_id=$(theorem_run_id "$sid" || true)
+actor="${THEOREM_ACTOR:-$(theorem_host)}"
+
+emit_refused_receipt() {
+  local code=$1
+  local message=$2
+  local pack_status=${3:-unknown}
+  local refusal receipt_hash payload append_args
+
+  [[ -n "$run_id" ]] || return 0
+  refusal=$(jq -n \
+    --arg status "refused" \
+    --arg code "$code" \
+    --arg message "$message" \
+    '{status: $status, code: $code, message: $message}')
+  receipt_hash=$(printf '%s' "$refusal" | shasum -a 256 | awk '{print $1}')
+  payload=$(jq -n \
+    --arg boundary "chat_stop" \
+    --arg pack_id "skill-pack:writing-engineering-prose-v0.1" \
+    --arg pack_status "$pack_status" \
+    --arg receipt_hash "$receipt_hash" \
+    --argjson refusal "$refusal" \
+    '{
+      event_subtype: "style_receipt_refused",
+      boundary: $boundary,
+      style_receipts: [{
+        boundary: $boundary,
+        pack_id: $pack_id,
+        pack_status: $pack_status,
+        action: "refused",
+        status: "refused",
+        receipt_hash: $receipt_hash,
+        refusal: $refusal
+      }]
+    }')
+  append_args=$(jq -n \
+    --arg run_id "$run_id" \
+    --arg actor "$actor" \
+    --arg key "style_receipt_refused:${run_id}:${code}" \
+    --argjson payload "$payload" \
+    '{
+      run_id: $run_id,
+      event_type: "SESSION.EVENT_RECORDED",
+      actor: $actor,
+      idempotency_key: $key,
+      payload: $payload
+    }')
+  (theorem_native_call "harness_append_transition" "$append_args" >/dev/null 2>&1 || true) &
+}
+
 disabled_file="$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}.writing-engineering-disabled"
 if [[ -f "$disabled_file" ]]; then
-  printf '{"continue":true}\n'
+  emit_refused_receipt \
+    "writing_engineering_disabled" \
+    "Writing Engineering policy is disabled for this session." \
+    "disabled"
+  printf '{"continue":true,"suppressOutput":true}\n'
   exit 0
 fi
 
-run_id=$(theorem_run_id "$sid" || true)
 transcript_path=$(echo "$input" | jq -r '.transcript_path // .transcriptPath // empty')
 if [[ -z "$run_id" || -z "$transcript_path" || ! -f "$transcript_path" ]]; then
   printf '{"continue":true}\n'
@@ -29,7 +82,6 @@ if [[ -z "$run_id" || -z "$transcript_path" || ! -f "$transcript_path" ]]; then
 fi
 
 repo_root=$(theorem_repo_root "$input")
-actor="${THEOREM_ACTOR:-$(theorem_host)}"
 
 find_prose_check() {
   if [[ -n "${THEOREM_PROSE_CHECK_BIN:-}" && -x "${THEOREM_PROSE_CHECK_BIN}" ]]; then
@@ -95,7 +147,11 @@ extract_final_assistant_message() {
 
 prose_check_bin=$(find_prose_check)
 if [[ -z "$prose_check_bin" ]]; then
-  printf '{"continue":true}\n'
+  emit_refused_receipt \
+    "prose_check_unavailable" \
+    "Writing Engineering checker is unavailable." \
+    "unknown"
+  printf '{"continue":true,"suppressOutput":true}\n'
   exit 0
 fi
 
@@ -123,6 +179,10 @@ receipt=$(
 )
 receipt=$(printf '%s' "$receipt" | jq -c 'select(type == "object")' 2>/dev/null || printf '')
 if [[ -z "$receipt" ]]; then
+  emit_refused_receipt \
+    "prose_check_invalid_output" \
+    "Writing Engineering checker returned empty or malformed output." \
+    "$pack_status"
   printf '{"continue":true,"suppressOutput":true}\n'
   exit 0
 fi

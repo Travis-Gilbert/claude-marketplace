@@ -39,13 +39,6 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sessionstart-writing-engineering.sh",
             "timeout": 5,
             "statusMessage": "Arming writing engineering mode"
-          },
-          {
-            "type": "command",
-            "shell": "bash",
-            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/scripts/ponytail-activate.js\" || exit 0",
-            "timeout": 5,
-            "statusMessage": "Loading ponytail mode"
           }
         ]
       }
@@ -94,13 +87,6 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/subagent-suggest.sh",
             "timeout": 10,
             "statusMessage": "Suggesting subagents"
-          },
-          {
-            "type": "command",
-            "shell": "bash",
-            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/scripts/ponytail-mode-tracker.js\" || exit 0",
-            "timeout": 5,
-            "statusMessage": "Tracking ponytail mode"
           }
         ]
       }

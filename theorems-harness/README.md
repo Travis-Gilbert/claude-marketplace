@@ -4,7 +4,9 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 ## What's shared (both hosts read this)
 
-- `skills/theorems-harness/`, `skills/context-refresh/`, `skills/harness-coordinate/`, `skills/peer-review/`, `skills/research/`, `skills/planning-theorem/`, `skills/theorize/`, `skills/execute/`, `skills/encode/`, `skills/replay-last-run/`, `skills/show-context/`, `skills/code_theorem/`, `skills/graph_theorem/`, `skills/compute_code/`, `skills/graph-version/`, `skills/symbolic/`, `skills/dispatch/`, `skills/browser-web/`, `skills/curiosity/`, `skills/session-offload/`, `skills/writing-engineering/`, `skills/design-engineering/`, `skills/rust-engineering/`, `skills/ponytail/`, `skills/ponytail-review/`, `skills/ponytail-audit/`, `skills/ponytail-debt/`, `skills/ponytail-gain/`, `skills/ponytail-help/`
+- Shared skill packages under `skills/`, including the adaptive Harness,
+  planning/execution, practice-system, replay, coordination, memory, code,
+  writing, design, and Rust engineering surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -23,14 +25,14 @@ encode durable lessons only when they are high signal.
 
 | Layer | Role |
 |---|---|
-| Slash commands | Human/agent entrypoints such as `/harness`, `/context-refresh`, `/coordinate`, `/peer-review`, `/research`, `/encode`, `/compute_code`, `/writing-engineering`, `/design-engineering`, `/ponytail`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`, `/ponytail-gain`, and `/ponytail-help` |
+| Slash commands | Human/agent entrypoints such as `/harness`, `/coordinate`, `/peer-review`, `/research`, `/encode`, `/compute_code`, `/replay-last-run`, `/writing-engineering`, and `/design-engineering` |
 | Skills | Behavioral protocols for when and how to use those entrypoints |
 | GraphQL MCP | Single remote HTTP `theorems-harness` server for graph reads, algorithms, code discovery, code ingest, harness run lifecycle, memory, coordination, and skill-pack surfaces |
 | SDK | Typed client helpers used by scripts and compatibility utilities; not a separate user-facing command layer |
 
 The older `theorem-context-sdk/claude-code` plugin is legacy host-adapter
-plumbing. Its manual refresh behavior now belongs under `/context-refresh`;
-grounded agent work belongs to this plugin's `/harness`.
+plumbing. Grounded agent work belongs to this plugin's `/harness`; context
+management stays ambient until a registered typed diagnostic is available.
 
 ## Manifest source and generated host manifests
 
@@ -51,8 +53,8 @@ python3 scripts/sync-plugin-manifests.py theorems-harness
 
 | Path | Purpose |
 |---|---|
-| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a harness run, loads codebase/coordination context, arms writing-engineering, loads Ponytail's default mode, and injects the standing harness frame; UserPromptSubmit writes live coordination intent, prepares context, emits checklist contracts, injects ambition/curiosity directives, suggests subagents, and tracks Ponytail mode changes; PreToolUse enforces the action rail and loads pre-tool context; PostToolUse records tool/context/coordination events; FileChanged refreshes changed-file context; Stop gates checklist completion, records repo hygiene, changed-language, writing, and design receipts, writes a coordination reflection, then Stop and PreCompact flush run/continuity state. Advertised from `.claude-plugin/plugin.json`. |
-| `hooks/codex-hooks.json` | Codex lifecycle hooks. Same turn/tool/stop lifecycle as Claude Code where Codex exposes compatible events, packaged in Codex-native hook schema and resolved via `${PLUGIN_ROOT}`. Codex `PreToolUse` is limited to auto-authorizing the harness MCP namespace so the plugin never gates Bash/Edit/Write/apply_patch calls. `FileChanged` and `PreCompact` remain Claude-only until Codex exposes those events. Codex reads the session-bound `.harness/checklists/<plan-slug>--<plan-id>.json` projection (with `.harness/checklist.json` as a legacy fallback), records actions after tool use, records repo hygiene plus changed-language Stop receipts, records the same writing/design Stop receipts, and loads/tracks Ponytail mode when Node.js is on the hook PATH. |
+| `hooks/hooks.json` | Claude Code lifecycle hooks. SessionStart begins a run, loads codebase/coordination context, arms Writing Engineering, and injects the standing Harness frame. Prompt, tool, file-change, Stop, and PreCompact hooks record context, actions, receipts, checklist evidence, and continuity. |
+| `hooks/codex-hooks.json` | Codex lifecycle hooks. Mirrors the supported turn/tool/Stop lifecycle with `${PLUGIN_ROOT}` paths, session-bound checklist projections, action/context receipts, and Writing/Design Engineering receipts. Codex `PreToolUse` only authorizes the Harness MCP namespace. |
 | `scripts/*.sh` | Shared bash implementations of the hooks. Host-aware, fail-open, pure bash + curl + jq. |
 | `scripts/peer-review-request.sh` | Creates `.theorem/peer-review/` packets and optionally sends a coordination mention for cross-model review before commit or launch reporting. |
 | `.mcp.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json` | Register the single remote HTTP MCP server named `theorems-harness`. There is no bundled Node MCP server or local proxy. |
@@ -70,7 +72,8 @@ through `theorem_native_call`.
 
 ## GraphQL MCP surface
 
-Version `0.6.0` is the GraphQL-first plugin contract. When `tools/list` exposes
+Version `0.9.0` is the capability-complete-mirror plugin contract. When
+`tools/list` exposes
 `graphql_query`, `graphql_mutate`, and `graphql_introspect`, agents should use
 `graphql_introspect` to discover the schema and then read or write memory,
 coordination, jobs, graph, code, and run surfaces through GraphQL. On servers
@@ -95,7 +98,8 @@ routing/display label, not as a different memory system. In user-facing reports,
 prefer the product language ("Harness recall", "Harness encode", "Harness
 memory") and include the wire-level identifier only when it matters.
 
-- Context and runs: `harness_prepare`, `harness_append_transition`, `harness_run`, `harness_kg_status`
+- Context and runs: `harness_prepare`, `harness_append_transition`,
+  `harness_run`, `replay_last_run`, `harness_kg_status`
 - Code: `compute_code` for reads and `code_ingest` for ingest/reindex/session overlay writes. The old `code_search` name is dispatch-compatible only; it is not advertised.
 - Graph and reasoning: `rustyred_thg_graph_*`, `rustyred_thg_algorithm_*`, `rustyred_thg_symbolic_*`, and graph-version tools.
 - Web: `rustyweb_search_acquisition`, `browse_for_me`, `browse_with_me`, `web_consume`
@@ -103,6 +107,11 @@ memory") and include the wire-level identifier only when it matters.
 - Coordination: `coordination_room`, `coordination_intent`, `write_intent`, `read_intents_for_room`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
 - Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`
 - Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
+
+The ambient practice graph is selected through Ensemble and compounds through
+the ordinary run/event/episode path. It does not add a second workflow engine
+or memory store. The 1918 Elements rules extend Writing Engineering in the same
+pack and receipt; there is no parallel Elements mode.
 
 ## Configuration
 
@@ -136,14 +145,6 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | `THEOREM_PEER_REVIEW_BASE` | empty | Optional base ref/commit used by `scripts/peer-review-request.sh` when preparing a peer-review packet. Defaults to upstream merge-base or `HEAD`. |
 | `THEOREM_PEER_REVIEW_ACTOR` | host actor | Optional actor override for peer-review packets. |
 | `THEOREM_PEER_REVIEW_TARGET` | other main agent | Optional target override for peer-review packets. |
-| `PONYTAIL_DEFAULT_MODE` | `full` | Optional Ponytail default mode for each new session: `lite`, `full`, `ultra`, or `off`. Config file fallback is `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). |
-
-Ponytail's lifecycle hooks are tiny Node.js scripts imported from
-`DietrichGebert/ponytail` at commit
-`6da37bfa7d0282522c7785759f4d2f1544015354`. If `node` is not on the
-non-interactive hook PATH, the hooks fail open and the skills/commands still
-remain available. Attribution and license live in
-`references/PONYTAIL-INTEGRATION.md` and `references/PONYTAIL-LICENSE`.
 
 ## Install (Claude Code)
 
@@ -168,8 +169,9 @@ From a local checkout:
 ./scripts/install-harness-skills.sh --bundle full
 ```
 
-The default `core` bundle installs `/harness`, coordination, context refresh,
-code discovery, encode, research, peer review, and execute skills. Use
+The default `core` bundle installs `/harness`, coordination, the ambient
+practice system, code discovery, encode, research, peer review, and execute
+skills. The `full` bundle adds replay, writing, design, and specialist skills. Use
 `--claude-only` or `--codex-only` for one host.
 
 ## Install (Codex)
