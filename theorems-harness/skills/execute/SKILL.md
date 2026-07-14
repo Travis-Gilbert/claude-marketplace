@@ -104,12 +104,14 @@ Use the canonical `plan` tool for every step; do not fall back to the flat
    `plan(action: "spawn_verify", plan_id, task_id, reviewer)`.
 5. The assigned reviewer attempts at least one falsification mode and submits
    at least one command through `plan(action: "submit_verify", ..., actor,
-   attempted_failure_modes, commands_run, defect_found)`.
+   attempted_failure_modes, commands_run, defect_found, patch_digest,
+   patch_generation)`. Use the digest and generation returned by the current
+   Plan projection; never copy them from an older receipt.
 6. After the final edit and accepted review receipt, run
    `plan(action: "prove", ...)`. Prefer the declared proof command. For an
    externally executed proof, submit `proof_status`, `proof_receipt_ref`,
-   `proof_digest`, and `commands_run`; `commands_run` must include the declared
-   command. `proof_digest` binds the external proof output; `patch_digest`
+   `proof_digest`, `commands_run`, `patch_digest`, and `patch_generation`;
+   `commands_run` must include the declared command. `proof_digest` binds the external proof output; `patch_digest`
    separately identifies the source patch. The engine binds both proof and
    verification receipts to the current patch generation and clears them when
    a newer patch is proposed, so rerun and resubmit evidence after any edit.

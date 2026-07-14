@@ -58,8 +58,8 @@ One tool, `plan`, with an `action` argument:
 | `add_task` / `add_tasks` / `refine` | Add one task, atomically bootstrap up to 100 declarative tasks in one graph commit, or split a claimed task into children that retain plan membership. Prefer `add_tasks` for initial or resumed multi-task bootstrap; exact matches are idempotent and any conflict refuses the whole batch. |
 | `claim` | Acquire or release a leased claim on a plan task. |
 | `transition` | Move a task (`patch_proposed`, `verifying`, `done`, `failed`, `pending` also work as direct actions). `patch_proposed` requires the exact `patch_digest`; `verifying` is a compatibility state, not a step in the enforceable verify happy path. Refusals are durable, replay-visible events. |
-| `prove` | Run a task's declared proof command and persist the receipt. External receipts require `proof_status`, `proof_receipt_ref`, `proof_digest`, and `commands_run`; the digest binds proof output, not the patch. |
-| `spawn_verify` / `submit_verify` | Open and submit the adversarial verify sibling for a `patch_proposed` task. The assigned reviewer must differ from the task author and active claimant; submission requires a falsification attempt and command. |
+| `prove` | Run a task's declared proof command and persist the receipt. Receipts require the current `patch_digest` and `patch_generation`; external receipts also require `proof_status`, `proof_receipt_ref`, `proof_digest`, and `commands_run`. |
+| `spawn_verify` / `submit_verify` | Open and submit the adversarial verify sibling for a `patch_proposed` task. The assigned reviewer must differ from the task author and active claimant; submission requires a falsification attempt, command, current `patch_digest`, and current `patch_generation`. |
 | `render` | Emit the deterministic projection (markdown + JSON contract). |
 | `import` | Lift a legacy checklist projection into a Plan. |
 | `query` | Bounded canned queries: `next_actionable`, `frontier`, `blocked_set`, `progress`, `stale_claims`, `verify_debt`. |
@@ -148,7 +148,8 @@ passing receipt. For externally run proofs, preserve `proof_receipt_ref`,
 `proof_digest`, and `commands_run` and ensure the declared command appears in
 that command list. `proof_digest` identifies the proof output; `patch_digest`
 identifies the source patch. The engine binds proof and verification receipts
-to the current patch generation and clears them after a later patch. Refusals land in the replay.
+to the caller-submitted current `patch_generation`, rejects stale receipt
+replay, and clears the bindings after a later patch. Refusals land in the replay.
 A task without a proof command or verify sibling still needs an honest concrete
 deferral reason before the plan closes.
 

@@ -73,6 +73,8 @@ grep -Fq 'reviewer distinct from' "$PLUGIN_ROOT/skills/execute/SKILL.md" \
 
 grep -Fq 'patch_digest' "$PLUGIN_ROOT/skills/execute/SKILL.md" \
   || fail "execute skill does not bind Plan evidence to a patch digest"
+grep -Fq 'patch_generation' "$PLUGIN_ROOT/skills/execute/SKILL.md" \
+  || fail "execute skill does not reject stale Plan receipt generations"
 
 if tr '\n' ' ' < "$PLUGIN_ROOT/skills/execute/SKILL.md" \
   | grep -Eq 'patch_proposed.{0,80}(->|→).{0,80}verifying.{0,80}(->|→).{0,80}done'; then
