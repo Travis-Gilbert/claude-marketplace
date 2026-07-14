@@ -42,6 +42,13 @@ function policy(options = {}) {
 }
 
 {
+  assert.throws(
+    () => policy().select({ verb: "orchestrate_refresh" }),
+    /no route family registered for orchestrate_refresh/,
+  );
+}
+
+{
   const routePolicy = policy({
     env: { THEOREM_CONTEXT_TENANT_SLUG: "travis-gilbert" },
   });

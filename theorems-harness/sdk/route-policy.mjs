@@ -73,7 +73,6 @@ const VERB_FAMILIES = Object.freeze({
   product_bootstrap: "product",
   domain_list: "product",
   domain_install: "product",
-  orchestrate_refresh: "product",
   context_compile: "product",
   instant_kg_reingest: "product",
   code_search: "theseus-engine",
