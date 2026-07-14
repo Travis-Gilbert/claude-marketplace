@@ -23,8 +23,9 @@ for users who explicitly want implementation.
 - Use the Plan substrate's enforceable happy path exactly: `claim` ->
   `patch_proposed` -> `spawn_verify` -> `submit_verify` -> `prove` -> `done`.
   Assign `spawn_verify` to a reviewer distinct from both the task author and
-  the active claimant. Do not insert the compatibility `verifying` transition
-  into this sequence: `spawn_verify` accepts only a `patch_proposed` target.
+  the active claimant. Do not insert the retired `verifying` transition into
+  this sequence: the Plan refuses it, and `spawn_verify` accepts only a
+  `patch_proposed` target.
 - Infer the smallest useful checklist when no plan exists. A one-off fix does
   not need a Plan node.
 - Keep the checklist alive, but right-size it. One tiny fix does not need a
