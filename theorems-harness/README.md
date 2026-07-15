@@ -6,8 +6,8 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 - Shared skill packages under `skills/`, including the adaptive Harness,
   planning/execution, practice-system, replay, coordination, memory, code,
-  stable solvers, programmable WASM, writing, design, and Rust engineering
-  surfaces.
+  identity and bindings, context management, stable solvers, programmable
+  WASM, writing, design, and Rust engineering surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -33,7 +33,8 @@ encode durable lessons only when they are high signal.
 
 The older `theorem-context-sdk/claude-code` plugin is legacy host-adapter
 plumbing. Grounded agent work belongs to this plugin's `/harness`; context
-management stays ambient until a registered typed diagnostic is available.
+management uses the exact status, explanation, prepare, and invalidation
+surfaces documented in `references/CONTEXT_CAPABILITY.md`.
 
 ## Manifest source and generated host manifests
 
@@ -99,8 +100,14 @@ routing/display label, not as a different memory system. In user-facing reports,
 prefer the product language ("Harness recall", "Harness encode", "Harness
 memory") and include the wire-level identifier only when it matters.
 
-- Context and runs: `harness_prepare`, `harness_append_transition`,
-  `harness_run`, `replay_last_run`, `harness_kg_status`
+- Identity and bindings: prefer typed GraphQL `identityBindingStatus` and
+  `identityBindingExplain`. Flat compatibility uses `identity_binding_status`
+  and `identity_binding_explain`; both surfaces accept no identity arguments.
+- Context and runs: prefer GraphQL `contextStatus`, `contextExplain`,
+  `refreshContext`, and `invalidateContext`. Flat compatibility uses
+  `context_status`, `context_explain`, `context_invalidate`, and
+  `harness_prepare`, alongside `harness_append_transition`, `harness_run`,
+  `replay_last_run`, and `harness_kg_status`.
 - Code: prefer GraphQL `codeStatus`, `codeSearch`, `codeContext`,
   `codeExplain`, `codeSpec`, `codeDrift`, `codeFeatures`, and `codeObligations`,
   with `ingestCodebase`/`reindexCodebase` mutations. Flat compatibility uses
@@ -134,6 +141,20 @@ path. Flat tools remain compatibility or flat-only operational paths. Preserve
 `episodeProvenanceContentAddress` with recalled evidence. The exact mapping,
 scope rules, opt-out marker, retro-import recovery contract, and
 practice-promotion firewall live in `references/MEMORY_CAPABILITY.md`.
+
+Identity is resolved from the authenticated admitted session, never from tool
+arguments or configuration alone. Keep principal, project selection, binding,
+active heads, scopes, budget, provenance, conflicts, warnings, and receipt hash
+together. Typed GraphQL and flat MCP parity, refusal rules, and the remaining
+live two-tenant/admission gaps live in `references/IDENTITY_CAPABILITY.md`.
+
+Context is a scoped lease and generation ledger. `harness_prepare` reuses or
+compiles; GraphQL `refreshContext` explicitly compiles; `context_invalidate` or
+`invalidateContext` advances the scoped epoch. Current `PostToolUse` and Claude
+`PreCompact` hooks record evidence or flush memory but do not advance that
+epoch, and Codex has no `PreCompact` hook. See
+`references/CONTEXT_CAPABILITY.md` for disposition reasons, stale/evicted
+generations, and the admitted-session proof boundary.
 
 Canonical verification atomically binds the claim, support/attack evidence,
 lineage, verifier, method, graph version, result, and calibration delta. Admitted
@@ -218,8 +239,8 @@ From a local checkout:
 The default `core` bundle installs `/harness`, coordination, the ambient
 practice system, code discovery, encode, research, peer review, and execute
 skills. The `full` bundle adds replay, solvers, programmable WASM, writing,
-design, and specialist skills. Use `--claude-only` or `--codex-only` for one
-host.
+identity and bindings, context management, design, and specialist skills. Use
+`--claude-only` or `--codex-only` for one host.
 
 ## Install (Codex)
 

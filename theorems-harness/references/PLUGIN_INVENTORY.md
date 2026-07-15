@@ -17,6 +17,8 @@ narrow entrypoints, but they are not separate products.
 | `research` | Public utility command | Runs fractal expansion, gap-frontier discovery, and code-symbol discovery | Keep available |
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
 | `replay-last-run` | Public audit utility | Selects the latest eligible run, deterministically replays it, and returns typed integrity evidence | Canonical |
+| `identity-bindings` | Focused capability workflow | Resolves the admitted principal and typed binding receipt without caller-supplied identity claims | Canonical |
+| `context-management` | Focused capability workflow | Teaches scoped leases, compile/reuse, explicit invalidation, generations, dispositions, and the current hook boundary | Canonical |
 | `solvers` | Focused capability workflow | Discovers, describes, and invokes stable `constraint.check` and `constraint.optimize` affordances and interprets typed proof receipts | Canonical |
 | `programmable-wasm` | Focused capability workflow | Separates installed app exports (`wasm_plugin:<plugin_id>.<export>`) from the Rust-only durable lifecycle | Canonical |
 | `writing-engineering` | Public writing utility | Applies Writing Engineering with the 1918 Elements rules integrated into one ruleset and receipt | Canonical |
@@ -103,6 +105,19 @@ support/attack lineage, graph-version freshness, authenticated actor/binding
 admission, self-reported head/model limits, and the boundary between reliability
 tiers and authorization. See `VERIFICATION_CAPABILITY.md`.
 
+Identity and binding teaching prefers typed GraphQL `identityBindingStatus` and
+`identityBindingExplain`, with flat `identity_binding_status` and
+`identity_binding_explain` for compatibility. The queries accept no identity
+arguments; admitted-session authority, selection rules, receipt fields, and
+the live proof gaps are in `IDENTITY_CAPABILITY.md`.
+
+Context teaching maps GraphQL `contextStatus`, `contextExplain`,
+`refreshContext`, and `invalidateContext` to flat `context_status`,
+`context_explain`, `harness_prepare`, and `context_invalidate`. It preserves
+lease decisions, included/excluded spans, stale/evicted generations, and the
+fact that current PostToolUse/PreCompact hooks do not advance the context
+epoch. See `CONTEXT_CAPABILITY.md`.
+
 Stable solver teaching uses only the dynamic `tool_search` -> `describe` ->
 `invoke` sequence for `constraint.check` and `constraint.optimize`, preserving
 budgets, provider provenance, refusal, and proof eligibility. See
@@ -141,9 +156,11 @@ Internal capability language:
 - `CHECKLIST_MANIFESTO.md`
 - `CODE_CAPABILITY.md`
 - `CONCISE_ACTION.md`
+- `CONTEXT_CAPABILITY.md`
 - `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`
 - `HOST_REPO_OPT_IN.md`
+- `IDENTITY_CAPABILITY.md`
 - `LEARNINGS.md`
 - `MEMORY_CAPABILITY.md`
 - `ORCHESTRATE_REPORTING.md`

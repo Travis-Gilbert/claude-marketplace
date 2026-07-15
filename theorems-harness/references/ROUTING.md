@@ -16,9 +16,22 @@ revise that choice as evidence changes.
 | `/encode` | Durable feedback, solution, or postmortem write through GraphQL `rememberMemory` with outcome metadata, or flat `encode` when needed. |
 | `/compute_code` | GraphQL-first code ingest, discovery, explanation, specification, drift, features, and obligations, with consolidated flat MCP and graph-structural fallbacks. |
 
-Context compilation is ambient. Inspect or refresh it only through a registered
-typed context capability; retired refresh commands are not an
-alias for an unregistered tool.
+Identity is ambient and argument-free. Load `identity-bindings` when principal,
+project selection, actor, binding, active heads, memory/capability scope, or
+budget provenance matters. Prefer typed GraphQL `identityBindingStatus` and
+`identityBindingExplain`; use flat `identity_binding_status` and
+`identity_binding_explain` only for compatibility or diagnosis. Follow
+`IDENTITY_CAPABILITY.md` and do not infer identity from configuration or known
+projects.
+
+Context compilation is ambient, but its control surface is exact. Load
+`context-management`; inspect with GraphQL `contextStatus` / `contextExplain`
+or flat `context_status` / `context_explain`, prepare through `harness_prepare`
+or GraphQL `refreshContext`, and advance the epoch through
+`context_invalidate` or `invalidateContext`. Current PostToolUse and Claude
+PreCompact hooks do not advance the epoch, and Codex has no PreCompact hook.
+Keep that admitted-session boundary visible as documented in
+`CONTEXT_CAPABILITY.md`.
 
 Memory is one tenant/project-bound capability, not separate recall, episode,
 and practice stores. Prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`,
@@ -62,6 +75,7 @@ The router selects abilities, not rigid products:
 - `diagnose`
 - `coordinate`
 - `compile_context`
+- `identity`
 - `research`
 - `validate`
 - `peer_review`
@@ -85,6 +99,8 @@ context refresh, or memory when the work demands it.
      `execute`
    - research, evidence, search, compare, current facts -> `research` or
      `compile_context`
+   - identity, principal, project selection, binding, active heads, scopes, or
+     budget provenance -> `identity`
    - review, PR, diff, audit -> `peer_review`
    - remember, encode, postmortem, lesson -> `remember`
 4. If no concrete action emerges, run a short `theorize` pass, choose a default,

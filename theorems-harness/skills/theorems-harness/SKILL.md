@@ -60,7 +60,8 @@ Use these as abilities inside one run, not as competing products:
 | `diagnose` | A failure, regression, flaky test, deploy issue, or runtime surprise appears. |
 | `coordinate` | Claude Code, Codex, Claude.ai, or another agent may overlap the work. |
 | `ambition` | A build, plan, or handoff could be underscoped relative to what was asked. |
-| `compile_context` | The prompt/context is stale, broad, or missing the source surface. |
+| `identity` | The admitted principal, project selection, actor, binding, active heads, scopes, budget, or provenance must be inspected. |
+| `compile_context` | Context status, lease reuse, explicit compilation/invalidation, generations, or span disposition matters. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
 | `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
 | `programmable_wasm` | An installed app export must be invoked, or a durable WASM lifecycle boundary must be inspected honestly. |
@@ -87,6 +88,16 @@ Use these as abilities inside one run, not as competing products:
   messages, or reflections.
 - If the user asks for research, evidence, graph search, code discovery, or
   current external facts, start with `research` or `compile_context`.
+- If identity, project selection, actor, binding, active heads, scopes, or
+  budget authority matters, load `identity-bindings`. Use only
+  `identityBindingStatus` / `identityBindingExplain` or the flat
+  `identity_binding_status` / `identity_binding_explain` compatibility tools;
+  pass no identity arguments.
+- If context state, lease, compilation, invalidation, generation, or span
+  disposition matters, load `context-management`. Use `harness_prepare` or
+  GraphQL `refreshContext` for preparation and `context_invalidate` or
+  `invalidateContext` for an epoch advance. Do not claim the current hooks
+  perform that invalidation.
 - If the user asks for satisfiability, constraint checking, or bounded pack
   optimization, load `solvers` and use only `constraint.check` or
   `constraint.optimize` through the dynamic gateway.
@@ -147,6 +158,15 @@ should prefer `/harness` plus adaptive routing.
 Load these only when the task enters the family; they are the progressive
 detail layer rather than another global tool catalog:
 
+- `identity-bindings` plus `references/IDENTITY_CAPABILITY.md` for typed
+  `identityBindingStatus` / `identityBindingExplain`, flat
+  `identity_binding_status` / `identity_binding_explain`, and the admitted
+  identity/binding proof boundary.
+- `context-management` plus `references/CONTEXT_CAPABILITY.md` for
+  `contextStatus`, `contextExplain`, `refreshContext`, `invalidateContext`,
+  flat `context_status`, `context_explain`, `context_invalidate`, and
+  `harness_prepare`, including the incomplete PostToolUse/PreCompact epoch
+  wiring.
 - `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
   `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
   `constraint.optimize`.

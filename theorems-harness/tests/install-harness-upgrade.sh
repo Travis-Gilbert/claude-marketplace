@@ -38,6 +38,8 @@ for target_root in "$claude_dir" "$codex_dir"; do
   for skill in "${retired_skills[@]}"; do
     [[ ! -e "$target_root/$skill" ]]
   done
+  [[ -f "$target_root/context-management/SKILL.md" ]]
+  [[ -f "$target_root/identity-bindings/SKILL.md" ]]
   [[ -f "$target_root/practice-system/SKILL.md" ]]
   [[ -f "$target_root/programmable-wasm/SKILL.md" ]]
   [[ -f "$target_root/replay-last-run/SKILL.md" ]]

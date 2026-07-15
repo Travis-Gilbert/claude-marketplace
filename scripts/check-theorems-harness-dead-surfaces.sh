@@ -95,6 +95,8 @@ fi
 "$PLUGIN_ROOT/tests/install-harness-upgrade.sh"
 node "$PLUGIN_ROOT/sdk/route-policy.test.mjs"
 "$PLUGIN_ROOT/tests/code-capability-surface.sh"
+"$PLUGIN_ROOT/tests/context-capability-surface.sh"
+"$PLUGIN_ROOT/tests/identity-capability-surface.sh"
 "$PLUGIN_ROOT/tests/memory-capability-surface.sh"
 "$PLUGIN_ROOT/tests/solver-capability-surface.sh"
 "$PLUGIN_ROOT/tests/programmable-wasm-capability-surface.sh"
