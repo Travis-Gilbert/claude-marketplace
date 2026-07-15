@@ -29,6 +29,9 @@ Not a fit:
 - Reading already-asserted facts: use `rustyred_thg_graph_query`.
 - Structural ranking of code or nodes: use the algorithm tools / `compute_code`.
 - Free-text similarity: use `rustyred_thg_vector_search`.
+- Reading a persisted head/model/domain/claim-type verification track record:
+  use GraphQL `calibrationReliability` or flat `calibration_reliability` under
+  the canonical contract in `references/VERIFICATION_CAPABILITY.md`.
 
 ## Tools
 
@@ -104,3 +107,6 @@ not), with the cost/information tradeoff in one line.
 - Feeding rules that reference predicates absent from the graph and then
   reporting an empty derivation as a negative result without checking the
   predicates exist.
+- Substituting symbolic source reliability for canonical verifier calibration.
+  The symbolic tool scores an arbitrary graph source; `calibrationReliability`
+  reads the outcome ledger for one exact head/model/domain/claim-type cell.

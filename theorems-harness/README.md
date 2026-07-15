@@ -116,6 +116,11 @@ memory") and include the wire-level identifier only when it matters.
 - Memory and learning: `recall`, `remember`, `relate`, `observe`, `self_note`,
   `self_revise`, `self_archive`, `self_recall_archive`, `encode`, `forget`,
   `handoff`, `retrieve_memory`, `turn_start`, and `evidence_bundle`
+- Verification and calibration: prefer GraphQL `recordVerification`,
+  `verificationReceipt`, `verificationExplain`, `verificationAllocate`, and
+  `calibrationReliability`. Flat compatibility uses `verification_record`,
+  `verification_receipt`, `verification_explain`, `verification_allocate`, and
+  `calibration_reliability`.
 
 For memory, prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`, nested
 `links`/`related`, and the `rememberMemory`, `reviseMemory`, `forgetMemory`, and
@@ -125,6 +130,13 @@ path. Flat tools remain compatibility or flat-only operational paths. Preserve
 `episodeProvenanceContentAddress` with recalled evidence. The exact mapping,
 scope rules, opt-out marker, retro-import recovery contract, and
 practice-promotion firewall live in `references/MEMORY_CAPABILITY.md`.
+
+Canonical verification atomically binds the claim, support/attack evidence,
+lineage, verifier, method, graph version, result, and calibration delta. Admitted
+tenant, actor, and binding claims are authoritative; head/model labels remain
+reported metadata, confidence is not proof, and calibration admission tier is
+not authentication. The exact mapping and reporting rules live in
+`references/VERIFICATION_CAPABILITY.md`.
 
 The ambient practice graph is selected through Ensemble and compounds through
 the ordinary run/event/episode path. It does not add a second workflow engine

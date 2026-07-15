@@ -95,6 +95,12 @@ keeps actor-memory/Data API tools, retro-import, opt-out, deduplication,
 reentrancy, and practice promotion in their real boundaries. See
 `MEMORY_CAPABILITY.md`.
 
+Canonical verification teaching covers GraphQL and flat receipt record, read,
+explain, allocation, and calibration reliability surfaces. It preserves
+support/attack lineage, graph-version freshness, authenticated actor/binding
+admission, self-reported head/model limits, and the boundary between reliability
+tiers and authorization. See `VERIFICATION_CAPABILITY.md`.
+
 Internal capability language:
 
 - `theorize` -> `/harness mode=theorize`
@@ -140,6 +146,7 @@ Internal capability language:
 - `SDK_DATABASE_HARNESS.md`
 - `SETTINGS.md`
 - `UI_VISUAL_PROJECT_GATES.md`
+- `VERIFICATION_CAPABILITY.md`
 
 ## Compatibility Risks
 

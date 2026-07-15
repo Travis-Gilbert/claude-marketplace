@@ -236,6 +236,24 @@ deduplication on replay/import, and keep a raw episode out of canonical practice
 until a same-scope clustered-outcome promotion receipt exists. See
 `references/MEMORY_CAPABILITY.md` for the exact mapping and guardrails.
 
+### Preferred GraphQL verification fields
+
+Use GraphQL mutation `recordVerification` to atomically record a canonical
+verification receipt, its support/attack evidence lineage, and any calibration
+delta. Use GraphQL queries `verificationReceipt`, `verificationExplain`,
+`verificationAllocate`, and `calibrationReliability` to read, explain, allocate,
+and inspect reliability. Flat compatibility uses `verification_record`,
+`verification_receipt`, `verification_explain`, `verification_allocate`, and
+`calibration_reliability`.
+
+Admitted tenant, actor, and binding claims are authoritative. Authenticated
+actor and binding overwrite nested verifier self-report; head/model strings
+remain reported runtime metadata, not signed identity. Confidence alone is not
+proof, `inconclusive` does not update calibration, and a reliability
+`admission_tier` is evidence weighting rather than authentication or action
+authorization. See `references/VERIFICATION_CAPABILITY.md` for the exact input,
+replay, graph-version, allocation, and reporting contract.
+
 ## Slim MCP Launch Aliases
 
 The local `theorems-harness` MCP server also exposes launch-facing aliases:

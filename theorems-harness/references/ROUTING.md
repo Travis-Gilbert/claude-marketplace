@@ -28,6 +28,14 @@ Keep `rankSignals` and episode provenance attached to retrieved context. Apply
 the opt-out, deduplication, retro-import reentrancy, and evidence-clustered
 practice-promotion rules in `MEMORY_CAPABILITY.md`.
 
+Verification and calibration are one canonical receipt capability. Prefer
+GraphQL `recordVerification`, `verificationReceipt`, `verificationExplain`,
+`verificationAllocate`, and `calibrationReliability`; use the corresponding
+flat `verification_*` and `calibration_reliability` tools only for compatibility
+or diagnosis. Route verifier confidence through the evidence and graph-version
+contract in `VERIFICATION_CAPABILITY.md`; do not treat self-reported head/model
+labels or a reliability admission tier as identity authority or proof.
+
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.
 
