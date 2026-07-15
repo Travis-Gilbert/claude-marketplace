@@ -26,12 +26,14 @@ core_skills=(
 )
 
 full_skills=(
+    "agent-contracts"
     "agent-interop"
     "ambition"
     "browser-web"
     "claudeai-session-writer"
     "compute_code"
     "commitments-policy"
+    "coordination-operations"
     "context-management"
     "curiosity"
     "data-reconstruction"
@@ -40,6 +42,7 @@ full_skills=(
     "encode"
     "execute"
     "graph-version"
+    "graph-storage"
     "graph-lisp"
     "graph_theorem"
     "harness-coordinate"

@@ -10,7 +10,7 @@ revise that choice as evidence changes.
 | Surface | Role |
 |---|---|
 | `/harness` / `theorems-harness` | Default opt-in. The agent observes, routes, acts, validates, remembers, and reports through the harness. |
-| `/coordinate` | Room digest, intent/reflection writes, presence, mentions, waits, and handoffs. |
+| `/coordinate` | Room digest, footprint intents, typed coordination records, mentions, and durable stream checkpoints. |
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
 | `/encode` | Durable feedback, solution, or postmortem write through GraphQL `rememberMemory` with outcome metadata, or flat `encode` when needed. |
@@ -108,6 +108,29 @@ Programmable WASM has no remotely callable lifecycle yet. Load
 durable publish/promote/inspect/selected-invoke/rollback kernel remains a Rust
 API, as documented in `PROGRAMMABLE_WASM_CAPABILITY.md`.
 
+Coordination, jobs, work graphs, session dispatch, or service health route to
+`coordination-operations`. Prefer the typed coordination and job fields where
+available; use real flat `coordination_record`, `stream_*`, `job_*`,
+`multihead_*`, and `spawn_session` surfaces only for their distinct state
+machines. HTTP `/health`, `/ready`, and `/version` are observations, not task
+tools. Follow `COORDINATION_OPERATIONS_CAPABILITY.md`; a footprint is not a
+lock, job submission is not execution, and accepted dispatch is not completion.
+
+Graph reads, algorithms, designated indexes, administrative mutations, graph
+versions, MCP resources, or storage readiness route to `graph-storage`.
+Prefer typed GraphQL reads and mutations, then use the exact advertised flat
+compatibility or flat-only name. Follow `GRAPH_STORAGE_CAPABILITY.md`; graph
+version repositories are caller-carried values, bulk writes can be partial,
+and RedCore, DocTree, AOF, AgentFS, and raw object-store internals are not
+agent-callable merely because the Rust substrate implements them.
+
+When work depends on result shape, refusal classification, pagination,
+truncation, retry, or proof, add `agent-contracts`. Discover the active catalog
+with MCP `initialize`, `tools/list`, and `graphql_introspect`, then apply the
+family contract in `AGENT_CONTRACTS_CAPABILITY.md`. Inspect protocol errors,
+tool-level `isError`, and GraphQL `{data, errors}` separately; never exchange a
+Data cursor, stream cursor, or `tool_result_fetch` byte offset.
+
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.
 
@@ -128,6 +151,9 @@ The router selects abilities, not rigid products:
 - `data_reconstruction`
 - `learning_evolution`
 - `agent_interop`
+- `coordination_operations`
+- `graph_storage`
+- `agent_contracts`
 - `research`
 - `verified_cognition`
 - `validate`
@@ -164,6 +190,12 @@ context refresh, or memory when the work demands it.
      or evolve boundaries -> `learning_evolution`
    - Composed agent, head call, A2A, ACP, or provider-head request ->
      `agent_interop`
+   - Coordination room, stream, job, work graph, session dispatch, readiness,
+     or tool catalog status -> `coordination_operations`
+   - Graph read, algorithm, search, designation, bulk mutation, graph version,
+     MCP graph resource, index spine, or storage mode -> `graph_storage`
+   - Error, refusal, cursor, pagination, truncation, retry, idempotency, receipt,
+     or proof envelope -> `agent_contracts`
    - Verified decision, consistency, reconstruction, repair, or voice boundary
      -> `verified_cognition`
    - review, PR, diff, audit -> `peer_review`

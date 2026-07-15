@@ -49,11 +49,40 @@ for (const retiredVerb of [
   "harness_context",
   "harness_fork",
   "harness_compare",
+  "coordination_reflection",
+  "coordination_decision",
+  "coordination_tension",
+  "mentions_wait",
+  "spawn_handoff_session",
 ]) {
   assert.throws(
     () => policy().select({ verb: retiredVerb }),
     new RegExp(`no route family registered for ${retiredVerb}`),
   );
+}
+
+for (const coordinationVerb of [
+  "coordination_record",
+  "read_messages_for_room",
+  "read_records_for_room",
+  "stream_publish",
+  "stream_read",
+  "stream_ack",
+  "stream_subscribe",
+  "stream_unsubscribe",
+  "job_submit",
+  "job_list",
+  "job_note",
+  "job_archive",
+  "spawn_session",
+]) {
+  const selection = policy({ nativeMcpUrl: "https://native.example/mcp" }).select({
+    verb: coordinationVerb,
+  });
+
+  assert.equal(selection.family, "coordination");
+  assert.equal(selection.route, ROUTES.NATIVE_MCP);
+  assert.equal(selection.receipt.server, "https://native.example/mcp");
 }
 
 {

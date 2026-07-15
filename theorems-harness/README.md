@@ -8,8 +8,9 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
   planning/execution, practice-system, replay, coordination, memory, code,
   identity and bindings, context management, commitments/policy, Graph Lisp,
   Data/reconstruction, stable solvers, verified cognition composition,
-  learning/evolution, agent interoperability, programmable WASM, writing,
-  design, and Rust engineering surfaces.
+  learning/evolution, agent interoperability, coordination/operations,
+  graph/storage, agent contracts, programmable WASM, writing, design, and Rust
+  engineering surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -118,15 +119,17 @@ memory") and include the wire-level identifier only when it matters.
   `code_extract_features`, and `code_implementation_obligations` for compiler
   reads. The old `code_search` name is dispatch-compatible only; it is not
   advertised.
-- Graph and reasoning: `rustyred_thg_graph_*`, `rustyred_thg_algorithm_*`, `rustyred_thg_symbolic_*`, and graph-version tools.
+- Graph and storage: prefer typed GraphQL graph/search/algorithm fields. Flat
+  query/explain/relational/index diagnostics and graph-version value operations
+  remain; administrative designation/bulk tools require admin admission.
 - Web: `rustyweb_search_acquisition`, `browse_for_me`, `browse_with_me`, `web_consume`
 - Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
-- Coordination: GraphQL `writeCoordinationRecord` and `recordClaim`, plus
-  `coordination_room`, `coordination_record`, `coordination_intent`,
-  `write_intent`, `read_intents_for_room`, `coordination_reflection`,
-  `coordination_decision`, `coordination_tension`, `commitment_retract`,
-  `commitment_supersede`, `commitment_check`, `coordinate`, `mentions`,
-  `mentions_wait`, `presence`, `subscribe`, and `continuity_pack`.
+- Coordination and jobs: prefer typed GraphQL room, task-reference-room,
+  stream, work-graph, and job fields. Flat compatibility includes
+  `coordination_room`, `coordination_intent`, `coordination_record`,
+  `read_intents_for_room`, `coordinate`, `mentions`, `presence`, `stream_*`,
+  and `job_*`. Decision/tension/reflection are `coordination_record` types, not
+  dedicated tools.
 - Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`
 - Memory and learning: `recall`, `remember`, `relate`, `observe`, `self_note`,
   `self_revise`, `self_archive`, `self_recall_archive`, `encode`, `forget`,
@@ -231,6 +234,22 @@ invocation are Rust-only; and ACP is exposed at `/v1/commonplace/acp/ws` when a
 server-local agent binary is available. Configured providers are not live proof
 without invocation receipts. See `references/AGENT_INTEROP_CAPABILITY.md`.
 
+Coordination and operations are several state machines, not one agent task
+endpoint. Load `coordination-operations` for exact room/record semantics,
+durable stream cursors and ack, derived job state, work graphs, GitHub Actions
+session dispatch, and `/health` / `/ready` / `/version` proof boundaries. See
+`references/COORDINATION_OPERATIONS_CAPABILITY.md`.
+
+Graph access uses typed GraphQL where covered, flat-only query/version
+diagnostics where needed, and a separate administrative mutation gate. Load
+`graph-storage`; graph-version repositories are caller-carried values and
+checkout is not a live rollback. See `references/GRAPH_STORAGE_CAPABILITY.md`.
+
+MCP, GraphQL, HTTP, and domain results do not yet share one envelope. Load
+`agent-contracts` when interpreting error layers, family cursors, result-fetch
+byte offsets, retries, idempotency, or receipts. See
+`references/AGENT_CONTRACTS_CAPABILITY.md`.
+
 Programmable WASM keeps its durable Rust registry lifecycle separate from the
 callable exports of installed app manifests. Agents may use the dynamic gateway
 for installed exports, but the publish/promote/inspect/selected-invoke/rollback
@@ -308,9 +327,10 @@ From a local checkout:
 The default `core` bundle installs `/harness`, coordination, the ambient
 practice system, code discovery, encode, research, peer review, and execute
 skills. The `full` bundle adds replay, Data/reconstruction,
-learning/evolution, agent interoperability, solvers, verified cognition
-composition, programmable WASM, writing, identity and bindings, context
-management, commitments/policy, Graph Lisp, design, and specialist skills. Use
+learning/evolution, agent interoperability, coordination/operations,
+graph/storage, agent contracts, solvers, verified cognition composition,
+programmable WASM, writing, identity and bindings, context management,
+commitments/policy, Graph Lisp, design, and specialist skills. Use
 `--claude-only` or `--codex-only` for one host.
 
 ## Install (Codex)
@@ -333,7 +353,8 @@ plugin_hooks = true
 - GraphQL code fields for ingest/reindex/status/search/context/explain/spec,
   drift, features, and obligations; flat hooks use `compute_code` and
   `code_ingest` where needed
-- `coordination_room`, `coordination_intent`, `coordination_record`, `coordination_reflection`, `coordinate`, `mentions`, `presence`
+- `coordination_room`, `coordination_intent`, `coordination_record`,
+  `coordinate`, `mentions`, `presence`, and durable stream operations
 - `remember`, `recall`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 
 Failure semantics: every hook fails open. Backend 500, missing jq, malformed responses all result in `{"continue": true}` so the user's session never breaks because the plugin had a bad day.

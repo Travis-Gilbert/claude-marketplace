@@ -12,7 +12,7 @@ narrow entrypoints, but they are not separate products.
 |---|---|---|---|
 | `theorems-harness` | Default adaptive command | Owns observe, route, plan, coordinate, delegate, execute, validate, report, learn | Canonical |
 | `practice-system` | Ambient practice graph | Binds planning, execution, verification, review, and run-to-run learning to the active Harness run | Canonical |
-| `harness-coordinate` | Public utility command | Teaches room digest, intent/reflection writes, presence, @mentions-as-interrupts, waits, and handoff protocol | Keep available |
+| `harness-coordinate` | Public utility command | Teaches room/intent reads, typed coordination records, presence, mentions, durable streams, and handoff without retired aliases | Keep available |
 | `peer-review` | Public and agent-triggerable command | Requests cross-frontier-model review before commit, PR, or launch-ready reporting | Keep available |
 | `research` | Public utility command | Runs fractal expansion, gap-frontier discovery, and code-symbol discovery | Keep available |
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
@@ -24,6 +24,9 @@ narrow entrypoints, but they are not separate products.
 | `data-reconstruction` | Focused capability workflow | Routes typed Data and instant-KG reads, flat-only DATAWAVE/resolve, and receipt- and obligation-preserving source reconstruction | Canonical |
 | `learning-evolution` | Focused capability workflow | Separates callable outcome, memory, practice, and programmable-graph validation seams from Rust-only GEPA, ReasoningBank, and theorem-evolve lifecycle code | Canonical |
 | `agent-interop` | Focused capability workflow | Teaches admitted composed-agent turns, durable Head Calls, Rust-only A2A, and the server ACP WebSocket with live-provider boundaries | Canonical |
+| `coordination-operations` | Focused capability workflow | Separates rooms/records, task-reference rooms, streams, jobs, work graphs, session dispatch, and service operations | Canonical |
+| `graph-storage` | Focused capability workflow | Routes GraphQL and flat graph primitives, admin mutation receipts, caller-carried versions, resources, and storage readiness | Canonical |
+| `agent-contracts` | Focused capability workflow | Interprets MCP/GraphQL error layers, family-specific pagination, result fetching, idempotency, budgets, and receipts | Canonical |
 | `solvers` | Focused capability workflow | Discovers, describes, and invokes stable `constraint.check` and `constraint.optimize` affordances and interprets typed proof receipts | Canonical |
 | `programmable-wasm` | Focused capability workflow | Separates installed app exports (`wasm_plugin:<plugin_id>.<export>`) from the Rust-only durable lifecycle | Canonical |
 | `verified-cognition` | Focused composition workflow | Separates proposals from proof while composing only real solver, reconstruction, verification, and Plan surfaces; names absent workflow orchestration honestly | Canonical |
@@ -157,6 +160,21 @@ routes. A2A card registration/invocation remains crate-level, and configured
 providers are not described as live without invocation receipts. See
 `AGENT_INTEROP_CAPABILITY.md`.
 
+Coordination and operations teaching maps typed and flat room/record/stream
+surfaces, GraphQL-only task-reference rooms, derived-state jobs, work graphs,
+GitHub Actions session dispatch, and HTTP readiness/discovery without treating
+them as one task API. See `COORDINATION_OPERATIONS_CAPABILITY.md`.
+
+Graph and storage teaching prefers typed GraphQL where covered, preserves
+flat-only query/version diagnostics, enforces administrative mutation receipts,
+and distinguishes caller-carried graph repositories from unprojected storage
+internals. See `GRAPH_STORAGE_CAPABILITY.md`.
+
+Agent-contract teaching preserves the actual JSON-RPC, tool-level, GraphQL, and
+domain error layers; separate cursors and fetch offsets; and family-specific
+receipts instead of inventing a universal envelope. See
+`AGENT_CONTRACTS_CAPABILITY.md`.
+
 Stable solver teaching uses only the dynamic `tool_search` -> `describe` ->
 `invoke` sequence for `constraint.check` and `constraint.optimize`, preserving
 budgets, provider provenance, refusal, and proof eligibility. See
@@ -197,6 +215,7 @@ Internal capability language:
 ## References
 
 - `ARTIFACT_SCHEMAS.md`
+- `AGENT_CONTRACTS_CAPABILITY.md`
 - `AGENT_INTEROP_CAPABILITY.md`
 - `BRIEF_TEMPLATE.md`
 - `CHECKLIST_MANIFESTO.md`
@@ -204,10 +223,12 @@ Internal capability language:
 - `COMMITMENTS_POLICY_CAPABILITY.md`
 - `CONCISE_ACTION.md`
 - `CONTEXT_CAPABILITY.md`
+- `COORDINATION_OPERATIONS_CAPABILITY.md`
 - `DATA_RECONSTRUCTION_CAPABILITY.md`
 - `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`
 - `GRAPH_LISP_CAPABILITY.md`
+- `GRAPH_STORAGE_CAPABILITY.md`
 - `HOST_REPO_OPT_IN.md`
 - `IDENTITY_CAPABILITY.md`
 - `LEARNINGS.md`

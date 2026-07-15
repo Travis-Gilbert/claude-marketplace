@@ -48,7 +48,6 @@ for field in "${graphql_fields[@]}"; do
   require_text "$PLUGIN_ROOT/README.md" "$field"
   require_text "$PLUGIN_ROOT/commands/compute_code.md" "$field"
   require_text "$PLUGIN_ROOT/skills/compute_code/SKILL.md" "$field"
-  require_text "$PLUGIN_ROOT/skills/theorems-harness/SKILL.md" "$field"
 done
 
 for tool in "${flat_tools[@]}"; do
@@ -56,8 +55,10 @@ for tool in "${flat_tools[@]}"; do
   require_text "$PLUGIN_ROOT/README.md" "$tool"
   require_text "$PLUGIN_ROOT/commands/compute_code.md" "$tool"
   require_text "$PLUGIN_ROOT/skills/compute_code/SKILL.md" "$tool"
-  require_text "$PLUGIN_ROOT/skills/theorems-harness/SKILL.md" "$tool"
 done
+
+require_text "$PLUGIN_ROOT/skills/theorems-harness/SKILL.md" 'CODE_CAPABILITY.md'
+require_text "$PLUGIN_ROOT/skills/theorems-harness/SKILL.md" '/compute_code'
 
 teaching_surfaces=(
   "$PLUGIN_ROOT/README.md"

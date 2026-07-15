@@ -67,6 +67,9 @@ Use these as abilities inside one run, not as competing products:
 | `data_reconstruction` | Typed Data or instant-KG reads, flat DATAWAVE/resolve, or receipt- and obligation-preserving source reconstruction is needed. |
 | `learning_evolution` | Outcomes, calibration, GEPA, ReasoningBank, or evolution work must distinguish callable evidence seams from Rust-only lifecycle APIs. |
 | `agent_interop` | A composed-agent turn, durable Head Call, A2A boundary, ACP session, or live provider claim must be routed exactly. |
+| `coordination_operations` | Rooms, durable streams, dispatch jobs, work graphs, spawning, or service readiness must use their real distinct state machines. |
+| `graph_storage` | Graph reads, algorithms, administrative mutations, version values, or storage readiness must be routed without exposing internals. |
+| `agent_contracts` | A result crosses MCP, GraphQL, HTTP, pagination, truncation, error, idempotency, or receipt boundaries. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
 | `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
 | `verified_cognition` | A decision, consistency, reconstruction, or repair claim must compose proposals and real proof surfaces without inventing a workflow. |
@@ -126,6 +129,16 @@ Use these as abilities inside one run, not as competing products:
   `stream_publish` / `stream_read` / `stream_ack` where callable, preserve
   admitted identity and budget, and require receipts before claiming live
   execution.
+- If coordination, durable streams, jobs, work graphs, spawning, readiness, or
+  catalog identity matters, load `coordination-operations`. Keep room records,
+  stream cursors, job state, and operational probes distinct.
+- If graph reads, algorithms, administrative graph writes, graph versions, or
+  storage mode matters, load `graph-storage`. Prefer typed GraphQL, preserve
+  mutation receipts, and keep caller-carried snapshots separate from live
+  graph state.
+- If an error, page, truncated result, retry, budget, or receipt crosses
+  capability families, load `agent-contracts`. Inspect every protocol/domain
+  layer and never synthesize a universal result contract.
 - If the user asks for satisfiability, constraint checking, or bounded pack
   optimization, load `solvers` and use only `constraint.check` or
   `constraint.optimize` through the dynamic gateway.
@@ -167,7 +180,8 @@ final claims.
 
 - Primary command: `/harness`
 - Utility commands:
-  - `/coordinate` for cross-agent presence, mentions, waits, and handoffs.
+  - `/coordinate` for cross-agent presence, mentions, stream checkpoints, and
+    handoffs.
   - `/peer-review` for cross-frontier-model diff review before commit, PR, or
     launch-ready reporting.
   - `/encode` for feedback, solution, or postmortem memory.
@@ -219,6 +233,16 @@ detail layer rather than another global tool catalog:
 - `agent-interop` plus `references/AGENT_INTEROP_CAPABILITY.md` for flat
   `composed_agent_run`, durable `head_call` streams, Head Call and ACP
   WebSockets, and the unprojected A2A client/runtime membrane.
+- `coordination-operations` plus
+  `references/COORDINATION_OPERATIONS_CAPABILITY.md` for rooms, typed records,
+  streams, task-reference rooms, jobs, work graphs, session dispatch, and
+  operational discovery/readiness.
+- `graph-storage` plus `references/GRAPH_STORAGE_CAPABILITY.md` for GraphQL and
+  flat reads, algorithms, admin mutations, caller-carried graph versions,
+  resources, and the unprojected storage internals.
+- `agent-contracts` plus `references/AGENT_CONTRACTS_CAPABILITY.md` for the real
+  MCP/GraphQL error layers, family-specific pagination, result fetching,
+  idempotency, and receipt interpretation.
 - `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
   `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
   `constraint.optimize`.
@@ -272,38 +296,11 @@ a result set looks like it lost similarity ordering or dropped recall, that is
 the symptom of a ranker being treated as a filter. Report it as a bug, do not
 treat it as expected.
 
-## Tools Owned (Theorem MCP, Form-B Short Names)
+## Capability details
 
-| Verb | Purpose |
-|---|---|
-| `harness_route` | Choose the next capability mix for a task or checkpoint. |
-| `harness_toolkit` | Compile or inspect the task toolkit from task type, permissions, and scope before a run. |
-| `harness_step` | Record a step inside an open run. |
-| `harness_search` | Search inside the run, recording tool-call and observation steps. |
-| `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
-| `compute_code` | Flat fallback for CodeCrawler status, search, context, explain, recognize, explore, and provider search operations. Context is an operation, not a separate flat tool. |
-| `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
-| `code_compile_spec` | Flat fallback for compiling a revision-bound code specification. |
-| `code_spec_drift` | Flat fallback for comparing a specification with the current indexed revision. |
-| `code_extract_features` | Flat fallback for extracting revision-bound code connection features. |
-| `code_implementation_obligations` | Flat fallback for compiling evidence-backed implementation obligations and unknowns. |
-| `harness_patch` | Propose a patch to the harness belief state. |
-| `plan` | Create and operate durable graph-backed plans: create, add_task, add_tasks, refine, claim, transition, spawn_verify, submit_verify, prove, render, inspect, migrate_task_ids, import, query, what_changed, analyze, converge, replay. The task happy path is claim -> patch_proposed (with `patch_digest`) -> spawn_verify -> submit_verify -> prove -> done; `add_tasks` atomically resumes or bootstraps up to 100 declarative tasks and refuses the full batch on a definition conflict. |
-| `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
-| `replay_last_run` | Select the latest eligible Harness run or an explicit run, replay its event ledger without side effects, and return typed integrity evidence. |
-| `query_data` / `retrieve_memory` / `turn_start` / `evidence_bundle` | Data API membrane: records query, memory-oriented retrieval, turn-start work-queue packet, and cited handoff bundles. |
-| `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
-| `encode` | Record feedback, solutions, and postmortems with outcome metadata. |
-| `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
-| `coordination_intent` | Announce what you are doing, which files or concepts your hands are on, and any semantic overlap peers should read. |
-| `coordination_reflection` | Write turn-end working memory for the next agent. |
-| `coordination_decision` | Preserve a room-scoped choice with rationale. |
-| `coordination_tension` | Surface a structural disagreement without blocking peer work. |
-| `coordinate` | Append a coordination message and queue actor mentions. |
-| `mentions` / `mentions_wait` | Load, consume, or briefly wait for pending mentions. |
-| `presence` | Refresh, end, or read short-TTL actor presence. |
-| `subscribe` | Register an actor as polling a mention channel. |
-| `continuity_pack` | Persist graph-backed and disk-mirrored continuity before compaction or handoff. |
+Do not maintain a second global tool catalog here. Discover the active MCP and
+GraphQL contracts, then load the focused family skill/reference selected above.
+The generated compact compatibility projection belongs to HCM-031.
 
 ### Preferred GraphQL code fields
 
@@ -351,43 +348,29 @@ proof, `inconclusive` does not update calibration, and a reliability
 authorization. See `references/VERIFICATION_CAPABILITY.md` for the exact input,
 replay, graph-version, allocation, and reporting contract.
 
-## Slim MCP Launch Aliases
-
-The local `theorems-harness` MCP server also exposes launch-facing aliases:
-
-| Tool | Purpose |
-|---|---|
-| `context_compile` | Compile an explicit Context Theorem artifact for a task. |
-| `code_ingest` | Ingest or refresh a repository in the CodeCrawler/code graph. |
-| `fractal_expand` | Launch-facing alias for `harness_fractal_expansion`. |
-| `instant_kg_status` | Check tenant-scoped Instant KG readiness through THG product. |
-| `instant_kg_reingest` | Enqueue fresh Instant KG capture/reingest. |
-| `provenance_trace` | Read reasoning trace provenance. |
-| `recall` / `remember` / `relate` | Preview, save, and connect reusable context. |
-| `domain_list` / `domain_install` | List and install Context Theorem domain packs. |
-
 ## Coordination Rule
 
 The heads are one agent with several hands (`codex`, `claude-code`, `claude-ai`),
 not separate workers dividing the repo. Coordinate as a unit:
 
-- Read the room (intents, reflections, open tensions) and drain mentions at
-  turn-start, before planning edits.
+- Read the room, intents, durable records, and mentions at turn-start, before
+  planning edits.
 - Write `coordination_intent` as an announcement: what you are doing now, which
   files or concepts your hands are on, and where semantic overlap may exist. It
   is not a lock.
 - When your work semantically overlaps another head's work, build on its edit
   rather than yielding or waiting; held, not clobbered. A real disagreement is a
-  `coordination_tension` you record and work around, not a silent overwrite.
+  `coordination_record` with `record_type: "tension"` that you work around,
+  not a silent overwrite.
 - Send `coordinate` with an `@actor` only for a block or a fork that changes the
   next action. Ordinary progress goes in your announcement summary.
-- Close your announcement at turn-end and write a `coordination_reflection` (and
-  a `coordination_decision` for any architectural choice) so the next head
-  resumes cold.
+- Close your announcement at turn-end. Use `coordination_record` with
+  `record_type: "reflection"` for the handoff and `record_type: "decision"`
+  for a load-bearing choice.
 
 The durable model is room digest plus interrupt mailbox: membership, intents,
-reflections, decisions, tensions, events, continuity packs, and pending mentions
-survive head sleep; short-TTL presence only says who is fresh. Full protocol:
+typed records, events, stream cursors, and pending mentions survive head sleep;
+short-TTL presence only says who is fresh. Full protocol:
 `skills/harness-coordinate/SKILL.md`.
 
 Ambient coordination now flows over per-room streams. Subscribe once with

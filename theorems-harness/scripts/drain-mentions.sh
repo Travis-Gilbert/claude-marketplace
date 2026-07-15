@@ -63,6 +63,6 @@ lines=$(printf '%s' "$relevant" | jq -r '
         + ((.message // "") | gsub("\\s+"; " ") | .[0:180])
 ' 2>/dev/null || printf '')
 
-reason=$(printf 'Before this turn ends you have %s unconsumed wake/ask/block mention(s) addressed to %s:\n%s\n\nDrain them now: call the mentions tool with consume=true, read the room (recall / coordination_context), then act on what arrived or fork it as a coordination_tension. A live head consumes its wakes at its own checkpoint instead of being re-spawned. If after reading nothing needs action, stopping again is fine.' "$count" "$actor" "$lines")
+reason=$(printf 'Before this turn ends you have %s unconsumed wake/ask/block mention(s) addressed to %s:\n%s\n\nDrain them now: call the mentions tool with consume=true, read the room (recall / coordination_context), then act on what arrived or record a structural fork through coordination_record with record_type=tension. A live head consumes its wakes at its own checkpoint instead of being re-spawned. If after reading nothing needs action, stopping again is fine.' "$count" "$actor" "$lines")
 
 jq -n --arg r "$reason" '{decision: "block", reason: $r}'
