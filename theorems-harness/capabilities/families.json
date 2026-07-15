@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "plugin_version": "0.9.2",
+  "plugin_version": "0.9.3",
   "registries": {
     "dynamic": [
       "constraint.check",
@@ -226,6 +226,25 @@
       ]
     },
     {
+      "id": "commitments",
+      "title": "Commitments, claims, constitution, and policy",
+      "skill": "commitments-policy",
+      "reference": "COMMITMENTS_POLICY_CAPABILITY.md",
+      "summary": "Canonical typed commitments preserve identity-bound slots and immutable lifecycle history; coordination decisions and still-unprojected typed claims remain distinct.",
+      "entries": [
+        {"surface": "graphql", "name": "Mutation.affirmTypedCommitment", "guidance": "identity-bound typed affirmation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.affirmTypedCommitment"},
+        {"surface": "graphql", "name": "Mutation.supersedeTypedCommitment", "guidance": "history-preserving typed supersession", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.supersedeTypedCommitment"},
+        {"surface": "graphql", "name": "Mutation.retractTypedCommitment", "guidance": "evidence-bound typed retraction", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.retractTypedCommitment"},
+        {"surface": "graphql", "name": "Query.typedCommitment", "guidance": "same-owner typed record read", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.typedCommitment"},
+        {"surface": "graphql", "name": "Query.explainTypedCommitment", "guidance": "typed lifecycle explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.explainTypedCommitment"},
+        {"surface": "flat_mcp", "name": "typed_commitment_affirm", "guidance": "flat typed affirmation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:typed_commitment_affirm"},
+        {"surface": "flat_mcp", "name": "typed_commitment_supersede", "guidance": "flat typed supersession", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:typed_commitment_supersede"},
+        {"surface": "flat_mcp", "name": "typed_commitment_retract", "guidance": "flat typed retraction", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:typed_commitment_retract"},
+        {"surface": "flat_mcp", "name": "typed_commitment_read", "guidance": "flat typed record read", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:typed_commitment_read"},
+        {"surface": "flat_mcp", "name": "typed_commitment_explain", "guidance": "flat typed explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:typed_commitment_explain"}
+      ]
+    },
+    {
       "id": "verification",
       "title": "Verification and calibration",
       "skill": "symbolic",
@@ -235,7 +254,16 @@
         {"surface": "graphql", "name": "Mutation.recordVerification", "guidance": "preferred typed write", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.recordVerification"},
         {"surface": "graphql", "name": "Query.verificationReceipt", "guidance": "preferred typed receipt", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.verificationReceipt"},
         {"surface": "graphql", "name": "Query.verificationExplain", "guidance": "preferred typed evidence explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.verificationExplain"},
+        {"surface": "graphql", "name": "Mutation.dischargeVerificationObligation", "guidance": "typed obligation discharge or refusal", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.dischargeVerificationObligation"},
+        {"surface": "graphql", "name": "Mutation.recordVerificationFrontier", "guidance": "typed bounded frontier publication", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.recordVerificationFrontier"},
+        {"surface": "graphql", "name": "Query.verificationFrontierReceipt", "guidance": "typed exact frontier receipt", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.verificationFrontierReceipt"},
         {"surface": "flat_mcp", "name": "verification_record", "guidance": "flat compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_record"},
+        {"surface": "flat_mcp", "name": "verification_receipt", "guidance": "flat exact receipt read", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_receipt"},
+        {"surface": "flat_mcp", "name": "verification_explain", "guidance": "flat evidence explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_explain"},
+        {"surface": "flat_mcp", "name": "verification_allocate", "guidance": "flat verification-budget ranking", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_allocate"},
+        {"surface": "flat_mcp", "name": "verification_obligation_discharge", "guidance": "flat obligation discharge or refusal", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_obligation_discharge"},
+        {"surface": "flat_mcp", "name": "verification_frontier_record", "guidance": "flat bounded frontier publication", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_frontier_record"},
+        {"surface": "flat_mcp", "name": "verification_frontier_receipt", "guidance": "flat exact frontier receipt", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_frontier_receipt"},
         {"surface": "flat_mcp", "name": "calibration_reliability", "guidance": "flat reliability diagnostic", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:calibration_reliability"}
       ]
     },

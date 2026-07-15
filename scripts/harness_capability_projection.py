@@ -46,8 +46,9 @@ def graphql_root_fields(sdl: str) -> list[str]:
 
 
 def compact_source_catalog(catalog: dict[str, Any], source_label: str) -> dict[str, Any]:
-    if catalog.get("schema_version") != 1:
-        raise ProjectionError("source capability catalog schema_version must be 1")
+    schema_version = catalog.get("schema_version")
+    if schema_version not in {1, 2}:
+        raise ProjectionError("source capability catalog schema_version must be 1 or 2")
     flat = catalog.get("flat_mcp")
     sdl = catalog.get("graphql_sdl")
     if not isinstance(flat, list) or not flat:
@@ -68,7 +69,7 @@ def compact_source_catalog(catalog: dict[str, Any], source_label: str) -> dict[s
         raise ProjectionError("source capability catalog server_version must be non-empty")
     if not graphql:
         raise ProjectionError("source capability catalog has no GraphQL root fields")
-    return {
+    compact = {
         "schema_version": 1,
         "server_version": server_version,
         "source": source_label,
@@ -76,6 +77,134 @@ def compact_source_catalog(catalog: dict[str, Any], source_label: str) -> dict[s
         "flat_mcp": sorted(names),
         "graphql": graphql,
     }
+    if schema_version == 2:
+        registry = catalog.get("capability_registry")
+        if not isinstance(registry, dict) or registry.get("schema_version") != 3:
+            raise ProjectionError(
+                "source capability catalog capability_registry must be a schema-v3 snapshot"
+            )
+        records = registry.get("records")
+        if not isinstance(records, list):
+            raise ProjectionError("source capability registry records must be an array")
+        canonical_ids: set[str] = set()
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get("descriptor"), dict):
+                raise ProjectionError("source capability registry records must contain descriptors")
+            canonical_id = record["descriptor"].get("canonical_id")
+            if not isinstance(canonical_id, str) or not canonical_id or canonical_id in canonical_ids:
+                raise ProjectionError(
+                    "source capability registry contains an invalid or duplicate canonical_id"
+                )
+            canonical_ids.add(canonical_id)
+        compact["registry_complete"] = catalog.get("registry_complete") is True
+        compact["capability_registry"] = registry
+    return compact
+
+
+def apply_registry_projection(spec: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    """Replace registered operation rows with source-owned descriptor teaching.
+
+    Families without canonical descriptors remain as an explicit transitional
+    overlay until the source catalog declares itself complete.
+    """
+    registry = source.get("capability_registry")
+    if registry is None:
+        return spec
+    projected = copy.deepcopy(spec)
+    families = projected.get("families")
+    if not isinstance(families, list):
+        raise ProjectionError("capability families must be an array")
+    by_reference = {
+        f"references/{family.get('reference')}": family
+        for family in families
+        if isinstance(family, dict) and isinstance(family.get("reference"), str)
+    }
+    canonical_keys: set[tuple[str, str]] = set()
+    for record in registry.get("records", []):
+        descriptor = record["descriptor"]
+        projections = descriptor.get("projections")
+        teaching = descriptor.get("teaching")
+        if not isinstance(projections, dict) or not isinstance(teaching, dict):
+            raise ProjectionError(
+                f"canonical descriptor {descriptor.get('canonical_id')} lacks projections or teaching"
+            )
+        plugin_refs = required_projection_references(projections.get("plugin"))
+        matched = {by_reference[ref]["id"] for ref in plugin_refs if ref in by_reference}
+        if len(matched) != 1:
+            raise ProjectionError(
+                f"canonical descriptor {descriptor.get('canonical_id')} must map to exactly one plugin family"
+            )
+        family = next(item for item in families if item.get("id") in matched)
+        for surface in ("graphql", "flat_mcp", "dynamic"):
+            for name in required_projection_references(projections.get(surface)):
+                key = (surface, name)
+                if key in canonical_keys:
+                    raise ProjectionError(f"duplicate canonical projection: {surface}:{name}")
+                canonical_keys.add(key)
+                schema = (
+                    f"graphql_introspect:{name}"
+                    if surface == "graphql"
+                    else f"tools/list:{name}"
+                    if surface == "flat_mcp"
+                    else f"capability_registry:{descriptor['canonical_id']}"
+                )
+                entry = {
+                    "surface": surface,
+                    "name": name,
+                    "guidance": required_teaching_text(teaching, "guidance", descriptor),
+                    "maturity": required_teaching_text(teaching, "maturity", descriptor),
+                    "live_status": required_teaching_text(teaching, "live_status", descriptor),
+                    "schema": schema,
+                    "canonical_id": descriptor["canonical_id"],
+                    "descriptor_address": record.get("content_address"),
+                }
+                existing = next(
+                    (
+                        item
+                        for item in family.get("entries", [])
+                        if item.get("surface") == surface and item.get("name") == name
+                    ),
+                    None,
+                )
+                if existing is None:
+                    family.setdefault("entries", []).append(entry)
+                else:
+                    existing.clear()
+                    existing.update(entry)
+    if source.get("registry_complete"):
+        manual = [
+            f"{entry.get('surface')}:{entry.get('name')}"
+            for family in families
+            for entry in family.get("entries", [])
+            if (entry.get("surface"), entry.get("name")) not in canonical_keys
+        ]
+        if manual:
+            raise ProjectionError(
+                "complete canonical registry leaves handwritten projections: " + ", ".join(sorted(manual))
+            )
+    return projected
+
+
+def required_projection_references(value: Any) -> list[str]:
+    if not isinstance(value, dict) or value.get("intent") != "required":
+        return []
+    references = value.get("references")
+    if not isinstance(references, list) or any(
+        not isinstance(reference, str) or not reference for reference in references
+    ):
+        raise ProjectionError("canonical required projection has invalid references")
+    return references
+
+
+def required_teaching_text(
+    teaching: dict[str, Any], field: str, descriptor: dict[str, Any]
+) -> str:
+    value = teaching.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ProjectionError(
+            f"canonical descriptor {descriptor.get('canonical_id')} has invalid teaching.{field}"
+        )
+    return value
 
 
 def plugin_versions(plugin_root: Path) -> dict[str, str]:
@@ -97,7 +226,7 @@ def plugin_versions(plugin_root: Path) -> dict[str, str]:
 def load_inputs(plugin_root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     spec = read_json(plugin_root / "capabilities" / "families.json")
     source = read_json(plugin_root / "capabilities" / "source-surfaces.json")
-    return spec, source
+    return apply_registry_projection(spec, source), source
 
 
 def apply_fixture(spec: dict[str, Any], fixture: dict[str, Any]) -> dict[str, Any]:
@@ -280,9 +409,16 @@ def family_catalog_text(
     rows = []
     for entry in sorted(family["entries"], key=lambda item: (item["surface"], item["name"])):
         live = entry.get("live_status", "source-registered")
+        canonical = entry.get("canonical_id")
+        address = entry.get("descriptor_address")
+        descriptor = (
+            f"`{canonical}`<br>`{address}`"
+            if isinstance(canonical, str) and isinstance(address, str)
+            else "—"
+        )
         rows.append(
             f"| `{entry['name']}` | {entry['surface']} | {entry['guidance']} | "
-            f"{entry['maturity']} | {live} | `{entry['schema']}` |"
+            f"{entry['maturity']} | {live} | `{entry['schema']}` | {descriptor} |"
         )
     return "\n".join(
         [
@@ -294,8 +430,8 @@ def family_catalog_text(
             f"Plugin version: `{plugin_version}`. Source server version: `{source.get('server_version')}`.",
             f"Source catalog SHA-256: `{source.get('source_catalog_sha256')}`.",
             "",
-            "| Capability | Surface | Guidance | Maturity | Live status | Schema/source |",
-            "|---|---|---|---|---|---|",
+            "| Capability | Surface | Guidance | Maturity | Live status | Schema/source | Canonical descriptor |",
+            "|---|---|---|---|---|---|---|",
             *rows,
             "",
             f"Behavioral contract: `references/{family['reference']}` in the source plugin.",

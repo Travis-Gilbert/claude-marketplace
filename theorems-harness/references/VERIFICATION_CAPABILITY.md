@@ -15,8 +15,11 @@ unavailable or when flat compatibility is the surface under test.
 | Record | Mutation `recordVerification` | `verification_record` | Atomically records the canonical receipt, evidence edges, and any calibration delta. |
 | Read | Query `verificationReceipt` | `verification_receipt` | Reads the tenant-scoped receipt and calibration delta by `receiptId` / `receipt_id`. |
 | Explain | Query `verificationExplain` | `verification_explain` | Projects support, attack, lineage, verifier, method, graph anchor, and calibration effect. |
-| Allocate | Query `verificationAllocate` | `verification_allocate` | Ranks candidates by stakes, unreliability, uncertainty, and miscalibration. |
-| Reliability | Query `calibrationReliability` | `calibration_reliability` | Reads the persisted posterior, Brier score, observations, and admission tier for one source cell. |
+| Allocate | None | `verification_allocate` | Ranks candidates by stakes, unreliability, uncertainty, and miscalibration. |
+| Reliability | None | `calibration_reliability` | Reads the persisted posterior, Brier score, observations, and admission tier for one source cell. |
+| Discharge obligation | Mutation `dischargeVerificationObligation` | `verification_obligation_discharge` | Persists an applied or refused discharge receipt binding the obligation, admitted verifier, constraints, evidence, and graph version. |
+| Record frontier | Mutation `recordVerificationFrontier` | `verification_frontier_record` | Persists one bounded, order-invariant frontier over unresolved obligations and verification receipts. |
+| Read frontier | Query `verificationFrontierReceipt` | `verification_frontier_receipt` | Reads the exact tenant-scoped frontier receipt by content-addressed id. |
 
 On GraphQL-default servers, covered flat tools may be absent from `tools/list`.
 That is not a missing capability. Introspect the GraphQL schema before falling
@@ -43,6 +46,13 @@ The first write refuses a stale `graph_version`. Exact content-addressed replay
 returns the existing receipt with `idempotent_replay=true`; it does not apply a
 second calibration update. `inconclusive` persists verification evidence but
 does not change calibration.
+
+Obligation discharge never infers success from confidence alone. A discharge
+must satisfy its declared verifier, method, evidence, confidence, and graph
+constraints; an unmet constraint persists a typed refusal rather than
+disappearing. Frontier writes accept bounded obligation and receipt-reference
+sets, preserve simultaneous support and attack evidence, and return the same
+receipt for order-equivalent replay.
 
 ## Admission and self-report rules
 

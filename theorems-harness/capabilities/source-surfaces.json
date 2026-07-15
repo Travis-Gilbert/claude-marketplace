@@ -1,4 +1,1348 @@
 {
+  "capability_registry": {
+    "records": [
+      {
+        "content_address": "sha256:a0d4b34f6eedbd87593fa4517b45d064d6c59730daaafc4d81813e2c7d7c4d15",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "graph:write"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.commitment.affirm",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-012--commitments-claims-constitution-and-policy"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "write"
+          },
+          "family": "identity-commitments",
+          "lineage_refs": [
+            "plan:HCM-012"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::TypedCommitmentInput",
+            "kind": "mutation",
+            "mutates_state": true,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::TypedCommitmentLifecycleReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "commitment"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "commitment lifecycle access requires explicit admitted invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "typed commitments use explicit identity-bound transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "typed_commitment_affirm"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Mutation.affirmTypedCommitment"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/COMMITMENTS_POLICY_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm012_commitment_descriptors -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm012_typed_commitment -- --nocapture"
+            ],
+            "receipt_type": "TypedCommitmentLifecycleReceipt"
+          },
+          "teaching": {
+            "family_summary": "Identity-bound typed commitments with immutable lifecycle receipts and explanations.",
+            "family_title": "Identity commitments",
+            "guidance": "Invoke `typed_commitment_affirm` through an admitted identity binding and retain its lifecycle receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:af11716ccff5468083805f351bee03888e0e660a106661bdd4a2cc0cb7c5c0e2",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.commitment.explain",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-012--commitments-claims-constitution-and-policy"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "identity-commitments",
+          "lineage_refs": [
+            "plan:HCM-012"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rustfn://theorem_harness_runtime::explain_typed_commitment",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::TypedCommitmentExplanation"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "commitment"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "commitment lifecycle access requires explicit admitted invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "typed commitments use explicit identity-bound transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "typed_commitment_explain"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.explainTypedCommitment"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/COMMITMENTS_POLICY_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm012_commitment_descriptors -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm012_typed_commitment -- --nocapture"
+            ],
+            "receipt_type": "TypedCommitmentExplanation"
+          },
+          "teaching": {
+            "family_summary": "Identity-bound typed commitments with immutable lifecycle receipts and explanations.",
+            "family_title": "Identity commitments",
+            "guidance": "Invoke `typed_commitment_explain` through an admitted identity binding and retain its lifecycle receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:5520daf06271f3c4a9112668a433dc9cae4b9eca934a517ea73521a2bf24eeba",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.commitment.read",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-012--commitments-claims-constitution-and-policy"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "identity-commitments",
+          "lineage_refs": [
+            "plan:HCM-012"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rustfn://theorem_harness_runtime::load_typed_commitment",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::TypedCommitmentRecord"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "commitment"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "commitment lifecycle access requires explicit admitted invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "typed commitments use explicit identity-bound transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "typed_commitment_read"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.typedCommitment"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/COMMITMENTS_POLICY_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm012_commitment_descriptors -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm012_typed_commitment -- --nocapture"
+            ],
+            "receipt_type": "TypedCommitmentRecord"
+          },
+          "teaching": {
+            "family_summary": "Identity-bound typed commitments with immutable lifecycle receipts and explanations.",
+            "family_title": "Identity commitments",
+            "guidance": "Invoke `typed_commitment_read` through an admitted identity binding and retain its lifecycle receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:a1eb31739e2208cb75b24ad1bc16653a61627f6899502bedc04d6c443ea0293d",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "graph:write"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.commitment.retract",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-012--commitments-claims-constitution-and-policy"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "write"
+          },
+          "family": "identity-commitments",
+          "lineage_refs": [
+            "plan:HCM-012"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rustfn://theorem_harness_runtime::retract_typed_commitment",
+            "kind": "mutation",
+            "mutates_state": true,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::TypedCommitmentLifecycleReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "commitment"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "commitment lifecycle access requires explicit admitted invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "typed commitments use explicit identity-bound transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "typed_commitment_retract"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Mutation.retractTypedCommitment"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/COMMITMENTS_POLICY_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm012_commitment_descriptors -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm012_typed_commitment -- --nocapture"
+            ],
+            "receipt_type": "TypedCommitmentLifecycleReceipt"
+          },
+          "teaching": {
+            "family_summary": "Identity-bound typed commitments with immutable lifecycle receipts and explanations.",
+            "family_title": "Identity commitments",
+            "guidance": "Invoke `typed_commitment_retract` through an admitted identity binding and retain its lifecycle receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:b4094a3828850a6f73cb070b1a22a504deedf1163cf6abdc023a233cb5eb13be",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "graph:write"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.commitment.supersede",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-012--commitments-claims-constitution-and-policy"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "write"
+          },
+          "family": "identity-commitments",
+          "lineage_refs": [
+            "plan:HCM-012"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rustfn://theorem_harness_runtime::supersede_typed_commitment",
+            "kind": "mutation",
+            "mutates_state": true,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::TypedCommitmentLifecycleReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "commitment"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "commitment lifecycle access requires explicit admitted invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "typed commitments use explicit identity-bound transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "typed_commitment_supersede"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Mutation.supersedeTypedCommitment"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/COMMITMENTS_POLICY_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm012_commitment_descriptors -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm012_typed_commitment -- --nocapture"
+            ],
+            "receipt_type": "TypedCommitmentLifecycleReceipt"
+          },
+          "teaching": {
+            "family_summary": "Identity-bound typed commitments with immutable lifecycle receipts and explanations.",
+            "family_title": "Identity commitments",
+            "guidance": "Invoke `typed_commitment_supersede` through an admitted identity binding and retain its lifecycle receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:dbcadb49d308f8d2b3ba7fdf720c967b898b5ba7c72fcc334f5f9d46018c071e",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "harness:read"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.practice.close_receipt",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/site/reference/mcp-tools.md#practice-and-compound-learning"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "practices",
+          "lineage_refs": [
+            "plan:HCM-032",
+            "rustfn://theorem_harness_runtime::compound_close_receipt"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::PracticeDiagnosticScope",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": false,
+            "output_schema_ref": "rust://theorem_harness_runtime::CompoundRunCloseReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "practice_diagnostics"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "diagnostics require an explicit admitted run"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "bounded direct diagnostics are atomic tools"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "practice_close_receipt"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.practiceCloseReceipt"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/LEARNINGS.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p rustyred-thg-mcp --lib graphql::practice",
+              "cargo test -p theorem-harness-runtime practice_diagnostics"
+            ],
+            "receipt_type": "CompoundRunCloseReceipt"
+          },
+          "teaching": {
+            "family_summary": "Source-attributed practices promote only after evidence-clustered outcomes and remain ambient across planning and execution.",
+            "family_title": "Practices",
+            "guidance": "Use to read the exact Compound close-harvest receipt for one admitted run.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "beta"
+          },
+          "teaching_refs": [
+            "references/LEARNINGS.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:751bbfbec45c0f77bdb98a06be7ed2265aad8c991ddfeca63af06b476b3c7a7d",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "harness:read"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.practice.explain",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/site/reference/mcp-tools.md#practice-and-compound-learning"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "practices",
+          "lineage_refs": [
+            "plan:HCM-032",
+            "rustfn://theorem_harness_runtime::practice_explain"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::PracticeDiagnosticScope",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": false,
+            "output_schema_ref": "rust://theorem_harness_runtime::PracticeExplanation"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "practice_diagnostics"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "diagnostics require an explicit admitted run"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "bounded direct diagnostics are atomic tools"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "practice_explain"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.practiceExplain"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/LEARNINGS.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p rustyred-thg-mcp --lib graphql::practice",
+              "cargo test -p theorem-harness-runtime practice_diagnostics"
+            ],
+            "receipt_type": "PracticeExplanation"
+          },
+          "teaching": {
+            "family_summary": "Source-attributed practices promote only after evidence-clustered outcomes and remain ambient across planning and execution.",
+            "family_title": "Practices",
+            "guidance": "Use to inspect exact selection, outcome, learning-state, episode, and Compound receipt lineage for one run.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "beta"
+          },
+          "teaching_refs": [
+            "references/LEARNINGS.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:7ed3d20e8c3011c1d641a9102937f8f6aeef1598ca614d52760aa9ba53de8f5d",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "harness:read"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.practice.status",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/site/reference/mcp-tools.md#practice-and-compound-learning"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "practices",
+          "lineage_refs": [
+            "plan:HCM-032",
+            "rustfn://theorem_harness_runtime::practice_status"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::PracticeDiagnosticScope",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": false,
+            "output_schema_ref": "rust://theorem_harness_runtime::PracticeStatus"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "practice_diagnostics"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "diagnostics require an explicit admitted run"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "bounded direct diagnostics are atomic tools"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "practice_status"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.practiceStatus"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/LEARNINGS.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p rustyred-thg-mcp --lib graphql::practice",
+              "cargo test -p theorem-harness-runtime practice_diagnostics"
+            ],
+            "receipt_type": "PracticeStatus"
+          },
+          "teaching": {
+            "family_summary": "Source-attributed practices promote only after evidence-clustered outcomes and remain ambient across planning and execution.",
+            "family_title": "Practices",
+            "guidance": "Use to verify that a run's practice and episode harvest completed without loading full receipts.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "beta"
+          },
+          "teaching_refs": [
+            "references/LEARNINGS.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:6c20d2f1a39182b65cf993eff300c44b8cd85f3be841d71cbe6da65f08fd1b3f",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "verification:read"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.verification.explain",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-014--verification-calibration-and-epistemic-receipts"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "not_required",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "verification-calibration",
+          "lineage_refs": [
+            "plan:HCM-014"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered",
+            "plugin-taught"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::VerificationReceiptLookup",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::RuntimeVerificationExplanation"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "calibration"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "verification publication and reads require explicit invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "verification uses explicit typed transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "verification_explain"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.verificationExplain"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/VERIFICATION_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm014_epistemic_frontier -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm014_verification -- --nocapture"
+            ],
+            "receipt_type": "RuntimeVerificationExplanation"
+          },
+          "teaching": {
+            "family_summary": "Evidence-backed verification obligations, receipts, and bounded epistemic frontiers.",
+            "family_title": "Verification and calibration",
+            "guidance": "Invoke `verification_explain` with an admitted principal and preserve its typed verification receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [
+            "references/VERIFICATION_CAPABILITY.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:999c439b67ccfde8ff0342fd2dc52521381102267b1bb337c74f32a8a8c743b9",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "verification:read"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.verification.frontier_receipt",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-014--verification-calibration-and-epistemic-receipts"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "not_required",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "verification-calibration",
+          "lineage_refs": [
+            "plan:HCM-014"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered",
+            "plugin-taught"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::EpistemicFrontierReceiptLookup",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::RuntimeEpistemicFrontierReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "calibration"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "verification publication and reads require explicit invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "verification uses explicit typed transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "verification_frontier_receipt"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.verificationFrontierReceipt"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/VERIFICATION_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm014_epistemic_frontier -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm014_verification -- --nocapture"
+            ],
+            "receipt_type": "RuntimeEpistemicFrontierReceipt"
+          },
+          "teaching": {
+            "family_summary": "Evidence-backed verification obligations, receipts, and bounded epistemic frontiers.",
+            "family_title": "Verification and calibration",
+            "guidance": "Invoke `verification_frontier_receipt` with an admitted principal and preserve its typed verification receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [
+            "references/VERIFICATION_CAPABILITY.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:c1b60a7b28e9eeecdf16260619f842af2aee012dfb042d5a268338e0b9aae794",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "verification:write"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.verification.frontier_record",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-014--verification-calibration-and-epistemic-receipts"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "write"
+          },
+          "family": "verification-calibration",
+          "lineage_refs": [
+            "plan:HCM-014"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered",
+            "plugin-taught"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::EpistemicFrontierRecordInput",
+            "kind": "mutation",
+            "mutates_state": true,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::RuntimeEpistemicFrontierReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "calibration"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "verification publication and reads require explicit invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "verification uses explicit typed transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "verification_frontier_record"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Mutation.recordVerificationFrontier"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/VERIFICATION_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm014_epistemic_frontier -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm014_verification -- --nocapture"
+            ],
+            "receipt_type": "RuntimeEpistemicFrontierReceipt"
+          },
+          "teaching": {
+            "family_summary": "Evidence-backed verification obligations, receipts, and bounded epistemic frontiers.",
+            "family_title": "Verification and calibration",
+            "guidance": "Invoke `verification_frontier_record` with an admitted principal and preserve its typed verification receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [
+            "references/VERIFICATION_CAPABILITY.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:cc8886e1a1e85cce705d05b167f4b01c08638302e52a9392936e1c050a4e3881",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "verification:write"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.verification.obligation_discharge",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-014--verification-calibration-and-epistemic-receipts"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "write"
+          },
+          "family": "verification-calibration",
+          "lineage_refs": [
+            "plan:HCM-014"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered",
+            "plugin-taught"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::VerificationObligationDischargeInput",
+            "kind": "mutation",
+            "mutates_state": true,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::RuntimeObligationDischargeReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "calibration"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "verification publication and reads require explicit invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "verification uses explicit typed transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "verification_obligation_discharge"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Mutation.dischargeVerificationObligation"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/VERIFICATION_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm014_epistemic_frontier -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm014_verification -- --nocapture"
+            ],
+            "receipt_type": "RuntimeObligationDischargeReceipt"
+          },
+          "teaching": {
+            "family_summary": "Evidence-backed verification obligations, receipts, and bounded epistemic frontiers.",
+            "family_title": "Verification and calibration",
+            "guidance": "Invoke `verification_obligation_discharge` with an admitted principal and preserve its typed verification receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [
+            "references/VERIFICATION_CAPABILITY.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:66ebc7e8d8650317e131ed112cb3108b50628c77335a57797759d06965f5a326",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "verification:read"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.verification.receipt",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-014--verification-calibration-and-epistemic-receipts"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "not_required",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "read"
+          },
+          "family": "verification-calibration",
+          "lineage_refs": [
+            "plan:HCM-014"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered",
+            "plugin-taught"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::VerificationReceiptLookup",
+            "kind": "query",
+            "mutates_state": false,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::RuntimeVerificationReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "calibration"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "verification publication and reads require explicit invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "verification uses explicit typed transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "verification_receipt"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Query.verificationReceipt"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/VERIFICATION_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm014_epistemic_frontier -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm014_verification -- --nocapture"
+            ],
+            "receipt_type": "RuntimeVerificationReceipt"
+          },
+          "teaching": {
+            "family_summary": "Evidence-backed verification obligations, receipts, and bounded epistemic frontiers.",
+            "family_title": "Verification and calibration",
+            "guidance": "Invoke `verification_receipt` with an admitted principal and preserve its typed verification receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [
+            "references/VERIFICATION_CAPABILITY.md"
+          ],
+          "version": "1.0.0"
+        }
+      },
+      {
+        "content_address": "sha256:294e99b076a30ae70d0395637203afa544ef7a67c979db15a441c3516075e286",
+        "descriptor": {
+          "access": {
+            "required_principal_scopes": [
+              "verification:write"
+            ],
+            "tenant_behavior": "principal_bound"
+          },
+          "canonical_id": "harness.verification.record",
+          "deprecation": null,
+          "documentation_refs": [
+            "docs/plans/harness-capability-complete-mirror/PLAN.md#hcm-014--verification-calibration-and-epistemic-receipts"
+          ],
+          "exposure_policy": {
+            "actor_requirement": "principal_actor",
+            "admin_required": false,
+            "ambient_reentrancy": {
+              "kind": "not_applicable"
+            },
+            "dynamic_effect_gate": {
+              "kind": "not_applicable"
+            },
+            "effect": "write"
+          },
+          "family": "verification-calibration",
+          "lineage_refs": [
+            "plan:HCM-014"
+          ],
+          "maturity": [
+            "implementation-present",
+            "oracle-backed",
+            "server-registered",
+            "plugin-taught"
+          ],
+          "operation": {
+            "idempotency": "idempotent",
+            "input_schema_ref": "rust://theorem_harness_runtime::RuntimeVerificationInput",
+            "kind": "mutation",
+            "mutates_state": true,
+            "open_world": true,
+            "output_schema_ref": "rust://theorem_harness_runtime::RuntimeVerificationReceipt"
+          },
+          "operational_states": [],
+          "owner": {
+            "crate_name": "theorem-harness-runtime",
+            "module_path": "calibration"
+          },
+          "projections": {
+            "ambient": {
+              "intent": "not_applicable",
+              "reason": "verification publication and reads require explicit invocation"
+            },
+            "dynamic": {
+              "intent": "not_applicable",
+              "reason": "verification uses explicit typed transport operations"
+            },
+            "flat_mcp": {
+              "intent": "required",
+              "references": [
+                "verification_record"
+              ]
+            },
+            "graphql": {
+              "intent": "required",
+              "references": [
+                "Mutation.recordVerification"
+              ]
+            },
+            "plugin": {
+              "intent": "required",
+              "references": [
+                "references/VERIFICATION_CAPABILITY.md"
+              ]
+            }
+          },
+          "proof": {
+            "oracle_class": "persisted-substrate",
+            "proof_commands": [
+              "cargo test -p theorem-harness-runtime --test hcm014_epistemic_frontier -- --nocapture",
+              "cargo test -p theorem-harness-runtime --test hcm014_verification -- --nocapture"
+            ],
+            "receipt_type": "RuntimeVerificationReceipt"
+          },
+          "teaching": {
+            "family_summary": "Evidence-backed verification obligations, receipts, and bounded epistemic frontiers.",
+            "family_title": "Verification and calibration",
+            "guidance": "Invoke `verification_record` with an admitted principal and preserve its typed verification receipt.",
+            "live_status": "source_advertised_live_unverified",
+            "maturity": "stable"
+          },
+          "teaching_refs": [
+            "references/VERIFICATION_CAPABILITY.md"
+          ],
+          "version": "1.0.0"
+        }
+      }
+    ],
+    "schema_version": 3
+  },
   "flat_mcp": [
     "browse_for_me",
     "browse_with_me",
@@ -88,6 +1432,9 @@
     "observe_web",
     "oracle",
     "plan",
+    "practice_close_receipt",
+    "practice_explain",
+    "practice_status",
     "presence",
     "programmable_graph",
     "programmable_graph_apply",
@@ -163,10 +1510,18 @@
     "tool_result_fetch",
     "tool_search",
     "turn_start",
+    "typed_commitment_affirm",
+    "typed_commitment_explain",
+    "typed_commitment_read",
+    "typed_commitment_retract",
+    "typed_commitment_supersede",
     "understand_code",
     "upsert_note",
     "verification_allocate",
     "verification_explain",
+    "verification_frontier_receipt",
+    "verification_frontier_record",
+    "verification_obligation_discharge",
     "verification_receipt",
     "verification_record",
     "web_consume",
@@ -178,6 +1533,7 @@
     "Mutation.addPlanTask",
     "Mutation.addPlanTasks",
     "Mutation.advanceCoordinationStream",
+    "Mutation.affirmTypedCommitment",
     "Mutation.bulkEdges",
     "Mutation.bulkNodes",
     "Mutation.claimPlanTask",
@@ -191,6 +1547,7 @@
     "Mutation.designateFulltext",
     "Mutation.designateSpatial",
     "Mutation.designateVector",
+    "Mutation.dischargeVerificationObligation",
     "Mutation.enrichApply",
     "Mutation.ensembleInstall",
     "Mutation.ensemblePublish",
@@ -214,6 +1571,7 @@
     "Mutation.putItem",
     "Mutation.recordClaim",
     "Mutation.recordVerification",
+    "Mutation.recordVerificationFrontier",
     "Mutation.refinePlanTask",
     "Mutation.refreshContext",
     "Mutation.refreshLibraryFixture",
@@ -222,6 +1580,7 @@
     "Mutation.releasePlanTask",
     "Mutation.rememberMemory",
     "Mutation.renderPlan",
+    "Mutation.retractTypedCommitment",
     "Mutation.reverseEngineerBehaviorIr",
     "Mutation.reverseEngineerCompose",
     "Mutation.reverseEngineerEmit",
@@ -235,6 +1594,7 @@
     "Mutation.skillPublish",
     "Mutation.spawnPlanVerify",
     "Mutation.submitPlanVerify",
+    "Mutation.supersedeTypedCommitment",
     "Mutation.transitionPlanTask",
     "Mutation.upsertDataView",
     "Mutation.upsertLibrary",
@@ -277,6 +1637,7 @@
     "Query.epistemicFrontier",
     "Query.epistemicNeighbors",
     "Query.expectedValue",
+    "Query.explainTypedCommitment",
     "Query.fulltextSearch",
     "Query.graphAlgorithm",
     "Query.graphLispDiff",
@@ -317,6 +1678,9 @@
     "Query.plan",
     "Query.planQuery",
     "Query.planWhatChanged",
+    "Query.practiceCloseReceipt",
+    "Query.practiceExplain",
+    "Query.practiceStatus",
     "Query.queryReceipts",
     "Query.relatedEvents",
     "Query.replayLastHarnessRun",
@@ -333,14 +1697,17 @@
     "Query.trainingExports",
     "Query.trainingRuns",
     "Query.turnStartDiscovery",
+    "Query.typedCommitment",
     "Query.vectorHybrid",
     "Query.vectorSearch",
     "Query.verificationExplain",
+    "Query.verificationFrontierReceipt",
     "Query.verificationReceipt",
     "Query.workGraph"
   ],
+  "registry_complete": false,
   "schema_version": 1,
   "server_version": "0.5.0",
   "source": "rustyred-thg-mcp:harness_capability_source_catalog",
-  "source_catalog_sha256": "4953f49fcabb220c82489dc5ac8b488ce3566b1f7b9b4639a732358bab7b9a66"
+  "source_catalog_sha256": "feb39dae1c91bf89c5050323c4922f9fbbc5092b6ac5f85fffa34396a173701b"
 }

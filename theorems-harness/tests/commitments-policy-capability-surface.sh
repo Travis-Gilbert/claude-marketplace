@@ -34,7 +34,11 @@ for file in "$CONTRACT" "$SKILL"; do
     'retract_typed_commitment' \
     'explain_typed_commitment' \
     'Constitution::refusal' \
-    'not exposed through MCP, GraphQL, or the dynamic'; do
+    'typed_commitment_affirm' \
+    'typed_commitment_supersede' \
+    'typed_commitment_retract' \
+    'typed_commitment_read' \
+    'typed_commitment_explain'; do
     require_text "$file" "$token"
   done
 done
@@ -56,7 +60,7 @@ for contract_token in \
   'current_request' \
   'live_evidence' \
   'persisted structured' \
-  'full declared core proof'; do
+  'full declared core'; do
   require_text "$CONTRACT" "$contract_token"
 done
 
@@ -71,7 +75,7 @@ for surface in \
   require_text "$surface" 'assert_typed_claim'
 done
 
-readonly INVENTED_PATTERN='\b(typed_claim_assert|claim_assert|assertTypedClaim|typedCommitmentAffirm|affirmTypedCommitment|constitutionCheck|policyExplain|commitmentExplain)\b'
+readonly INVENTED_PATTERN='\b(typed_claim_assert|claim_assert|assertTypedClaim|typedCommitmentAffirm|constitutionCheck|policyExplain|commitmentExplain)\b'
 if command -v rg >/dev/null 2>&1; then
   if rg -n "$INVENTED_PATTERN" \
     "$PLUGIN_ROOT/README.md" "$PLUGIN_ROOT/commands" "$PLUGIN_ROOT/references" "$PLUGIN_ROOT/skills" \

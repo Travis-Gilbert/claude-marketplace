@@ -154,6 +154,17 @@ case "$tool" in
   context_explain)
     jq -cn '{jsonrpc:"2.0",id:1,result:{structuredContent:{status:"active",compile_receipt:{receipt_id:"compile:fixture"},dispositions:[]}}}'
     ;;
+  practice_status)
+    run_id=$(printf '%s' "$args" | jq -r '.run_id')
+    jq -cn --arg run_id "$run_id" '{jsonrpc:"2.0",id:1,result:{structuredContent:{tenant_slug:"Travis-Gilbert",project_slug:"repo",run_id:$run_id,closed_run_harvested:true,selection_receipt_ids:["selection:fixture"],outcome_receipt_ids:["outcome:fixture"],learning_state_content_addresses:["learning:fixture"],episode_content_addresses:["episode:fixture"],compound_close_receipt_id:"close:fixture",missing_outcome_keys:[],missing_episode_ids:[],truncated:false}}}'
+    ;;
+  practice_explain)
+    run_id=$(printf '%s' "$args" | jq -r '.run_id')
+    jq -cn --arg run_id "$run_id" '{jsonrpc:"2.0",id:1,result:{structuredContent:{status:{tenant_slug:"Travis-Gilbert",project_slug:"repo",run_id:$run_id,closed_run_harvested:true,selection_receipt_ids:["selection:fixture"],outcome_receipt_ids:["outcome:fixture"],learning_state_content_addresses:["learning:fixture"],episode_content_addresses:["episode:fixture"],compound_close_receipt_id:"close:fixture",missing_outcome_keys:[],missing_episode_ids:[],truncated:false},selections:[],outcomes:[],learning_states:[],episodes:[],compound_close_receipt:{receipt_id:"close:fixture"}}}}'
+    ;;
+  practice_close_receipt)
+    jq -cn '{jsonrpc:"2.0",id:1,result:{structuredContent:{receipt_id:"close:fixture",tenant_slug:"Travis-Gilbert",project_slug:"repo"}}}'
+    ;;
   coordination_intent|coordination_record)
     jq -cn '{jsonrpc:"2.0",id:1,result:{structuredContent:{status:"recorded"}}}'
     ;;
@@ -196,12 +207,28 @@ printf '%s' "$diagnostic" | jq -e '
   .run.value.detail.run.status == "closed" and
   .context.status.status == "active" and
   .context.explain.status == "active" and
-  .practice.graph_status == "canonical"
+  .practice.graph_status == "canonical" and
+  .practice.status.closed_run_harvested == true and
+  .practice.status.missing_outcome_keys == [] and
+  .practice.status.missing_episode_ids == [] and
+  .close_harvest.compound_close_receipt.receipt_id == "close:fixture"
 ' >/dev/null
 
 if [ "$mode" != "fixture" ]; then
   printf '%s\n' "$diagnostic" | jq .
-  printf '%s\n' 'real ambient session is structurally closed, but HCM-032 live acceptance remains blocked: practice_status, practice_explain, and direct episode/close-harvest diagnostics are not registered.' >&2
+  if printf '%s' "$diagnostic" | jq -e '
+    .delivery.degraded == false and
+    .run.value.detail.run.status == "closed" and
+    .practice.status.closed_run_harvested == true and
+    .practice.status.truncated == false and
+    .practice.status.missing_outcome_keys == [] and
+    .practice.status.missing_episode_ids == [] and
+    .close_harvest.compound_close_receipt != null
+  ' >/dev/null; then
+    printf '%s\n' 'real ambient session closed with complete practice and episode harvest receipts.' >&2
+    exit 0
+  fi
+  printf '%s\n' 'real ambient session remains incomplete; inspect the typed practice diagnostics above.' >&2
   exit 3
 fi
 

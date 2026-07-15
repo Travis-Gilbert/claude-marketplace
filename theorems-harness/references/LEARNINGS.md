@@ -169,3 +169,27 @@ file:
 3. **Schema enforcement.** The `OrchestrateLearningSpec` dataclass
    forces every learning to have a trigger — preventing abstract
    advice that doesn't survive contact with future work.
+
+## Runtime practice and Compound diagnostics
+
+The Harness runtime also turns selected Superpowers-derived practices into
+receipt-backed outcomes and episodic memories. These read surfaces inspect that
+loop for one admitted tenant, project, and run:
+
+| Operation | GraphQL | Flat MCP | Meaning |
+|---|---|---|---|
+| Status | `practiceStatus` | `practice_status` | Bounded completeness summary with exact missing-outcome and missing-episode keys. |
+| Explain | `practiceExplain` | `practice_explain` | Selection, outcome, learning-state, episode, and Compound-close lineage. |
+| Compound close receipt | `practiceCloseReceipt` | `practice_close_receipt` | Exact receipt proving the Compound close hook ran. It does not alone prove practice attribution completed. |
+
+Treat `closed_run_harvested=true` as the complete-run oracle. It requires a
+Compound close receipt, an outcome for every selected practice, a matching
+persisted episode for every outcome, no missing evidence keys, and an
+untruncated diagnostic result. A Compound close receipt by itself is narrower:
+it proves only the close hook, not the downstream outcome/episode harvest.
+
+These diagnostics derive tenant and project from admitted identity. Supply only
+the run id and an optional bounded limit; never use caller-provided tenant or
+project fields as authority. A false status is actionable degradation, not an
+empty successful run: inspect the missing keys with `practice_explain`, repair
+or retry attribution, and preserve the original receipts.

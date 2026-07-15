@@ -1,14 +1,9 @@
 # Commitments, Claims, Constitution, and Policy Capability
 
-This family currently has two distinct layers. The remote Harness exposes
-coordination standing decisions, structured coordination claims, commitment
-lifecycle operations, and policy receipts. The newer canonical typed claim,
-typed commitment, and structured constitution-refusal seams are production Rust
-APIs but are not yet projected through MCP, GraphQL, or the dynamic capability
-gateway.
-
-The canonical typed seams are not exposed through MCP, GraphQL, or the dynamic
-gateway today.
+This family has two distinct layers. The remote Harness exposes coordination
+standing decisions, structured coordination claims, and the canonical typed
+commitment lifecycle. Canonical typed claims and structured constitution
+refusals remain production Rust APIs without agent-callable transport.
 
 Do not collapse these layers. A coordination claim or standing decision is not
 the canonical typed assertion/commitment record merely because its payload is
@@ -24,6 +19,11 @@ structured.
 | Supersede | None | `commitment_supersede` | Links an active standing decision to an already-existing active replacement. |
 | Check output | None | `commitment_check` | Checks output against active scoped decisions and persists tension records for verified violations. |
 | Structured coordination claim | Mutation `recordClaim` | None | Records task-reference subject/predicate/object claims, contradictions, and same-actor supersession in Coordination V2. |
+| Affirm canonical typed commitment | Mutation `affirmTypedCommitment` | `typed_commitment_affirm` | Creates an immutable, evidence-bound commitment owned by the admitted actor. |
+| Read canonical typed commitment | Query `typedCommitment` | `typed_commitment_read` | Reads one same-tenant commitment and refuses a different admitted owner. |
+| Explain canonical typed commitment | Query `explainTypedCommitment` | `typed_commitment_explain` | Returns active/superseded/retracted status plus the immutable lifecycle. |
+| Supersede canonical typed commitment | Mutation `supersedeTypedCommitment` | `typed_commitment_supersede` | Replaces the active commitment in the same owner/scope/rule slot and preserves history. |
+| Retract canonical typed commitment | Mutation `retractTypedCommitment` | `typed_commitment_retract` | Deactivates the commitment with rule, evidence, and explanation receipts. |
 
 `writeCoordinationRecord` returns JSON and lowers to the same native handler as
 `coordination_record`. Its policy receipt names required/missing scopes, budget
@@ -55,7 +55,7 @@ witnesses. Rust readers include `load_typed_claim`,
 `load_typed_claim_witness`, `load_typed_claim_slot`, and
 `active_typed_contradictions`.
 
-## Canonical typed commitment Rust API
+## Canonical typed commitment contract
 
 `theorem-harness-runtime::commitment` exposes:
 
@@ -106,9 +106,9 @@ retraction, explanation, and structured-refusal tests cover the Rust seams.
 Remote standing-decision and Coordination V2 claim tests cover their separate
 contracts.
 
-Still open are MCP/GraphQL/descriptors for the canonical typed seams, adoption
-by admitted identity and coordination commitments, persisted structured
-constitution-refusal transport, and the full declared core proof. Until those
-land, use remote standing-decision operations only for their documented
-coordination behavior and report canonical typed writes as unavailable to an
-agent session.
+Typed commitment MCP/GraphQL operations derive tenant and owner from admitted
+identity; caller tenant/owner fields do not grant authority. Still open are the
+canonical typed-claim transport, adoption by coordination commitments,
+persisted structured constitution-refusal transport, and the full declared core
+proof. Do not substitute coordination standing decisions for typed commitment
+records, or describe the still-unprojected claim/constitution seams as remote.
