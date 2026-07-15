@@ -62,6 +62,8 @@ Use these as abilities inside one run, not as competing products:
 | `ambition` | A build, plan, or handoff could be underscoped relative to what was asked. |
 | `identity` | The admitted principal, project selection, actor, binding, active heads, scopes, budget, or provenance must be inspected. |
 | `compile_context` | Context status, lease reuse, explicit compilation/invalidation, generations, or span disposition matters. |
+| `governance` | A standing decision, structured claim, typed witness, constitution refusal, or policy receipt must be created or interpreted. |
+| `graph_lisp` | Repository work needs bounded pure Graph Lisp read/eval/diff/explain or its receipt/refusal contract. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
 | `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
 | `programmable_wasm` | An installed app export must be invoked, or a durable WASM lifecycle boundary must be inspected honestly. |
@@ -98,6 +100,14 @@ Use these as abilities inside one run, not as competing products:
   GraphQL `refreshContext` for preparation and `context_invalidate` or
   `invalidateContext` for an epoch advance. Do not claim the current hooks
   perform that invalidation.
+- If a standing decision, claim conflict, constitution rule, or policy receipt
+  matters, load `commitments-policy`. Use GraphQL `writeCoordinationRecord` /
+  `recordClaim` and the real flat lifecycle including `commitment_check` for
+  remote coordination; reserve `assert_typed_claim` and the canonical typed
+  lifecycle for Rust repository work until it is projected.
+- If Graph Lisp matters, load `graph-lisp`. The only current agent envelope is
+  Rust `rustyred_thg_graph_lisp::execute_capability`; it has no remote
+  projection, and effect requests refuse with `external_executor_required`.
 - If the user asks for satisfiability, constraint checking, or bounded pack
   optimization, load `solvers` and use only `constraint.check` or
   `constraint.optimize` through the dynamic gateway.
@@ -167,6 +177,14 @@ detail layer rather than another global tool catalog:
   flat `context_status`, `context_explain`, `context_invalidate`, and
   `harness_prepare`, including the incomplete PostToolUse/PreCompact epoch
   wiring.
+- `commitments-policy` plus
+  `references/COMMITMENTS_POLICY_CAPABILITY.md` for remote
+  `writeCoordinationRecord`, `recordClaim`, `commitment_check`, and the
+  Rust-only canonical `assert_typed_claim`, typed commitment, and constitution
+  seams.
+- `graph-lisp` plus `references/GRAPH_LISP_CAPABILITY.md` for crate-local
+  `execute_capability`, bounded pure read/eval/diff/explain, deterministic
+  receipts, and the `external_executor_required` effect boundary.
 - `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
   `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
   `constraint.optimize`.

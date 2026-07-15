@@ -6,8 +6,9 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 - Shared skill packages under `skills/`, including the adaptive Harness,
   planning/execution, practice-system, replay, coordination, memory, code,
-  identity and bindings, context management, stable solvers, programmable
-  WASM, writing, design, and Rust engineering surfaces.
+  identity and bindings, context management, commitments/policy, Graph Lisp,
+  stable solvers, programmable WASM, writing, design, and Rust engineering
+  surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -119,7 +120,12 @@ memory") and include the wire-level identifier only when it matters.
 - Graph and reasoning: `rustyred_thg_graph_*`, `rustyred_thg_algorithm_*`, `rustyred_thg_symbolic_*`, and graph-version tools.
 - Web: `rustyweb_search_acquisition`, `browse_for_me`, `browse_with_me`, `web_consume`
 - Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
-- Coordination: `coordination_room`, `coordination_intent`, `write_intent`, `read_intents_for_room`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
+- Coordination: GraphQL `writeCoordinationRecord` and `recordClaim`, plus
+  `coordination_room`, `coordination_record`, `coordination_intent`,
+  `write_intent`, `read_intents_for_room`, `coordination_reflection`,
+  `coordination_decision`, `coordination_tension`, `commitment_retract`,
+  `commitment_supersede`, `commitment_check`, `coordinate`, `mentions`,
+  `mentions_wait`, `presence`, `subscribe`, and `continuity_pack`.
 - Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`
 - Memory and learning: `recall`, `remember`, `relate`, `observe`, `self_note`,
   `self_revise`, `self_archive`, `self_recall_archive`, `encode`, `forget`,
@@ -156,6 +162,15 @@ epoch, and Codex has no `PreCompact` hook. See
 `references/CONTEXT_CAPABILITY.md` for disposition reasons, stale/evicted
 generations, and the admitted-session proof boundary.
 
+Remote commitments are coordination standing decisions: create them through
+GraphQL `writeCoordinationRecord` or flat `coordination_record`, use the real
+flat lifecycle tools including `commitment_check`, and use GraphQL `recordClaim`
+only for Coordination V2 claims. The canonical Rust seam is
+`assert_typed_claim` plus typed commitment and `Constitution::refusal` APIs; it
+is not remotely projected yet. See
+`references/COMMITMENTS_POLICY_CAPABILITY.md` for the evidence, history,
+witness, and policy-receipt boundaries.
+
 Canonical verification atomically binds the claim, support/attack evidence,
 lineage, verifier, method, graph version, result, and calibration delta. Admitted
 tenant, actor, and binding claims are authoritative; head/model labels remain
@@ -174,6 +189,13 @@ callable exports of installed app manifests. Agents may use the dynamic gateway
 for installed exports, but the publish/promote/inspect/selected-invoke/rollback
 lifecycle has no MCP or GraphQL projection yet. See
 `references/PROGRAMMABLE_WASM_CAPABILITY.md`.
+
+Graph Lisp pure read/eval/diff/explain is currently the crate-local
+`rustyred_thg_graph_lisp::execute_capability` envelope. It has no MCP, GraphQL,
+or dynamic gateway projection, and `dynamic_call` refuses with
+`external_executor_required` even when granted. Exact limits, receipt fields,
+typed errors, graph-version limits, and replay guarantees live in
+`references/GRAPH_LISP_CAPABILITY.md`.
 
 The ambient practice graph is selected through Ensemble and compounds through
 the ordinary run/event/episode path. It does not add a second workflow engine
@@ -239,8 +261,9 @@ From a local checkout:
 The default `core` bundle installs `/harness`, coordination, the ambient
 practice system, code discovery, encode, research, peer review, and execute
 skills. The `full` bundle adds replay, solvers, programmable WASM, writing,
-identity and bindings, context management, design, and specialist skills. Use
-`--claude-only` or `--codex-only` for one host.
+identity and bindings, context management, commitments/policy, Graph Lisp,
+design, and specialist skills. Use `--claude-only` or `--codex-only` for one
+host.
 
 ## Install (Codex)
 

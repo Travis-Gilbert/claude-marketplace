@@ -19,6 +19,8 @@ narrow entrypoints, but they are not separate products.
 | `replay-last-run` | Public audit utility | Selects the latest eligible run, deterministically replays it, and returns typed integrity evidence | Canonical |
 | `identity-bindings` | Focused capability workflow | Resolves the admitted principal and typed binding receipt without caller-supplied identity claims | Canonical |
 | `context-management` | Focused capability workflow | Teaches scoped leases, compile/reuse, explicit invalidation, generations, dispositions, and the current hook boundary | Canonical |
+| `commitments-policy` | Focused capability workflow | Separates remote standing decisions and policy receipts from the Rust-only canonical typed claim, commitment, and constitution seams | Canonical |
+| `graph-lisp` | Focused capability workflow | Teaches crate-local bounded read/eval/diff/explain, deterministic receipts, and the absent remote projection | Canonical |
 | `solvers` | Focused capability workflow | Discovers, describes, and invokes stable `constraint.check` and `constraint.optimize` affordances and interprets typed proof receipts | Canonical |
 | `programmable-wasm` | Focused capability workflow | Separates installed app exports (`wasm_plugin:<plugin_id>.<export>`) from the Rust-only durable lifecycle | Canonical |
 | `writing-engineering` | Public writing utility | Applies Writing Engineering with the 1918 Elements rules integrated into one ruleset and receipt | Canonical |
@@ -118,6 +120,18 @@ lease decisions, included/excluded spans, stale/evicted generations, and the
 fact that current PostToolUse/PreCompact hooks do not advance the context
 epoch. See `CONTEXT_CAPABILITY.md`.
 
+Commitments and policy teaching uses GraphQL `writeCoordinationRecord` and
+`recordClaim` plus flat `coordination_record`, `commitment_retract`,
+`commitment_supersede`, and `commitment_check` for their current coordination
+contracts. It keeps the canonical Rust `assert_typed_claim`, typed commitment,
+and structured constitution-refusal seams explicitly non-remote. See
+`COMMITMENTS_POLICY_CAPABILITY.md`.
+
+Graph Lisp teaching covers the crate-local `execute_capability` envelope and
+its pure bounded operations. It does not invent an MCP/GraphQL/dynamic surface;
+granted effects still refuse with `external_executor_required`. See
+`GRAPH_LISP_CAPABILITY.md`.
+
 Stable solver teaching uses only the dynamic `tool_search` -> `describe` ->
 `invoke` sequence for `constraint.check` and `constraint.optimize`, preserving
 budgets, provider provenance, refusal, and proof eligibility. See
@@ -155,10 +169,12 @@ Internal capability language:
 - `BRIEF_TEMPLATE.md`
 - `CHECKLIST_MANIFESTO.md`
 - `CODE_CAPABILITY.md`
+- `COMMITMENTS_POLICY_CAPABILITY.md`
 - `CONCISE_ACTION.md`
 - `CONTEXT_CAPABILITY.md`
 - `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`
+- `GRAPH_LISP_CAPABILITY.md`
 - `HOST_REPO_OPT_IN.md`
 - `IDENTITY_CAPABILITY.md`
 - `LEARNINGS.md`

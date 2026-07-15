@@ -33,6 +33,22 @@ PreCompact hooks do not advance the epoch, and Codex has no PreCompact hook.
 Keep that admitted-session boundary visible as documented in
 `CONTEXT_CAPABILITY.md`.
 
+Commitments, claims, constitution, and policy require a layer check before
+routing. Load `commitments-policy`. For remote work, use GraphQL
+`writeCoordinationRecord` / `recordClaim` and the real flat standing-decision
+lifecycle including `commitment_check`. For repository work, the canonical seam
+is Rust `assert_typed_claim`, typed commitment lifecycle, and
+`Constitution::refusal`; it has no remote projection. Follow
+`COMMITMENTS_POLICY_CAPABILITY.md` and never report a coordination record as a
+canonical typed assertion receipt.
+
+Graph Lisp routes to `graph-lisp` only for repository implementation, tests, or
+contract reasoning. The current capability is
+`rustyred_thg_graph_lisp::execute_capability`; it has no agent-callable remote
+projection, and effect requests refuse with `external_executor_required`. See
+`GRAPH_LISP_CAPABILITY.md` rather than inventing an MCP, GraphQL, or dynamic
+action.
+
 Memory is one tenant/project-bound capability, not separate recall, episode,
 and practice stores. Prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`,
 nested `links`/`related`, and the typed memory mutations. Route flat-only actor
@@ -76,6 +92,8 @@ The router selects abilities, not rigid products:
 - `coordinate`
 - `compile_context`
 - `identity`
+- `governance`
+- `graph_lisp`
 - `research`
 - `validate`
 - `peer_review`
@@ -101,6 +119,10 @@ context refresh, or memory when the work demands it.
      `compile_context`
    - identity, principal, project selection, binding, active heads, scopes, or
      budget provenance -> `identity`
+   - standing decision, commitment, claim conflict, constitution, or policy
+     receipt -> `governance`
+   - Graph Lisp read, eval, diff, explain, fuel, or permission boundary ->
+     `graph_lisp`
    - review, PR, diff, audit -> `peer_review`
    - remember, encode, postmortem, lesson -> `remember`
 4. If no concrete action emerges, run a short `theorize` pass, choose a default,
