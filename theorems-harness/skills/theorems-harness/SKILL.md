@@ -65,6 +65,8 @@ Use these as abilities inside one run, not as competing products:
 | `governance` | A standing decision, structured claim, typed witness, constitution refusal, or policy receipt must be created or interpreted. |
 | `graph_lisp` | Repository work needs bounded pure Graph Lisp read/eval/diff/explain or its receipt/refusal contract. |
 | `data_reconstruction` | Typed Data or instant-KG reads, flat DATAWAVE/resolve, or receipt- and obligation-preserving source reconstruction is needed. |
+| `learning_evolution` | Outcomes, calibration, GEPA, ReasoningBank, or evolution work must distinguish callable evidence seams from Rust-only lifecycle APIs. |
+| `agent_interop` | A composed-agent turn, durable Head Call, A2A boundary, ACP session, or live provider claim must be routed exactly. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
 | `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
 | `verified_cognition` | A decision, consistency, reconstruction, or repair claim must compose proposals and real proof surfaces without inventing a workflow. |
@@ -115,6 +117,15 @@ Use these as abilities inside one run, not as competing products:
   `resolve_ingest`, `resolve_entities`, `resolve_explain`, `datawave_ingest`,
   `reconstruct`, and `reconstruct_binary` flat-only. Preserve source SHAs,
   receipts, unknowns, unresolved obligations, and validation `not_run` state.
+- If learning, GEPA, ReasoningBank, or candidate evolution matters, load
+  `learning-evolution`. Use canonical outcome/calibration and memory evidence;
+  treat `programmable_graph` evolve as proposal validation and keep the GEPA
+  and `theorem-evolve` lifecycle Rust-only.
+- If composed-agent invocation, Head Calls, A2A, ACP, or provider execution
+  matters, load `agent-interop`. Use `composed_agent_run` and durable
+  `stream_publish` / `stream_read` / `stream_ack` where callable, preserve
+  admitted identity and budget, and require receipts before claiming live
+  execution.
 - If the user asks for satisfiability, constraint checking, or bounded pack
   optimization, load `solvers` and use only `constraint.check` or
   `constraint.optimize` through the dynamic gateway.
@@ -201,6 +212,13 @@ detail layer rather than another global tool catalog:
   flat-only `datawave_ingest` and `resolve_ingest`, and
   `reverseEngineerCompose` through `reverseEngineerPort` with source and
   obligation discipline.
+- `learning-evolution` plus
+  `references/LEARNING_EVOLUTION_CAPABILITY.md` for canonical outcome evidence,
+  flat `programmable_graph` evolve validation, and the Rust-only GEPA,
+  ReasoningBank, and `theorem-evolve` boundaries.
+- `agent-interop` plus `references/AGENT_INTEROP_CAPABILITY.md` for flat
+  `composed_agent_run`, durable `head_call` streams, Head Call and ACP
+  WebSockets, and the unprojected A2A client/runtime membrane.
 - `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
   `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
   `constraint.optimize`.

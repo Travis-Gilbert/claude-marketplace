@@ -58,6 +58,21 @@ flat-only tools. Follow `DATA_RECONSTRUCTION_CAPABILITY.md`; preserve explicit
 source SHAs, receipts, unknowns, `unresolved_obligations`, and validate-stage
 `not_run` rather than claiming end-to-end parity.
 
+Learning, GEPA, ReasoningBank, or evolution work routes to
+`learning-evolution`. Use canonical verification/calibration and memory/run
+outcomes for agent-callable learning evidence. Flat `programmable_graph` with
+`action: "evolve"` validates a tenant-bound proposal only; GEPA and
+`theorem-evolve` train/evaluate/promote/rollback remain Rust-only. Follow
+`LEARNING_EVOLUTION_CAPABILITY.md` and require independent outcomes before
+claiming improvement or promotion.
+
+Composed agents, live head-to-head messages, A2A, or ACP route to
+`agent-interop`. Use flat `composed_agent_run` for one admitted turn and
+`stream_publish` / `stream_read` / `stream_ack` for durable `head_call` events.
+The Head Call and ACP WebSockets are server protocols; A2A remains crate-level.
+Follow `AGENT_INTEROP_CAPABILITY.md` and claim a live provider only from
+returned invocation receipts.
+
 Memory is one tenant/project-bound capability, not separate recall, episode,
 and practice stores. Prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`,
 nested `links`/`related`, and the typed memory mutations. Route flat-only actor
@@ -111,6 +126,8 @@ The router selects abilities, not rigid products:
 - `governance`
 - `graph_lisp`
 - `data_reconstruction`
+- `learning_evolution`
+- `agent_interop`
 - `research`
 - `verified_cognition`
 - `validate`
@@ -143,6 +160,10 @@ context refresh, or memory when the work demands it.
      `graph_lisp`
    - Data records, instant KG, DATAWAVE, entity resolution, source
      reconstruction, or port obligations -> `data_reconstruction`
+   - Learning outcomes, GEPA, ReasoningBank, candidate evaluation, promotion,
+     or evolve boundaries -> `learning_evolution`
+   - Composed agent, head call, A2A, ACP, or provider-head request ->
+     `agent_interop`
    - Verified decision, consistency, reconstruction, repair, or voice boundary
      -> `verified_cognition`
    - review, PR, diff, audit -> `peer_review`

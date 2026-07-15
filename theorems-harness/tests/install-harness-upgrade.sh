@@ -45,11 +45,13 @@ for target_root in "$claude_dir" "$codex_dir"; do
       || fail "retired skill remains installed: $target_root/$skill"
   done
   for skill in \
+    agent-interop \
     commitments-policy \
     context-management \
     data-reconstruction \
     graph-lisp \
     identity-bindings \
+    learning-evolution \
     practice-system \
     programmable-wasm \
     replay-last-run \

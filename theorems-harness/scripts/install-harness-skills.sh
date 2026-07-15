@@ -26,6 +26,7 @@ core_skills=(
 )
 
 full_skills=(
+    "agent-interop"
     "ambition"
     "browser-web"
     "claudeai-session-writer"
@@ -43,6 +44,7 @@ full_skills=(
     "graph_theorem"
     "harness-coordinate"
     "identity-bindings"
+    "learning-evolution"
     "peer-review"
     "planning-theorem"
     "practice-system"

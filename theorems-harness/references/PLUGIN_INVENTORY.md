@@ -22,6 +22,8 @@ narrow entrypoints, but they are not separate products.
 | `commitments-policy` | Focused capability workflow | Separates remote standing decisions and policy receipts from the Rust-only canonical typed claim, commitment, and constitution seams | Canonical |
 | `graph-lisp` | Focused capability workflow | Teaches crate-local bounded read/eval/diff/explain, deterministic receipts, and the absent remote projection | Canonical |
 | `data-reconstruction` | Focused capability workflow | Routes typed Data and instant-KG reads, flat-only DATAWAVE/resolve, and receipt- and obligation-preserving source reconstruction | Canonical |
+| `learning-evolution` | Focused capability workflow | Separates callable outcome, memory, practice, and programmable-graph validation seams from Rust-only GEPA, ReasoningBank, and theorem-evolve lifecycle code | Canonical |
+| `agent-interop` | Focused capability workflow | Teaches admitted composed-agent turns, durable Head Calls, Rust-only A2A, and the server ACP WebSocket with live-provider boundaries | Canonical |
 | `solvers` | Focused capability workflow | Discovers, describes, and invokes stable `constraint.check` and `constraint.optimize` affordances and interprets typed proof receipts | Canonical |
 | `programmable-wasm` | Focused capability workflow | Separates installed app exports (`wasm_plugin:<plugin_id>.<export>`) from the Rust-only durable lifecycle | Canonical |
 | `verified-cognition` | Focused composition workflow | Separates proposals from proof while composing only real solver, reconstruction, verification, and Plan surfaces; names absent workflow orchestration honestly | Canonical |
@@ -142,6 +144,19 @@ projections exist. It preserves flat-only `datawave_ingest`, `resolve_ingest`,
 `reconstruct_binary`, plus source pins, receipts, unknowns, and unresolved
 obligations. See `DATA_RECONSTRUCTION_CAPABILITY.md`.
 
+Learning and evolution teaching uses canonical verification/calibration,
+ordinary memory/run outcomes, practice learning, and flat `programmable_graph`
+proposal validation where those remote seams exist. GEPA trainsets/gates,
+ReasoningBank entry points, and `theorem-evolve` evaluation/promotion remain
+Rust-only and cannot be presented as remote lifecycle actions. See
+`LEARNING_EVOLUTION_CAPABILITY.md`.
+
+Agent interoperability teaching uses flat `composed_agent_run`, durable
+`stream_publish` Head Calls, and the authenticated Head Call and ACP WebSocket
+routes. A2A card registration/invocation remains crate-level, and configured
+providers are not described as live without invocation receipts. See
+`AGENT_INTEROP_CAPABILITY.md`.
+
 Stable solver teaching uses only the dynamic `tool_search` -> `describe` ->
 `invoke` sequence for `constraint.check` and `constraint.optimize`, preserving
 budgets, provider provenance, refusal, and proof eligibility. See
@@ -182,6 +197,7 @@ Internal capability language:
 ## References
 
 - `ARTIFACT_SCHEMAS.md`
+- `AGENT_INTEROP_CAPABILITY.md`
 - `BRIEF_TEMPLATE.md`
 - `CHECKLIST_MANIFESTO.md`
 - `CODE_CAPABILITY.md`
@@ -195,6 +211,7 @@ Internal capability language:
 - `HOST_REPO_OPT_IN.md`
 - `IDENTITY_CAPABILITY.md`
 - `LEARNINGS.md`
+- `LEARNING_EVOLUTION_CAPABILITY.md`
 - `MEMORY_CAPABILITY.md`
 - `ORCHESTRATE_REPORTING.md`
 - `PLAN_TEMPLATE.md`

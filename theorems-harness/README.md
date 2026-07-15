@@ -8,7 +8,8 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
   planning/execution, practice-system, replay, coordination, memory, code,
   identity and bindings, context management, commitments/policy, Graph Lisp,
   Data/reconstruction, stable solvers, verified cognition composition,
-  programmable WASM, writing, design, and Rust engineering surfaces.
+  learning/evolution, agent interoperability, programmable WASM, writing,
+  design, and Rust engineering surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -144,6 +145,13 @@ memory") and include the wire-level identifier only when it matters.
   `resolve_ingest`, `resolve_entities`, `resolve_explain`,
   `memory_dedup_report`, `datawave_ingest`, `reconstruct`, and
   `reconstruct_binary` are flat-only.
+- Learning and evolution: use canonical verification/calibration plus ordinary
+  memory/run outcome surfaces. Flat `programmable_graph` with
+  `action: "evolve"` validates a standing-program proposal; GEPA,
+  ReasoningBank, and `theorem-evolve` lifecycles remain Rust-only.
+- Agents and interop: flat `composed_agent_run` runs one admitted composed turn.
+  Durable Head Calls use `stream_publish`, `stream_read`, and `stream_ack` with
+  `kind: "head_call"`; A2A remains Rust-only and ACP is a server WebSocket.
 - Dynamic capabilities: `tool_search`, `describe`, and `invoke`. Stable solver
   affordances are `constraint.check` and `constraint.optimize`. Installed app
   WASM exports use `wasm_plugin:<plugin_id>.<export>`.
@@ -207,6 +215,21 @@ canonical verification receipts, and the Plan lifecycle while keeping proposal
 and proof separate. The verified-decision, consistency, reconstruction,
 repair, and voice orchestrators remain unimplemented. See
 `references/VERIFIED_COGNITION_CAPABILITY.md`.
+
+Learning and evolution reuse canonical outcome, memory, run, and practice
+evidence. Load `learning-evolution`; the callable flat evolve seam is proposal
+validation through
+`programmable_graph`, not a GEPA train/promote action. Candidate scores,
+lineage, held-out outcomes, guardrail discounts, and independent verification
+must stay attached. See `references/LEARNING_EVOLUTION_CAPABILITY.md`.
+
+Agent interoperability is not one transport. Load `agent-interop`.
+`composed_agent_run` is a
+tenant- and binding-admitted flat write; Head Calls are durable stream events
+with an optional authenticated WebSocket accelerator; A2A registration and
+invocation are Rust-only; and ACP is exposed at `/v1/commonplace/acp/ws` when a
+server-local agent binary is available. Configured providers are not live proof
+without invocation receipts. See `references/AGENT_INTEROP_CAPABILITY.md`.
 
 Programmable WASM keeps its durable Rust registry lifecycle separate from the
 callable exports of installed app manifests. Agents may use the dynamic gateway
@@ -284,10 +307,11 @@ From a local checkout:
 
 The default `core` bundle installs `/harness`, coordination, the ambient
 practice system, code discovery, encode, research, peer review, and execute
-skills. The `full` bundle adds replay, Data/reconstruction, solvers, verified
-cognition composition, programmable WASM, writing, identity and bindings,
-context management, commitments/policy, Graph Lisp, design, and specialist
-skills. Use `--claude-only` or `--codex-only` for one host.
+skills. The `full` bundle adds replay, Data/reconstruction,
+learning/evolution, agent interoperability, solvers, verified cognition
+composition, programmable WASM, writing, identity and bindings, context
+management, commitments/policy, Graph Lisp, design, and specialist skills. Use
+`--claude-only` or `--codex-only` for one host.
 
 ## Install (Codex)
 
