@@ -62,6 +62,8 @@ Use these as abilities inside one run, not as competing products:
 | `ambition` | A build, plan, or handoff could be underscoped relative to what was asked. |
 | `compile_context` | The prompt/context is stale, broad, or missing the source surface. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
+| `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
+| `programmable_wasm` | An installed app export must be invoked, or a durable WASM lifecycle boundary must be inspected honestly. |
 | `validate` | A claim needs tests, screenshots, deploy proof, replay, or runtime evidence. |
 | `peer_review` | A risky diff, multi-agent edit, commit, PR, or launch-ready claim is near. |
 | `remember` | The session produced a reusable lesson, decision, postmortem, or correction. |
@@ -85,6 +87,12 @@ Use these as abilities inside one run, not as competing products:
   messages, or reflections.
 - If the user asks for research, evidence, graph search, code discovery, or
   current external facts, start with `research` or `compile_context`.
+- If the user asks for satisfiability, constraint checking, or bounded pack
+  optimization, load `solvers` and use only `constraint.check` or
+  `constraint.optimize` through the dynamic gateway.
+- If the user asks about programmable WASM, load `programmable-wasm`. Invoke an
+  installed export only through `wasm_plugin:<plugin_id>.<export>`; do not imply
+  the Rust-only lifecycle is remotely callable.
 - If the user asks for review or a second model's view, start with
   `peer_review`; do not convert that into implementation unless asked.
 - If the task is broad but actionable, use a short `theorize` pass, choose a
@@ -133,6 +141,19 @@ run-to-run learning into the active Harness run.
 
 Compatibility commands such as `/execute` may remain installed, but new work
 should prefer `/harness` plus adaptive routing.
+
+## Focused capability guides
+
+Load these only when the task enters the family; they are the progressive
+detail layer rather than another global tool catalog:
+
+- `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
+  `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
+  `constraint.optimize`.
+- `programmable-wasm` plus
+  `references/PROGRAMMABLE_WASM_CAPABILITY.md` for installed app exports shaped
+  `wasm_plugin:<plugin_id>.<export>` and the honest Rust-only durable lifecycle
+  boundary.
 
 ## Querying the multi-model store
 

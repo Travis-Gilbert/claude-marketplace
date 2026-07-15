@@ -36,6 +36,18 @@ or diagnosis. Route verifier confidence through the evidence and graph-version
 contract in `VERIFICATION_CAPABILITY.md`; do not treat self-reported head/model
 labels or a reliability admission tier as identity authority or proof.
 
+Constraint solving is a focused dynamic capability. Load `solvers`, then use
+`tool_search`, `describe`, and `invoke` for only `constraint.check` and
+`constraint.optimize`. Read `SOLVER_CAPABILITY.md` before treating a conclusion
+as proof; provider availability, bounds, cancellation, and proof eligibility
+are receipt facts.
+
+Programmable WASM has no remotely callable lifecycle yet. Load
+`programmable-wasm` for installed app exports shaped
+`wasm_plugin:<plugin_id>.<export>` and use the ordinary dynamic gateway. The
+durable publish/promote/inspect/selected-invoke/rollback kernel remains a Rust
+API, as documented in `PROGRAMMABLE_WASM_CAPABILITY.md`.
+
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.
 

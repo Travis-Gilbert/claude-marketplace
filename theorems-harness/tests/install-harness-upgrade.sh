@@ -39,7 +39,9 @@ for target_root in "$claude_dir" "$codex_dir"; do
     [[ ! -e "$target_root/$skill" ]]
   done
   [[ -f "$target_root/practice-system/SKILL.md" ]]
+  [[ -f "$target_root/programmable-wasm/SKILL.md" ]]
   [[ -f "$target_root/replay-last-run/SKILL.md" ]]
+  [[ -f "$target_root/solvers/SKILL.md" ]]
   [[ -f "$target_root/writing-engineering/SKILL.md" ]]
 done
 

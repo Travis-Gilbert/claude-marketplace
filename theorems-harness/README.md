@@ -6,7 +6,8 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 
 - Shared skill packages under `skills/`, including the adaptive Harness,
   planning/execution, practice-system, replay, coordination, memory, code,
-  writing, design, and Rust engineering surfaces.
+  stable solvers, programmable WASM, writing, design, and Rust engineering
+  surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -121,6 +122,9 @@ memory") and include the wire-level identifier only when it matters.
   `calibrationReliability`. Flat compatibility uses `verification_record`,
   `verification_receipt`, `verification_explain`, `verification_allocate`, and
   `calibration_reliability`.
+- Dynamic capabilities: `tool_search`, `describe`, and `invoke`. Stable solver
+  affordances are `constraint.check` and `constraint.optimize`. Installed app
+  WASM exports use `wasm_plugin:<plugin_id>.<export>`.
 
 For memory, prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`, nested
 `links`/`related`, and the `rememberMemory`, `reviseMemory`, `forgetMemory`, and
@@ -137,6 +141,18 @@ tenant, actor, and binding claims are authoritative; head/model labels remain
 reported metadata, confidence is not proof, and calibration admission tier is
 not authentication. The exact mapping and reporting rules live in
 `references/VERIFICATION_CAPABILITY.md`.
+
+Stable constraint actions are dynamic affordances rather than dedicated flat
+or GraphQL tools. Discover, describe, and invoke them through the gateway, then
+interpret the typed operation receipt and its proof eligibility. Exact schemas,
+budgets, refusal semantics, and current cancellation/persistence limits live in
+`references/SOLVER_CAPABILITY.md`.
+
+Programmable WASM keeps its durable Rust registry lifecycle separate from the
+callable exports of installed app manifests. Agents may use the dynamic gateway
+for installed exports, but the publish/promote/inspect/selected-invoke/rollback
+lifecycle has no MCP or GraphQL projection yet. See
+`references/PROGRAMMABLE_WASM_CAPABILITY.md`.
 
 The ambient practice graph is selected through Ensemble and compounds through
 the ordinary run/event/episode path. It does not add a second workflow engine
@@ -201,8 +217,9 @@ From a local checkout:
 
 The default `core` bundle installs `/harness`, coordination, the ambient
 practice system, code discovery, encode, research, peer review, and execute
-skills. The `full` bundle adds replay, writing, design, and specialist skills. Use
-`--claude-only` or `--codex-only` for one host.
+skills. The `full` bundle adds replay, solvers, programmable WASM, writing,
+design, and specialist skills. Use `--claude-only` or `--codex-only` for one
+host.
 
 ## Install (Codex)
 

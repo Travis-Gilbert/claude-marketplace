@@ -17,6 +17,8 @@ narrow entrypoints, but they are not separate products.
 | `research` | Public utility command | Runs fractal expansion, gap-frontier discovery, and code-symbol discovery | Keep available |
 | `encode` | Public and agent-triggerable command | Records feedback, solutions, and postmortems | Keep available |
 | `replay-last-run` | Public audit utility | Selects the latest eligible run, deterministically replays it, and returns typed integrity evidence | Canonical |
+| `solvers` | Focused capability workflow | Discovers, describes, and invokes stable `constraint.check` and `constraint.optimize` affordances and interprets typed proof receipts | Canonical |
+| `programmable-wasm` | Focused capability workflow | Separates installed app exports (`wasm_plugin:<plugin_id>.<export>`) from the Rust-only durable lifecycle | Canonical |
 | `writing-engineering` | Public writing utility | Applies Writing Engineering with the 1918 Elements rules integrated into one ruleset and receipt | Canonical |
 | `theorize` | Internal phase skill | Internal `theorize` mode | Keep available |
 | `planning-theorem` | Internal phase skill | Internal `plan` mode | Keep available |
@@ -101,6 +103,16 @@ support/attack lineage, graph-version freshness, authenticated actor/binding
 admission, self-reported head/model limits, and the boundary between reliability
 tiers and authorization. See `VERIFICATION_CAPABILITY.md`.
 
+Stable solver teaching uses only the dynamic `tool_search` -> `describe` ->
+`invoke` sequence for `constraint.check` and `constraint.optimize`, preserving
+budgets, provider provenance, refusal, and proof eligibility. See
+`SOLVER_CAPABILITY.md`.
+
+Programmable WASM teaching exposes installed app exports through the same
+dynamic gateway while keeping publish, promote, inspect, selected invocation,
+receipt lookup, and rollback at the current Rust substrate boundary. See
+`PROGRAMMABLE_WASM_CAPABILITY.md`.
+
 Internal capability language:
 
 - `theorize` -> `/harness mode=theorize`
@@ -138,6 +150,7 @@ Internal capability language:
 - `PLAN_TEMPLATE.md`
 - `PLANNED-CAPABILITY-PLUGIN-IDEAS.md`
 - `PRODUCTION_GATES.md`
+- `PROGRAMMABLE_WASM_CAPABILITY.md`
 - `PROFILES.md`
 - `REFS_AUDIT.md`
 - `REFS_MANIFEST.md`
@@ -145,6 +158,7 @@ Internal capability language:
 - `ROUTING.md`
 - `SDK_DATABASE_HARNESS.md`
 - `SETTINGS.md`
+- `SOLVER_CAPABILITY.md`
 - `UI_VISUAL_PROJECT_GATES.md`
 - `VERIFICATION_CAPABILITY.md`
 
