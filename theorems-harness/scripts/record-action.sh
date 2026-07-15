@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # PostToolUse hook. Records the tool call into the harness run as an event,
 # so the timeline is replayable and comparable across runs.
-# Background: best-effort. If the backend is slow or unreachable, drop the
-# event silently rather than block the session.
+# Delivery is queued locally with a stable hook-event key. The hook returns
+# immediately; transport failures remain retryable and visible in ambient
+# status rather than silently dropping the event.
 
 # shellcheck disable=SC1091
 source "$(dirname "$0")/lib.sh"
@@ -27,8 +28,8 @@ tool_response=$(echo "$input" | jq -c '.tool_response // .response // .result //
 
 step_body=$(jq -n \
   --arg tool "$tool_name" \
-  --argjson tin "${tool_input:-{}}" \
-  --argjson tout "${tool_response:-{}}" \
+  --argjson tin "$tool_input" \
+  --argjson tout "$tool_response" \
   '{
     event_subtype: "tool_use",
     tool: $tool,
@@ -37,7 +38,15 @@ step_body=$(jq -n \
     timestamp: (now | todate)
   }')
 
-# Best-effort, fire-and-forget so the user's session isn't slowed.
-( theorem_append_transition "$run_id" "SESSION.EVENT_RECORDED" "${THEOREM_ACTOR:-$(theorem_host)}" "$step_body" "tool-use:$sid:$tool_name:$(date -u +%s)" >/dev/null 2>&1 || true ) &
+tool_event_id=$(echo "$input" | jq -r '.tool_use_id // .toolUseId // .event_id // .eventId // empty' 2>/dev/null || echo "")
+if [ -z "$tool_event_id" ]; then
+  tool_event_id=$(printf '%s' "$input" | jq -cS . 2>/dev/null | shasum -a 256 | awk '{print $1}')
+fi
+request_key="tool-use:$sid:$tool_event_id"
+order_hash=$(printf '%s' "$request_key" | shasum -a 256 | awk '{print substr($1, 1, 16)}')
+theorem_ambient_queue_transition \
+  "$cwd" "$sid" "200-$order_hash" "$run_id" "SESSION.EVENT_RECORDED" \
+  "${THEOREM_ACTOR:-$(theorem_host)}" "$step_body" "$request_key" \
+  >/dev/null 2>&1 || true
 
 printf '{"continue":true}\n'

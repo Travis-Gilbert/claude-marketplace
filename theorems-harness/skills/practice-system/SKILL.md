@@ -47,7 +47,11 @@ Map the abstract practices to real host capabilities:
 
 Never fabricate `practice_status`, `practice_explain`, or another diagnostic
 tool. Use those names only after the active MCP server actually registers them.
-Until then, inspect the run replay and ordinary plan/coordination receipts.
+Until then, inspect `harness_run` plus the practice-graph status stamped in its
+run scope. For local hook health, use `scripts/ambient-status.sh --cwd <repo>
+--session <id> --refresh`: it reads the real `harness_run`, `context_status`, and
+`context_explain` surfaces and explicitly reports that practice and close-
+harvest receipt diagnostics remain unavailable.
 
 ## Activation and reentrancy
 

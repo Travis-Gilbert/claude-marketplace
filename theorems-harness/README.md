@@ -292,6 +292,21 @@ the ordinary run/event/episode path. It does not add a second workflow engine
 or memory store. The 1918 Elements rules extend Writing Engineering in the same
 pack and receipt; there is no parallel Elements mode.
 
+Lifecycle writes use a durable session queue under
+`.theorem/ambient/<session>/`. Stable request keys make hook retries and lost
+responses idempotent; one short-lived worker preserves run ordering without
+blocking the agent. Transport or MCP refusals leave the call queued and mark
+`status.json` degraded. `scripts/ambient-health-hook.sh` surfaces that state at
+SessionStart and prompt boundaries, while `scripts/ambient-status.sh --cwd
+<repo> --session <id> --refresh` combines local delivery health with the real
+`harness_run`, `context_status`, and `context_explain` reads.
+
+The runtime selects practices at typed run boundaries and performs episode
+capture plus Compound Engineering attribution when `RUN.CLOSED` is accepted.
+The current catalog does not register `practice_status`, `practice_explain`, or
+a direct close-harvest receipt read, so ambient diagnostics report those gaps
+instead of aliasing `ensemble_select` or claiming unobservable live evidence.
+
 ## Configuration
 
 Codex plugin hooks are off unless the host config enables them:
@@ -321,6 +336,7 @@ Claude Code uses `hooks/hooks.json`; Codex uses the explicit `hooks` path in `.c
 | `THEOREM_REVIEW_RUN_TESTS` | `0` | Set to `1` to include project test commands in the changed-language review pass. |
 | `THEOREM_REPO_HYGIENE_LARGE_FILE_BYTES` | `5242880` | Size threshold for large untracked-file hygiene warnings. |
 | `THEOREM_DEBUG` | `0` | Set to `1` to log hook activity to stderr |
+| `THEOREM_AMBIENT_SYNC` | `0` | Test/oracle switch that drains ambient calls inline. Normal hooks leave this off so delivery is non-blocking. |
 | `THEOREM_PEER_REVIEW_BASE` | empty | Optional base ref/commit used by `scripts/peer-review-request.sh` when preparing a peer-review packet. Defaults to upstream merge-base or `HEAD`. |
 | `THEOREM_PEER_REVIEW_ACTOR` | host actor | Optional actor override for peer-review packets. |
 | `THEOREM_PEER_REVIEW_TARGET` | other main agent | Optional target override for peer-review packets. |
@@ -398,6 +414,7 @@ plugin_hooks = true
 - `harness_prepare` (compile the Context Brief from Ensemble selection plus memory recall)
 - `harness_append_transition` (append run lifecycle events)
 - `harness_run` (read run event ledgers)
+- `context_status` and `context_explain` (read the admitted context lease and lineage)
 - GraphQL code fields for ingest/reindex/status/search/context/explain/spec,
   drift, features, and obligations; flat hooks use `compute_code` and
   `code_ingest` where needed
@@ -406,3 +423,15 @@ plugin_hooks = true
 - `remember`, `recall`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 
 Failure semantics: every hook fails open. Backend 500, missing jq, malformed responses all result in `{"continue": true}` so the user's session never breaks because the plugin had a bad day.
+
+Offline ambient proof is deterministic and does not touch installed state or a
+live tenant:
+
+```bash
+scripts/check-harness-ambient-session.sh --tenant Travis-Gilbert
+```
+
+Use `--mode local --mcp-url http://127.0.0.1:<port>/mcp` for an explicit local
+host. Live mode additionally requires `THEOREM_AMBIENT_LIVE=1` and an admitted
+token; it remains blocked until the server projects direct practice and
+close-harvest diagnostics. Fixture success is never reported as live evidence.

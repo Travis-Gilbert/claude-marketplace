@@ -58,6 +58,7 @@ if [ -z "$run_id" ]; then
     --arg actor "$actor" \
     --arg repo "$repo_label" \
     --arg branch "$branch" \
+    --arg tenant "$tenant" \
     '{
       task: ($actor + " session"),
       actor: $actor,
@@ -67,11 +68,14 @@ if [ -z "$run_id" ]; then
         cwd: $cwd,
         repo: $repo,
         branch: $branch,
+        tenant_slug: $tenant,
         permissions: ["graph_read", "code_read", "web_browse"]
       }
     }')
-  (theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$create_payload" "session-start:$sid" >/dev/null 2>&1 || true) &
   theorem_set_run_id "$sid" "$run_id"
+  theorem_ambient_queue_transition \
+    "$cwd" "$sid" "010" "$run_id" "RUN.CREATED" "$actor" "$create_payload" "session-start:$sid" \
+    >/dev/null 2>&1 || true
 fi
 
 prepare_body=$(jq -n \
@@ -95,8 +99,25 @@ if [ -z "$artifact_response" ] || ! printf '%s' "$artifact_response" | jq empty 
   exit 0
 fi
 
+artifact_id=$(printf '%s' "$artifact_response" | jq -r '.brief_id // .context_lease.brief_id // .signature // .decision_content_hash // .brief.signature // ""')
+context_action=$(printf '%s' "$artifact_response" | jq -r '.context_action // "compile"')
+prompt_event_id=$(printf '%s' "$prompt" | shasum -a 256 | awk '{print $1}')
 artifact_body=$(printf '%s' "$artifact_response" | jq -r '.rendered_markdown // .brief_markdown // .markdown // empty')
 if [ -z "$artifact_body" ]; then
+  if [ "$context_action" = "reuse" ] && [ -n "$artifact_id" ]; then
+    acting_payload=$(jq -n --arg actor "$actor" '{adapter: $actor, started_at: (now | todate)}')
+    theorem_ambient_queue_transition "$cwd" "$sid" "090" "$run_id" "AGENT.ACTING" "$actor" "$acting_payload" "agent-acting:$sid" >/dev/null 2>&1 || true
+    context_boundary=$(jq -n \
+      --arg brief_id "$artifact_id" \
+      --arg generation_id "$(printf '%s' "$artifact_response" | jq -r '.context_generation.generation_id // .context_lease.generation_id // empty')" \
+      --arg lease_id "$(printf '%s' "$artifact_response" | jq -r '.context_lease.lease_id // empty')" \
+      '{event_subtype:"context_boundary",brief_id:$brief_id,context_action:"reuse",generation_id:$generation_id,lease_id:$lease_id}')
+    theorem_ambient_queue_transition \
+      "$cwd" "$sid" "190-$prompt_event_id" "$run_id" "SESSION.EVENT_RECORDED" "$actor" "$context_boundary" \
+      "context-boundary:$sid:$artifact_id:$prompt_event_id" >/dev/null 2>&1 || true
+    printf '{"continue":true,"suppressOutput":true}\n'
+    exit 0
+  fi
   theorem_warn "harness_prepare response missing rendered markdown; passing prompt through"
   printf '{"continue":true}\n'
   exit 0
@@ -127,8 +148,6 @@ POSTURE
 )
 artifact_body="${artifact_body}${posture_block}"
 
-artifact_id=$(printf '%s' "$artifact_response" | jq -r '.signature // .decision_content_hash // .brief.signature // ""')
-
 runs_dir="$THEOREM_STATE_DIR/runs/${sid//[\/:]/_}"
 mkdir -p "$runs_dir"
 printf '%s' "$artifact_response" > "$runs_dir/last-artifact.json"
@@ -158,32 +177,53 @@ if [ -n "$artifact_id" ]; then
     }')
   context_plan_payload=$(jq -n \
     --arg sig "$artifact_id" \
-    --argjson budget "${THEOREM_BUDGET_TOKENS}" \
-    '{budget_tokens: $budget, plan_hash: $sig, candidate_token_count: 1}')
+    --argjson budget "$(printf '%s' "$artifact_response" | jq '.context_compile_receipt.token_budget // 1')" \
+    --argjson candidate_tokens "$(printf '%s' "$artifact_response" | jq '.context_compile_receipt.candidate_tokens // 0')" \
+    '{budget_tokens: $budget, plan_hash: $sig, candidate_token_count: $candidate_tokens}')
   context_compiled_payload=$(jq -n \
     --arg sig "$artifact_id" \
-    --argjson budget "${THEOREM_BUDGET_TOKENS}" \
+    --argjson budget "$(printf '%s' "$artifact_response" | jq '.context_compile_receipt.token_budget // 1')" \
+    --argjson used_tokens "$(printf '%s' "$artifact_response" | jq '.context_compile_receipt.used_tokens // 0')" \
+    --argjson included_count "$(printf '%s' "$artifact_response" | jq '[.context_compile_receipt.dispositions[]? | select(.disposition == "included")] | length')" \
+    --argjson excluded_count "$(printf '%s' "$artifact_response" | jq '[.context_compile_receipt.dispositions[]? | select(.disposition != "included")] | length')" \
+    --argjson token_ledger "$(printf '%s' "$artifact_response" | jq '.context_compile_receipt // {}')" \
     '{
       artifact_id: $sig,
-      capsule_tokens: 1,
+      capsule_tokens: $used_tokens,
       budget_tokens: $budget,
-      included_atom_count: 0,
-      excluded_atom_count: 0,
-      token_ledger: {}
+      included_atom_count: $included_count,
+      excluded_atom_count: $excluded_count,
+      token_ledger: $token_ledger
     }')
   injected_payload=$(jq -n \
     --arg artifact_id "$artifact_id" \
     --arg actor "$actor" \
     '{ artifact_id: $artifact_id, adapter: $actor, target: "cli" }')
   acting_payload=$(jq -n --arg actor "$actor" '{adapter: $actor, started_at: (now | todate)}')
-  (theorem_append_transition "$run_id" "HOST.OBSERVED" "$actor" "$host_payload" "host-observed:$sid" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "TASK.RESOLVED" "$actor" "$task_payload" "task-resolved:$sid:$artifact_id" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "PROFILE.SELECTED" "$actor" "$profile_payload" "profile-selected:$sid:$artifact_id" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "TOOLKIT.COMPILED" "$actor" "$toolkit_payload" "toolkit-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "CONTEXT.PLANNED" "$actor" "$context_plan_payload" "context-planned:$sid:$artifact_id" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "CONTEXT.COMPILED" "$actor" "$context_compiled_payload" "context-compiled:$sid:$artifact_id" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "CONTEXT.INJECTED" "$actor" "$injected_payload" "context-injected:$sid:$artifact_id" >/dev/null 2>&1 || true) &
-  (theorem_append_transition "$run_id" "AGENT.ACTING" "$actor" "$acting_payload" "agent-acting:$sid:$artifact_id" >/dev/null 2>&1 || true) &
+  theorem_ambient_queue_transition "$cwd" "$sid" "020" "$run_id" "HOST.OBSERVED" "$actor" "$host_payload" "host-observed:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "030" "$run_id" "TASK.RESOLVED" "$actor" "$task_payload" "task-resolved:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "040" "$run_id" "PROFILE.SELECTED" "$actor" "$profile_payload" "profile-selected:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "050" "$run_id" "TOOLKIT.COMPILED" "$actor" "$toolkit_payload" "toolkit-compiled:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "060" "$run_id" "CONTEXT.PLANNED" "$actor" "$context_plan_payload" "context-planned:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "070" "$run_id" "CONTEXT.COMPILED" "$actor" "$context_compiled_payload" "context-compiled:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "080" "$run_id" "CONTEXT.INJECTED" "$actor" "$injected_payload" "context-injected:$sid" >/dev/null 2>&1 || true
+  theorem_ambient_queue_transition "$cwd" "$sid" "090" "$run_id" "AGENT.ACTING" "$actor" "$acting_payload" "agent-acting:$sid" >/dev/null 2>&1 || true
+
+  context_boundary=$(jq -n \
+    --arg brief_id "$artifact_id" \
+    --arg context_action "$context_action" \
+    --arg generation_id "$(printf '%s' "$artifact_response" | jq -r '.context_generation.generation_id // .context_lease.generation_id // empty')" \
+    --arg lease_id "$(printf '%s' "$artifact_response" | jq -r '.context_lease.lease_id // empty')" \
+    '{
+      event_subtype: "context_boundary",
+      brief_id: $brief_id,
+      context_action: $context_action,
+      generation_id: $generation_id,
+      lease_id: $lease_id
+    }')
+  theorem_ambient_queue_transition \
+    "$cwd" "$sid" "190-$prompt_event_id" "$run_id" "SESSION.EVENT_RECORDED" "$actor" "$context_boundary" \
+    "context-boundary:$sid:$artifact_id:$prompt_event_id" >/dev/null 2>&1 || true
 fi
 
 jq -n \
