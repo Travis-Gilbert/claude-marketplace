@@ -92,7 +92,7 @@ run. Name the first divergent sequence and field when present, along with the
   refusal history. That is a different ledger.
 - Use `git diff` for file changes and the visible conversation for chat
   transcript.
-- Do not call retired `harness_begin`, `harness_context`, `harness_fork`, or
-  `harness_compare` interfaces.
+- Do not guess orchestration aliases. If the canonical tool is unavailable,
+  report that replay cannot be proven on the current host.
 - Do not claim that replay reproduced external side effects. The explicit
   receipt field is `side_effects_replayed: false`.

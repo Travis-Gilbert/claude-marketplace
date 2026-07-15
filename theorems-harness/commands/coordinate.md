@@ -1,5 +1,5 @@
 ---
-description: Coordinate with another head over the shared substrate: read the room, announce your own work and semantic overlap, and use @mentions only for blocks and forks.
+description: "Coordinate with another head over the shared substrate: read the room, announce your own work and semantic overlap, and use @mentions only for blocks and forks."
 argument-hint: <message-or-coordination-task>
 allowed-tools: Read, Grep, Glob, LS, Bash, Skill
 ---

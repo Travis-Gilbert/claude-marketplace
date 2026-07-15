@@ -152,8 +152,7 @@ Internal capability language:
 
 - Host environments may retain an installed-cache copy of removed skills until
   the plugin is refreshed. Source and generated manifests intentionally omit
-  `show-context`, `context-refresh`, `code_theorem`, and Ponytail; none has an
-  alias.
+  every retired interface, and none has an alias.
 - Redis/harness writeback is environment-sensitive. Orchestrate must report
   writeback as proven or deferred per run.
 - The default harness SDK client and tenant-scoped THG product client remain

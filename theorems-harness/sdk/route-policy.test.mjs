@@ -41,10 +41,18 @@ function policy(options = {}) {
   assert.equal(selection.receipt.dataDir, null);
 }
 
-{
+for (const retiredVerb of [
+  "harness_describe_current",
+  "orchestrate_refresh",
+  "code_theorem",
+  "harness_begin",
+  "harness_context",
+  "harness_fork",
+  "harness_compare",
+]) {
   assert.throws(
-    () => policy().select({ verb: "orchestrate_refresh" }),
-    /no route family registered for orchestrate_refresh/,
+    () => policy().select({ verb: retiredVerb }),
+    new RegExp(`no route family registered for ${retiredVerb}`),
   );
 }
 

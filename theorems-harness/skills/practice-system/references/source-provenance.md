@@ -31,5 +31,5 @@ and its source skill hash is
 - Compound Engineering owns outcome attribution and proposal-based learning.
 - Writing Engineering owns Elements-derived rules and receipts.
 
-Do not restore Ponytail aliases, standalone episodic-memory storage, or a
+Do not restore retired practice aliases, standalone episodic-memory storage, or a
 parallel Elements skill pack.

@@ -1,5 +1,5 @@
 ---
-description: The default Theorem's Harness command. Treats the user's intent as permission to use the best harness capability mix for the session: observe, route, plan, coordinate, execute, validate, peer-review, encode, and report as the work demands.
+description: "The default Theorem's Harness command. Treats the user's intent as permission to use the best harness capability mix for the session: observe, route, plan, coordinate, execute, validate, peer-review, encode, and report as the work demands."
 argument-hint: <intent-or-task> [mode=plan|execute|theorize|research|coordinate]
 allowed-tools: Read, Write, Edit, Grep, Glob, LS, Bash, Agent, Skill
 ---

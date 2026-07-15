@@ -5,7 +5,7 @@ IFS=$'\n\t'
 
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly PLUGIN_ROOT="$REPO_ROOT/theorems-harness"
-readonly RETIRED_PATTERN='show-context|context-refresh|code_theorem|ponytail(-audit|-debt|-gain|-help|-review)?'
+readonly RETIRED_ACTIVE_PATTERN='show[-_]context|context[-_]refresh|code[-_]theorem|harness[-_]describe[-_]current|orchestrate[-_]refresh|harness[-_](begin|context|fork|compare)|ponytail([-_ ](audit|debt|gain|help|review))?'
 
 retired_names=(
   "show-context"
@@ -34,18 +34,24 @@ done
 active_surfaces=(
   "$PLUGIN_ROOT/.claude-plugin"
   "$PLUGIN_ROOT/.codex-plugin"
+  "$PLUGIN_ROOT/agents"
   "$PLUGIN_ROOT/commands"
   "$PLUGIN_ROOT/hooks"
+  "$PLUGIN_ROOT/sdk/route-policy.mjs"
+  "$PLUGIN_ROOT/skills"
+  "$PLUGIN_ROOT/README.md"
   "$PLUGIN_ROOT/plugin.manifest.json"
+  "$PLUGIN_ROOT/references/PLUGIN_INVENTORY.md"
+  "$PLUGIN_ROOT/references/ROUTING.md"
 )
 
 if command -v rg >/dev/null 2>&1; then
-  if rg -n -i "$RETIRED_PATTERN" "${active_surfaces[@]}"; then
-    fail "a retired name remains in an active manifest, hook, or command surface"
+  if rg -n -i -- "$RETIRED_ACTIVE_PATTERN" "${active_surfaces[@]}"; then
+    fail "a retired interface remains in active plugin teaching or executable surfaces"
   fi
 else
-  if grep -ERin "$RETIRED_PATTERN" "${active_surfaces[@]}"; then
-    fail "a retired name remains in an active manifest, hook, or command surface"
+  if grep -ERin -- "$RETIRED_ACTIVE_PATTERN" "${active_surfaces[@]}"; then
+    fail "a retired interface remains in active plugin teaching or executable surfaces"
   fi
 fi
 
@@ -58,6 +64,11 @@ done
 [[ -f "$PLUGIN_ROOT/skills/replay-last-run/SKILL.md" ]] || fail "real replay-last-run skill is missing"
 [[ -f "$PLUGIN_ROOT/commands/replay-last-run.md" ]] || fail "real replay-last-run command is missing"
 [[ -f "$PLUGIN_ROOT/skills/practice-system/SKILL.md" ]] || fail "replacement practice system is missing"
+
+grep -Fq '`replay_last_run`' "$PLUGIN_ROOT/skills/replay-last-run/SKILL.md" \
+  || fail "replay-last-run does not teach the canonical replay_last_run tool"
+grep -Fq 'replay_last_run' "$PLUGIN_ROOT/sdk/route-policy.mjs" \
+  || fail "route policy does not register the canonical replay_last_run tool"
 
 readonly PLAN_SEQUENCE='claim.*patch_proposed.*spawn_verify.*submit_verify.*prove.*done'
 for teaching in \
@@ -82,6 +93,7 @@ if tr '\n' ' ' < "$PLUGIN_ROOT/skills/execute/SKILL.md" \
 fi
 
 "$PLUGIN_ROOT/tests/install-harness-upgrade.sh"
+node "$PLUGIN_ROOT/sdk/route-policy.test.mjs"
 "$PLUGIN_ROOT/tests/code-capability-surface.sh"
 "$PLUGIN_ROOT/tests/memory-capability-surface.sh"
 "$PLUGIN_ROOT/tests/verification-capability-surface.sh"

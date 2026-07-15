@@ -17,7 +17,7 @@ revise that choice as evidence changes.
 | `/compute_code` | GraphQL-first code ingest, discovery, explanation, specification, drift, features, and obligations, with consolidated flat MCP and graph-structural fallbacks. |
 
 Context compilation is ambient. Inspect or refresh it only through a registered
-typed context capability; the retired `/context-refresh` command is not an
+typed context capability; retired refresh commands are not an
 alias for an unregistered tool.
 
 Memory is one tenant/project-bound capability, not separate recall, episode,
@@ -127,7 +127,7 @@ Use `codex-sdk-harness-product` when work references:
 - `theorem-context-sdk/theorem-context-py/theorem_context/product.py`
 - `TheoremContextClient`
 - `TheoremHotGraphClient`
-- harness begin/get/step/search/context/patch/replay/fork/compare
+- current Plan actions, Plan replay, deterministic run replay, and patch flows
 - THG product `command`, `batch`, `run`, `contextPack`, or `graphQuery`
 - `ContextArtifact`
 - TypeScript/Python SDK parity
