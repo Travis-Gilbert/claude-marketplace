@@ -1,0 +1,14 @@
+{
+  "mutation": {
+    "kind": "add_entry",
+    "family": "coordination",
+    "entry": {
+      "surface": "flat_mcp",
+      "name": "mentions_wait",
+      "guidance": "must refuse",
+      "maturity": "removed",
+      "live_status": "missing",
+      "schema": "none"
+    }
+  }
+}

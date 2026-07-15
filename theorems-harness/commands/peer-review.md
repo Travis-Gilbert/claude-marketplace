@@ -13,7 +13,7 @@ Run the theorems-harness:peer-review skill against the user's request.
 3. If no packet exists and the current directory is a git repo, generate one
    with `scripts/peer-review-request.sh`.
 4. Prefer the shared coordination tools in this order: `presence`, `mentions`,
-   `coordinate`, `mentions_wait`.
+   `coordinate`, `mentions`, or `stream_read`.
 5. Return the packet path, peer-review status, findings, and reconciliation.
 
 Use `/coordinate` for simple messages. Use `/peer-review` when a diff needs

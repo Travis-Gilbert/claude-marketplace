@@ -1,0 +1,7 @@
+{
+  "mutation": {
+    "kind": "set_skill",
+    "family": "identity",
+    "value": "missing-identity-skill"
+  }
+}

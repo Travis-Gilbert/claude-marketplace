@@ -61,8 +61,8 @@ Return a concise `Capability Router Brief`:
 
 - Use `coordinate` when another agent may overlap the repo, branch, task, or
   files. Prefer `coordination_intent` file-level claims and
-  `coordination_reflection` handoff state over broad lane ownership or message
-  handshakes.
+  `coordination_record` with `record_type: "reflection"` for handoff state over
+  broad lane ownership or message handshakes.
 - Use `compile_context` when the context artifact is missing, stale, or too
   narrow for the task.
 - Use `theorize` briefly when multiple viable approaches exist and the wrong

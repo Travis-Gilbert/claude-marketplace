@@ -6,6 +6,8 @@ version: 0.1.0
 
 # Harness Practice System
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Apply the Harness-native practice graph for substantive implementation work.
 Treat it as an ambient, versioned workflow selected through Ensemble, not as a
 collection of slash commands. Preserve user and project instructions as higher
@@ -45,7 +47,11 @@ Map the abstract practices to real host capabilities:
 
 Never fabricate `practice_status`, `practice_explain`, or another diagnostic
 tool. Use those names only after the active MCP server actually registers them.
-Until then, inspect the run replay and ordinary plan/coordination receipts.
+Until then, inspect `harness_run` plus the practice-graph status stamped in its
+run scope. For local hook health, use `scripts/ambient-status.sh --cwd <repo>
+--session <id> --refresh`: it reads the real `harness_run`, `context_status`, and
+`context_explain` surfaces and explicitly reports that practice and close-
+harvest receipt diagnostics remain unavailable.
 
 ## Activation and reentrancy
 
@@ -74,8 +80,12 @@ Treat output as complete only when a current oracle supports it.
 - Preserve typed refusals and failed checks as evidence rather than hiding
   them.
 - Keep one anecdote as an episode, not as a promoted practice.
-- Require repeated evidence and the declared promotion gate before revising a
-  canonical practice.
+- Require same-tenant, same-project, same-practice-graph clustered evidence and
+  the declared promotion gate before revising a canonical practice. The default
+  gate requires 3 distinct episodes, 3 distinct runs, 2 distinct sessions, 2
+  positive outcomes, and a positive rate of 2/3.
+- Keep the committed promotion receipt and its authoritative episode support
+  edges as the proof. Never promote from caller-supplied citations alone.
 
 ## Run-to-run learning
 
@@ -92,10 +102,17 @@ Ensemble selection
 
 Do not add a second memory store or learning loop. Capture episodes in the
 tenant-bound Harness substrate. Retrieve bounded prior evidence at selection
-boundaries. Keep explicit opt-out and do-not-index markers authoritative.
+boundaries and retain `rankSignals` plus episode provenance in citations. Keep
+explicit opt-out and do-not-index markers authoritative. Treat retro-import as
+an idempotent, reentrancy-safe runtime path whose partial recovery follows its
+persisted phase receipts; it is not an agent MCP tool.
 
 ## Progressive disclosure
 
 Read `references/source-provenance.md` when auditing upstream lineage,
 licensing, source hashes, or the boundary between imported semantics and
 Theorem-specific behavior.
+
+Read `../../references/MEMORY_CAPABILITY.md` when applying episode capture,
+tenant/project isolation, opt-out, deduplication, retro-import recovery, ranked
+recall, or practice-promotion rules.

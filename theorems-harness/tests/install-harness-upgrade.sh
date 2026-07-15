@@ -6,6 +6,11 @@ plugin_root=$(cd "$(dirname "$0")/.." && pwd)
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 
+fail() {
+  printf 'install-harness upgrade check failed: %s\n' "$*" >&2
+  exit 1
+}
+
 claude_dir="$fixture/claude"
 codex_dir="$fixture/codex"
 retired_skills=(
@@ -36,11 +41,29 @@ done
 
 for target_root in "$claude_dir" "$codex_dir"; do
   for skill in "${retired_skills[@]}"; do
-    [[ ! -e "$target_root/$skill" ]]
+    [[ ! -e "$target_root/$skill" ]] \
+      || fail "retired skill remains installed: $target_root/$skill"
   done
-  [[ -f "$target_root/practice-system/SKILL.md" ]]
-  [[ -f "$target_root/replay-last-run/SKILL.md" ]]
-  [[ -f "$target_root/writing-engineering/SKILL.md" ]]
+  for skill in \
+    agent-contracts \
+    agent-interop \
+    commitments-policy \
+    context-management \
+    coordination-operations \
+    data-reconstruction \
+    graph-lisp \
+    graph-storage \
+    identity-bindings \
+    learning-evolution \
+    practice-system \
+    programmable-wasm \
+    replay-last-run \
+    solvers \
+    verified-cognition \
+    writing-engineering; do
+    [[ -f "$target_root/$skill/SKILL.md" ]] \
+      || fail "full bundle did not install: $target_root/$skill"
+  done
 done
 
 printf 'install-harness upgrade cleanup passed\n'

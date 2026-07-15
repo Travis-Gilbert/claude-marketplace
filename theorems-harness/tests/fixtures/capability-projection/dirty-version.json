@@ -1,0 +1,6 @@
+{
+  "mutation": {
+    "kind": "set_plugin_version",
+    "value": "99.99.99"
+  }
+}

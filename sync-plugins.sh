@@ -13,6 +13,7 @@
 # Usage:
 #   ./sync-plugins.sh              # sync all plugins
 #   ./sync-plugins.sh d3-pro       # sync one plugin
+#   ./sync-plugins.sh --preserve-user-config theorems-harness
 #   ./sync-plugins.sh --status     # show sync status
 #   ./sync-plugins.sh --uninstall d3-pro  # remove a plugin
 
@@ -26,6 +27,7 @@ SETTINGS="$HOME/.claude/settings.json"
 # `<marketplace>/<name>.backup.*` is itself discoverable during slash-command
 # resolution — the orphan-plugin trap in CLAUDE.md. Keep them out of the scan path.
 BACKUP_DIR="$HOME/.claude/plugins/.sync-backups"
+PRESERVE_USER_CONFIG=false
 
 # Extra marketplace clones that also host these plugins (e.g. the desktop app's
 # own channel). We only re-point a plugin here if the marketplace ALREADY hosts
@@ -51,8 +53,8 @@ NC='\033[0m'
 find_plugins() {
     local search_dir="${1:-$DEV_DIR}"
     find "$search_dir" -maxdepth 4 -path "*/.claude-plugin/plugin.json" \
-        -not -path "*/worktrees/*" \
-        -not -path "*/.claude/worktrees/*" \
+        -not -path "$search_dir/worktrees/*" \
+        -not -path "$search_dir/.claude/worktrees/*" \
         -not -path "*/node_modules/*" \
         -exec dirname {} \; \
         | xargs -I{} dirname {} \
@@ -77,6 +79,14 @@ import json
 d = json.load(open('$plugin_dir/.claude-plugin/plugin.json'))
 print(d.get('version', '0.0.0'))
 " 2>/dev/null
+}
+
+# Create only the registry state needed by the installer. User settings remain
+# host-owned and are never created implicitly.
+ensure_registry() {
+    [[ -f "$REGISTRY" ]] && return 0
+    mkdir -p "$(dirname "$REGISTRY")"
+    printf '{\n  "version": 2,\n  "plugins": {}\n}\n' >"$REGISTRY"
 }
 
 # ─────────────────────────────────────────────
@@ -129,6 +139,7 @@ with open(registry_path, 'w') as f:
 enable_plugin() {
     local name="$1"
 
+    [[ "$PRESERVE_USER_CONFIG" == true ]] && return 0
     [[ ! -f "$SETTINGS" ]] && return 0
 
     python3 -c "
@@ -158,6 +169,7 @@ else:
 disable_plugin() {
     local name="$1"
 
+    [[ "$PRESERVE_USER_CONFIG" == true ]] && return 0
     [[ ! -f "$SETTINGS" ]] && return 0
 
     python3 -c "
@@ -396,7 +408,13 @@ uninstall_plugin() {
 # Main
 # ─────────────────────────────────────────────
 main() {
+    if [[ "${1:-}" == "--preserve-user-config" ]]; then
+        PRESERVE_USER_CONFIG=true
+        shift
+    fi
+
     mkdir -p "$MARKETPLACE"
+    ensure_registry
 
     if [[ "${1:-}" == "--status" ]]; then
         show_status

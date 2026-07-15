@@ -24,6 +24,7 @@ head_sha=$(theorem_git_head "$repo_root")
 existing=$(theorem_run_id "$sid")
 if [ -n "$existing" ]; then
   theorem_log "session $sid already has run $existing; reusing"
+  theorem_ambient_spawn_drain "$cwd" "$sid" >/dev/null 2>&1 || true
   printf '{"continue":true,"suppressOutput":true}\n'
   exit 0
 fi
@@ -56,9 +57,10 @@ payload=$(jq -n \
     } + (if ($tenant | length) > 0 then {tenant_slug: $tenant} else {} end))
   }')
 
-(theorem_append_transition "$run_id" "RUN.CREATED" "$actor" "$payload" "session-start:$sid" >/dev/null 2>&1 || true) &
-
 theorem_set_run_id "$sid" "$run_id"
+theorem_ambient_queue_transition \
+  "$cwd" "$sid" "010" "$run_id" "RUN.CREATED" "$actor" "$payload" "session-start:$sid" \
+  >/dev/null 2>&1 || true
 theorem_log "began run $run_id for session $sid"
 
 printf '{"continue":true,"suppressOutput":true}\n'

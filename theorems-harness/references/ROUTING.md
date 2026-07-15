@@ -10,15 +10,126 @@ revise that choice as evidence changes.
 | Surface | Role |
 |---|---|
 | `/harness` / `theorems-harness` | Default opt-in. The agent observes, routes, acts, validates, remembers, and reports through the harness. |
-| `/coordinate` | Room digest, intent/reflection writes, presence, mentions, waits, and handoffs. |
+| `/coordinate` | Room digest, footprint intents, typed coordination records, mentions, and durable stream checkpoints. |
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
-| `/encode` | Durable feedback, solution, or postmortem write. |
-| `/compute_code` | Native CodeCrawler-backed code discovery, with graph-structural ranking fallback. |
+| `/encode` | Durable feedback, solution, or postmortem write through GraphQL `rememberMemory` with outcome metadata, or flat `encode` when needed. |
+| `/compute_code` | GraphQL-first code ingest, discovery, explanation, specification, drift, features, and obligations, with consolidated flat MCP and graph-structural fallbacks. |
 
-Context compilation is ambient. Inspect or refresh it only through a registered
-typed context capability; the retired `/context-refresh` command is not an
-alias for an unregistered tool.
+Identity is ambient and argument-free. Load `identity-bindings` when principal,
+project selection, actor, binding, active heads, memory/capability scope, or
+budget provenance matters. Prefer typed GraphQL `identityBindingStatus` and
+`identityBindingExplain`; use flat `identity_binding_status` and
+`identity_binding_explain` only for compatibility or diagnosis. Follow
+`IDENTITY_CAPABILITY.md` and do not infer identity from configuration or known
+projects.
+
+Context compilation is ambient, but its control surface is exact. Load
+`context-management`; inspect with GraphQL `contextStatus` / `contextExplain`
+or flat `context_status` / `context_explain`, prepare through `harness_prepare`
+or GraphQL `refreshContext`, and advance the epoch through
+`context_invalidate` or `invalidateContext`. Current PostToolUse and Claude
+PreCompact hooks do not advance the epoch, and Codex has no PreCompact hook.
+Keep that admitted-session boundary visible as documented in
+`CONTEXT_CAPABILITY.md`.
+
+Commitments, claims, constitution, and policy require a layer check before
+routing. Load `commitments-policy`. For remote work, use GraphQL
+`writeCoordinationRecord` / `recordClaim` and the real flat standing-decision
+lifecycle including `commitment_check`. For repository work, the canonical seam
+is Rust `assert_typed_claim`, typed commitment lifecycle, and
+`Constitution::refusal`; it has no remote projection. Follow
+`COMMITMENTS_POLICY_CAPABILITY.md` and never report a coordination record as a
+canonical typed assertion receipt.
+
+Graph Lisp routes to `graph-lisp` only for repository implementation, tests, or
+contract reasoning. The current capability is
+`rustyred_thg_graph_lisp::execute_capability`; it has no agent-callable remote
+projection, and effect requests refuse with `external_executor_required`. See
+`GRAPH_LISP_CAPABILITY.md` rather than inventing an MCP, GraphQL, or dynamic
+action.
+
+Data, instant-KG, DATAWAVE, resolve, or source-port work routes to
+`data-reconstruction`. Prefer typed Data, `harnessKg*`, and
+`reverseEngineerCompose` through `reverseEngineerPort` GraphQL fields where
+they exist. Use `resolve_ingest`, `resolve_entities`, `resolve_explain`,
+`datawave_ingest`, `reconstruct`, and `reconstruct_binary` only as their real
+flat-only tools. Follow `DATA_RECONSTRUCTION_CAPABILITY.md`; preserve explicit
+source SHAs, receipts, unknowns, `unresolved_obligations`, and validate-stage
+`not_run` rather than claiming end-to-end parity.
+
+Learning, GEPA, ReasoningBank, or evolution work routes to
+`learning-evolution`. Use canonical verification/calibration and memory/run
+outcomes for agent-callable learning evidence. Flat `programmable_graph` with
+`action: "evolve"` validates a tenant-bound proposal only; GEPA and
+`theorem-evolve` train/evaluate/promote/rollback remain Rust-only. Follow
+`LEARNING_EVOLUTION_CAPABILITY.md` and require independent outcomes before
+claiming improvement or promotion.
+
+Composed agents, live head-to-head messages, A2A, or ACP route to
+`agent-interop`. Use flat `composed_agent_run` for one admitted turn and
+`stream_publish` / `stream_read` / `stream_ack` for durable `head_call` events.
+The Head Call and ACP WebSockets are server protocols; A2A remains crate-level.
+Follow `AGENT_INTEROP_CAPABILITY.md` and claim a live provider only from
+returned invocation receipts.
+
+Memory is one tenant/project-bound capability, not separate recall, episode,
+and practice stores. Prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`,
+nested `links`/`related`, and the typed memory mutations. Route flat-only actor
+memory and Data API packets only when their advertised capability is needed.
+Keep `rankSignals` and episode provenance attached to retrieved context. Apply
+the opt-out, deduplication, retro-import reentrancy, and evidence-clustered
+practice-promotion rules in `MEMORY_CAPABILITY.md`.
+
+Verification and calibration are one canonical receipt capability. Prefer
+GraphQL `recordVerification`, `verificationReceipt`, `verificationExplain`,
+`verificationAllocate`, and `calibrationReliability`; use the corresponding
+flat `verification_*` and `calibration_reliability` tools only for compatibility
+or diagnosis. Route verifier confidence through the evidence and graph-version
+contract in `VERIFICATION_CAPABILITY.md`; do not treat self-reported head/model
+labels or a reliability admission tier as identity authority or proof.
+
+Constraint solving is a focused dynamic capability. Load `solvers`, then use
+`tool_search`, `describe`, and `invoke` for only `constraint.check` and
+`constraint.optimize`. Read `SOLVER_CAPABILITY.md` before treating a conclusion
+as proof; provider availability, bounds, cancellation, and proof eligibility
+are receipt facts.
+
+Verified decision, consistency, reconstruction, or repair requests route to
+`verified-cognition` only as a composition guide. Use real
+`constraint.check`, reconstruction, verification, and Plan surfaces; there is
+no verified-cognition or voice workflow orchestrator. Follow
+`VERIFIED_COGNITION_CAPABILITY.md` and keep proposals, `not_run` receipts,
+unresolved obligations, and proof separate.
+
+Programmable WASM has no remotely callable lifecycle yet. Load
+`programmable-wasm` for installed app exports shaped
+`wasm_plugin:<plugin_id>.<export>` and use the ordinary dynamic gateway. The
+durable publish/promote/inspect/selected-invoke/rollback kernel remains a Rust
+API, as documented in `PROGRAMMABLE_WASM_CAPABILITY.md`.
+
+Coordination, jobs, work graphs, session dispatch, or service health route to
+`coordination-operations`. Prefer the typed coordination and job fields where
+available; use real flat `coordination_record`, `stream_*`, `job_*`,
+`multihead_*`, and `spawn_session` surfaces only for their distinct state
+machines. HTTP `/health`, `/ready`, and `/version` are observations, not task
+tools. Follow `COORDINATION_OPERATIONS_CAPABILITY.md`; a footprint is not a
+lock, job submission is not execution, and accepted dispatch is not completion.
+
+Graph reads, algorithms, designated indexes, administrative mutations, graph
+versions, MCP resources, or storage readiness route to `graph-storage`.
+Prefer typed GraphQL reads and mutations, then use the exact advertised flat
+compatibility or flat-only name. Follow `GRAPH_STORAGE_CAPABILITY.md`; graph
+version repositories are caller-carried values, bulk writes can be partial,
+and RedCore, DocTree, AOF, AgentFS, and raw object-store internals are not
+agent-callable merely because the Rust substrate implements them.
+
+When work depends on result shape, refusal classification, pagination,
+truncation, retry, or proof, add `agent-contracts`. Discover the active catalog
+with MCP `initialize`, `tools/list`, and `graphql_introspect`, then apply the
+family contract in `AGENT_CONTRACTS_CAPABILITY.md`. Inspect protocol errors,
+tool-level `isError`, and GraphQL `{data, errors}` separately; never exchange a
+Data cursor, stream cursor, or `tool_result_fetch` byte offset.
 
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.
@@ -34,7 +145,17 @@ The router selects abilities, not rigid products:
 - `diagnose`
 - `coordinate`
 - `compile_context`
+- `identity`
+- `governance`
+- `graph_lisp`
+- `data_reconstruction`
+- `learning_evolution`
+- `agent_interop`
+- `coordination_operations`
+- `graph_storage`
+- `agent_contracts`
 - `research`
+- `verified_cognition`
 - `validate`
 - `peer_review`
 - `remember`
@@ -57,6 +178,26 @@ context refresh, or memory when the work demands it.
      `execute`
    - research, evidence, search, compare, current facts -> `research` or
      `compile_context`
+   - identity, principal, project selection, binding, active heads, scopes, or
+     budget provenance -> `identity`
+   - standing decision, commitment, claim conflict, constitution, or policy
+     receipt -> `governance`
+   - Graph Lisp read, eval, diff, explain, fuel, or permission boundary ->
+     `graph_lisp`
+   - Data records, instant KG, DATAWAVE, entity resolution, source
+     reconstruction, or port obligations -> `data_reconstruction`
+   - Learning outcomes, GEPA, ReasoningBank, candidate evaluation, promotion,
+     or evolve boundaries -> `learning_evolution`
+   - Composed agent, head call, A2A, ACP, or provider-head request ->
+     `agent_interop`
+   - Coordination room, stream, job, work graph, session dispatch, readiness,
+     or tool catalog status -> `coordination_operations`
+   - Graph read, algorithm, search, designation, bulk mutation, graph version,
+     MCP graph resource, index spine, or storage mode -> `graph_storage`
+   - Error, refusal, cursor, pagination, truncation, retry, idempotency, receipt,
+     or proof envelope -> `agent_contracts`
+   - Verified decision, consistency, reconstruction, repair, or voice boundary
+     -> `verified_cognition`
    - review, PR, diff, audit -> `peer_review`
    - remember, encode, postmortem, lesson -> `remember`
 4. If no concrete action emerges, run a short `theorize` pass, choose a default,
@@ -111,7 +252,7 @@ Use `codex-sdk-harness-product` when work references:
 - `theorem-context-sdk/theorem-context-py/theorem_context/product.py`
 - `TheoremContextClient`
 - `TheoremHotGraphClient`
-- harness begin/get/step/search/context/patch/replay/fork/compare
+- current Plan actions, Plan replay, deterministic run replay, and patch flows
 - THG product `command`, `batch`, `run`, `contextPack`, or `graphQuery`
 - `ContextArtifact`
 - TypeScript/Python SDK parity

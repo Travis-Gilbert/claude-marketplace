@@ -17,7 +17,7 @@ Run the theorems-harness:surface-idea skill against the user's request.
 
 3. For each high-confidence idea, encode via the harness `encode` tool
    with `kind=encode, outcome=positive, signal=pinned,
-   tags=[idea, surfaced, source-task:<id>, training_target:none]`.
+   tags=[idea, surfaced, source-task:<id>]`.
 
 4. For each low-confidence candidate, surface to the user as a
    suggestion: "Surfaced N candidates. Want me to encode any?"
