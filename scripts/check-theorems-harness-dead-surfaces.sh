@@ -97,11 +97,13 @@ node "$PLUGIN_ROOT/sdk/route-policy.test.mjs"
 "$PLUGIN_ROOT/tests/code-capability-surface.sh"
 "$PLUGIN_ROOT/tests/commitments-policy-capability-surface.sh"
 "$PLUGIN_ROOT/tests/context-capability-surface.sh"
+"$PLUGIN_ROOT/tests/data-reconstruction-capability-surface.sh"
 "$PLUGIN_ROOT/tests/graph-lisp-capability-surface.sh"
 "$PLUGIN_ROOT/tests/identity-capability-surface.sh"
 "$PLUGIN_ROOT/tests/memory-capability-surface.sh"
 "$PLUGIN_ROOT/tests/solver-capability-surface.sh"
 "$PLUGIN_ROOT/tests/programmable-wasm-capability-surface.sh"
 "$PLUGIN_ROOT/tests/verification-capability-surface.sh"
+"$PLUGIN_ROOT/tests/verified-cognition-capability-surface.sh"
 
 printf 'theorems-harness dead surfaces: clean\n'

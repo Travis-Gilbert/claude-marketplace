@@ -64,8 +64,10 @@ Use these as abilities inside one run, not as competing products:
 | `compile_context` | Context status, lease reuse, explicit compilation/invalidation, generations, or span disposition matters. |
 | `governance` | A standing decision, structured claim, typed witness, constitution refusal, or policy receipt must be created or interpreted. |
 | `graph_lisp` | Repository work needs bounded pure Graph Lisp read/eval/diff/explain or its receipt/refusal contract. |
+| `data_reconstruction` | Typed Data or instant-KG reads, flat DATAWAVE/resolve, or receipt- and obligation-preserving source reconstruction is needed. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
 | `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
+| `verified_cognition` | A decision, consistency, reconstruction, or repair claim must compose proposals and real proof surfaces without inventing a workflow. |
 | `programmable_wasm` | An installed app export must be invoked, or a durable WASM lifecycle boundary must be inspected honestly. |
 | `validate` | A claim needs tests, screenshots, deploy proof, replay, or runtime evidence. |
 | `peer_review` | A risky diff, multi-agent edit, commit, PR, or launch-ready claim is near. |
@@ -108,9 +110,18 @@ Use these as abilities inside one run, not as competing products:
 - If Graph Lisp matters, load `graph-lisp`. The only current agent envelope is
   Rust `rustyred_thg_graph_lisp::execute_capability`; it has no remote
   projection, and effect requests refuse with `external_executor_required`.
+- If Data, instant KG, DATAWAVE, resolve, or source reconstruction matters,
+  load `data-reconstruction`. Prefer typed GraphQL where it exists; keep
+  `resolve_ingest`, `resolve_entities`, `resolve_explain`, `datawave_ingest`,
+  `reconstruct`, and `reconstruct_binary` flat-only. Preserve source SHAs,
+  receipts, unknowns, unresolved obligations, and validation `not_run` state.
 - If the user asks for satisfiability, constraint checking, or bounded pack
   optimization, load `solvers` and use only `constraint.check` or
   `constraint.optimize` through the dynamic gateway.
+- If the user asks for verified decision, consistency, reconstruction, repair,
+  or voice, load `verified-cognition`. Compose only real solver,
+  reconstruction, verification, and Plan surfaces; report the missing workflow
+  orchestrator or voice surface instead of inventing one.
 - If the user asks about programmable WASM, load `programmable-wasm`. Invoke an
   installed export only through `wasm_plugin:<plugin_id>.<export>`; do not imply
   the Rust-only lifecycle is remotely callable.
@@ -185,6 +196,11 @@ detail layer rather than another global tool catalog:
 - `graph-lisp` plus `references/GRAPH_LISP_CAPABILITY.md` for crate-local
   `execute_capability`, bounded pure read/eval/diff/explain, deterministic
   receipts, and the `external_executor_required` effect boundary.
+- `data-reconstruction` plus
+  `references/DATA_RECONSTRUCTION_CAPABILITY.md` for typed Data and instant-KG,
+  flat-only `datawave_ingest` and `resolve_ingest`, and
+  `reverseEngineerCompose` through `reverseEngineerPort` with source and
+  obligation discipline.
 - `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
   `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
   `constraint.optimize`.
@@ -192,6 +208,10 @@ detail layer rather than another global tool catalog:
   `references/PROGRAMMABLE_WASM_CAPABILITY.md` for installed app exports shaped
   `wasm_plugin:<plugin_id>.<export>` and the honest Rust-only durable lifecycle
   boundary.
+- `verified-cognition` plus
+  `references/VERIFIED_COGNITION_CAPABILITY.md` for safe composition of
+  `constraint.check`, reconstruction, verification receipts, and the Plan
+  lifecycle without a fictional workflow tool.
 
 ## Querying the multi-model store
 

@@ -33,6 +33,7 @@ full_skills=(
     "commitments-policy"
     "context-management"
     "curiosity"
+    "data-reconstruction"
     "design-engineering"
     "dispatch"
     "encode"
@@ -55,6 +56,7 @@ full_skills=(
     "symbolic"
     "theorems-harness"
     "theorize"
+    "verified-cognition"
     "writing-engineering"
 )
 

@@ -7,8 +7,8 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
 - Shared skill packages under `skills/`, including the adaptive Harness,
   planning/execution, practice-system, replay, coordination, memory, code,
   identity and bindings, context management, commitments/policy, Graph Lisp,
-  stable solvers, programmable WASM, writing, design, and Rust engineering
-  surfaces.
+  Data/reconstruction, stable solvers, verified cognition composition,
+  programmable WASM, writing, design, and Rust engineering surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
 
@@ -135,6 +135,15 @@ memory") and include the wire-level identifier only when it matters.
   `calibrationReliability`. Flat compatibility uses `verification_record`,
   `verification_receipt`, `verification_explain`, `verification_allocate`, and
   `calibration_reliability`.
+- Data and instant KG: prefer GraphQL `dataSchema`, `dataRecords`,
+  `dataRecord`, `dataLinks`, `dataQuery`, `dataRetrieve`, `dataViews`,
+  `dataView`, `upsertDataView`, and the six `harnessKg*` reads. Flat
+  compatibility uses `query_data` and exact `harness_kg_*` tools.
+- Reconstruction and resolution: prefer `reverseEngineerCompose` through
+  `reverseEngineerPort`; exact flat compatibility uses `reverse_engineer_*`.
+  `resolve_ingest`, `resolve_entities`, `resolve_explain`,
+  `memory_dedup_report`, `datawave_ingest`, `reconstruct`, and
+  `reconstruct_binary` are flat-only.
 - Dynamic capabilities: `tool_search`, `describe`, and `invoke`. Stable solver
   affordances are `constraint.check` and `constraint.optimize`. Installed app
   WASM exports use `wasm_plugin:<plugin_id>.<export>`.
@@ -178,11 +187,26 @@ reported metadata, confidence is not proof, and calibration admission tier is
 not authentication. The exact mapping and reporting rules live in
 `references/VERIFICATION_CAPABILITY.md`.
 
+Data and reconstruction have deliberately different projections. Typed Data,
+instant-KG, and the seven source reconstruction stages coexist with flat-only
+DATAWAVE, resolve, compound reconstruction, and binary reconstruction. Exact
+source pins, provenance, `unknowns`, `unresolved_obligations`, and validation
+receipts marked `not_run` must survive the workflow. See
+`references/DATA_RECONSTRUCTION_CAPABILITY.md`; neither emit nor port is a live
+or end-to-end parity oracle.
+
 Stable constraint actions are dynamic affordances rather than dedicated flat
 or GraphQL tools. Discover, describe, and invoke them through the gateway, then
 interpret the typed operation receipt and its proof eligibility. Exact schemas,
 budgets, refusal semantics, and current cancellation/persistence limits live in
 `references/SOLVER_CAPABILITY.md`.
+
+Verified cognition is currently composition, not a dedicated tool. Load
+`verified-cognition` and combine `constraint.check`, reconstruction stages,
+canonical verification receipts, and the Plan lifecycle while keeping proposal
+and proof separate. The verified-decision, consistency, reconstruction,
+repair, and voice orchestrators remain unimplemented. See
+`references/VERIFIED_COGNITION_CAPABILITY.md`.
 
 Programmable WASM keeps its durable Rust registry lifecycle separate from the
 callable exports of installed app manifests. Agents may use the dynamic gateway
@@ -260,10 +284,10 @@ From a local checkout:
 
 The default `core` bundle installs `/harness`, coordination, the ambient
 practice system, code discovery, encode, research, peer review, and execute
-skills. The `full` bundle adds replay, solvers, programmable WASM, writing,
-identity and bindings, context management, commitments/policy, Graph Lisp,
-design, and specialist skills. Use `--claude-only` or `--codex-only` for one
-host.
+skills. The `full` bundle adds replay, Data/reconstruction, solvers, verified
+cognition composition, programmable WASM, writing, identity and bindings,
+context management, commitments/policy, Graph Lisp, design, and specialist
+skills. Use `--claude-only` or `--codex-only` for one host.
 
 ## Install (Codex)
 

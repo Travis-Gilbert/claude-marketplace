@@ -21,8 +21,10 @@ narrow entrypoints, but they are not separate products.
 | `context-management` | Focused capability workflow | Teaches scoped leases, compile/reuse, explicit invalidation, generations, dispositions, and the current hook boundary | Canonical |
 | `commitments-policy` | Focused capability workflow | Separates remote standing decisions and policy receipts from the Rust-only canonical typed claim, commitment, and constitution seams | Canonical |
 | `graph-lisp` | Focused capability workflow | Teaches crate-local bounded read/eval/diff/explain, deterministic receipts, and the absent remote projection | Canonical |
+| `data-reconstruction` | Focused capability workflow | Routes typed Data and instant-KG reads, flat-only DATAWAVE/resolve, and receipt- and obligation-preserving source reconstruction | Canonical |
 | `solvers` | Focused capability workflow | Discovers, describes, and invokes stable `constraint.check` and `constraint.optimize` affordances and interprets typed proof receipts | Canonical |
 | `programmable-wasm` | Focused capability workflow | Separates installed app exports (`wasm_plugin:<plugin_id>.<export>`) from the Rust-only durable lifecycle | Canonical |
+| `verified-cognition` | Focused composition workflow | Separates proposals from proof while composing only real solver, reconstruction, verification, and Plan surfaces; names absent workflow orchestration honestly | Canonical |
 | `writing-engineering` | Public writing utility | Applies Writing Engineering with the 1918 Elements rules integrated into one ruleset and receipt | Canonical |
 | `theorize` | Internal phase skill | Internal `theorize` mode | Keep available |
 | `planning-theorem` | Internal phase skill | Internal `plan` mode | Keep available |
@@ -132,6 +134,14 @@ its pure bounded operations. It does not invent an MCP/GraphQL/dynamic surface;
 granted effects still refuse with `external_executor_required`. See
 `GRAPH_LISP_CAPABILITY.md`.
 
+Data and reconstruction teaching uses typed GraphQL `dataSchema` through
+`upsertDataView`, the exact `harnessKg*` reads, and the seven
+`reverseEngineerCompose` through `reverseEngineerPort` mutations where those
+projections exist. It preserves flat-only `datawave_ingest`, `resolve_ingest`,
+`resolve_entities`, `resolve_explain`, `memory_dedup_report`, `reconstruct`, and
+`reconstruct_binary`, plus source pins, receipts, unknowns, and unresolved
+obligations. See `DATA_RECONSTRUCTION_CAPABILITY.md`.
+
 Stable solver teaching uses only the dynamic `tool_search` -> `describe` ->
 `invoke` sequence for `constraint.check` and `constraint.optimize`, preserving
 budgets, provider provenance, refusal, and proof eligibility. See
@@ -141,6 +151,12 @@ Programmable WASM teaching exposes installed app exports through the same
 dynamic gateway while keeping publish, promote, inspect, selected invocation,
 receipt lookup, and rollback at the current Rust substrate boundary. See
 `PROGRAMMABLE_WASM_CAPABILITY.md`.
+
+Verified cognition teaching is a disciplined composition of
+`constraint.check`, reconstruction stages, canonical verification receipts,
+and the Plan lifecycle. The planned verified-decision, consistency,
+reconstruction, repair, and voice orchestrators are not callable surfaces. See
+`VERIFIED_COGNITION_CAPABILITY.md`.
 
 Internal capability language:
 
@@ -172,6 +188,7 @@ Internal capability language:
 - `COMMITMENTS_POLICY_CAPABILITY.md`
 - `CONCISE_ACTION.md`
 - `CONTEXT_CAPABILITY.md`
+- `DATA_RECONSTRUCTION_CAPABILITY.md`
 - `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`
 - `GRAPH_LISP_CAPABILITY.md`
@@ -194,6 +211,7 @@ Internal capability language:
 - `SOLVER_CAPABILITY.md`
 - `UI_VISUAL_PROJECT_GATES.md`
 - `VERIFICATION_CAPABILITY.md`
+- `VERIFIED_COGNITION_CAPABILITY.md`
 
 ## Compatibility Risks
 

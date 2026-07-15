@@ -47,12 +47,14 @@ for target_root in "$claude_dir" "$codex_dir"; do
   for skill in \
     commitments-policy \
     context-management \
+    data-reconstruction \
     graph-lisp \
     identity-bindings \
     practice-system \
     programmable-wasm \
     replay-last-run \
     solvers \
+    verified-cognition \
     writing-engineering; do
     [[ -f "$target_root/$skill/SKILL.md" ]] \
       || fail "full bundle did not install: $target_root/$skill"

@@ -49,6 +49,15 @@ projection, and effect requests refuse with `external_executor_required`. See
 `GRAPH_LISP_CAPABILITY.md` rather than inventing an MCP, GraphQL, or dynamic
 action.
 
+Data, instant-KG, DATAWAVE, resolve, or source-port work routes to
+`data-reconstruction`. Prefer typed Data, `harnessKg*`, and
+`reverseEngineerCompose` through `reverseEngineerPort` GraphQL fields where
+they exist. Use `resolve_ingest`, `resolve_entities`, `resolve_explain`,
+`datawave_ingest`, `reconstruct`, and `reconstruct_binary` only as their real
+flat-only tools. Follow `DATA_RECONSTRUCTION_CAPABILITY.md`; preserve explicit
+source SHAs, receipts, unknowns, `unresolved_obligations`, and validate-stage
+`not_run` rather than claiming end-to-end parity.
+
 Memory is one tenant/project-bound capability, not separate recall, episode,
 and practice stores. Prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`,
 nested `links`/`related`, and the typed memory mutations. Route flat-only actor
@@ -70,6 +79,13 @@ Constraint solving is a focused dynamic capability. Load `solvers`, then use
 `constraint.optimize`. Read `SOLVER_CAPABILITY.md` before treating a conclusion
 as proof; provider availability, bounds, cancellation, and proof eligibility
 are receipt facts.
+
+Verified decision, consistency, reconstruction, or repair requests route to
+`verified-cognition` only as a composition guide. Use real
+`constraint.check`, reconstruction, verification, and Plan surfaces; there is
+no verified-cognition or voice workflow orchestrator. Follow
+`VERIFIED_COGNITION_CAPABILITY.md` and keep proposals, `not_run` receipts,
+unresolved obligations, and proof separate.
 
 Programmable WASM has no remotely callable lifecycle yet. Load
 `programmable-wasm` for installed app exports shaped
@@ -94,7 +110,9 @@ The router selects abilities, not rigid products:
 - `identity`
 - `governance`
 - `graph_lisp`
+- `data_reconstruction`
 - `research`
+- `verified_cognition`
 - `validate`
 - `peer_review`
 - `remember`
@@ -123,6 +141,10 @@ context refresh, or memory when the work demands it.
      receipt -> `governance`
    - Graph Lisp read, eval, diff, explain, fuel, or permission boundary ->
      `graph_lisp`
+   - Data records, instant KG, DATAWAVE, entity resolution, source
+     reconstruction, or port obligations -> `data_reconstruction`
+   - Verified decision, consistency, reconstruction, repair, or voice boundary
+     -> `verified_cognition`
    - review, PR, diff, audit -> `peer_review`
    - remember, encode, postmortem, lesson -> `remember`
 4. If no concrete action emerges, run a short `theorize` pass, choose a default,
