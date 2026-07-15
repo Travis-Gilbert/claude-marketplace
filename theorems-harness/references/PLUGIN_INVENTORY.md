@@ -193,6 +193,11 @@ reconstruction, repair, and voice orchestrators are not callable surfaces. See
 
 Internal capability language:
 
+The machine-checked compact projection is
+`CAPABILITY_CATALOG.generated.md`; removed and compatibility-only names are in
+`COMPATIBILITY.generated.md`. Both are regenerated from `capabilities/` and
+must not be edited by hand.
+
 - `theorize` -> `/harness mode=theorize`
 - `planning-theorem` -> `/harness mode=plan`
 - `execute` -> `/harness mode=execute`

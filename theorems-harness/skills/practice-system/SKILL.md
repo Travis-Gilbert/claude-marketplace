@@ -6,6 +6,8 @@ version: 0.1.0
 
 # Harness Practice System
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Apply the Harness-native practice graph for substantive implementation work.
 Treat it as an ambient, versioned workflow selected through Ensemble, not as a
 collection of slash commands. Preserve user and project instructions as higher

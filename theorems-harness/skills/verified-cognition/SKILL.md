@@ -5,6 +5,8 @@ description: "Use when a decision, consistency check, reconstruction, or repair 
 
 # Verified cognition
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/VERIFIED_COGNITION_CAPABILITY.md` plus the capability
 guide for every primitive you use.
 

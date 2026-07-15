@@ -5,6 +5,8 @@ description: "Use when an agent must query Data records or instant-KG views, run
 
 # Data and reconstruction
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/DATA_RECONSTRUCTION_CAPABILITY.md` before using this
 family. The projections differ; do not translate a flat-only action into an
 invented GraphQL or dynamic tool.

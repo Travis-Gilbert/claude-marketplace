@@ -5,6 +5,8 @@ description: The Harness memory-write capability. Use when the user runs /encode
 
 # Encode
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Encode writes feedback, solutions, postmortems, decisions, preferences, and
 continuity packs into the shared Theorem harness memory substrate. It is both
 a user command (`/encode`) and an agent-owned primitive: an agent may trigger

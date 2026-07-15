@@ -1,0 +1,392 @@
+{
+  "schema_version": 1,
+  "plugin_version": "0.9.2",
+  "registries": {
+    "dynamic": [
+      "constraint.check",
+      "constraint.optimize",
+      "wasm_plugin:<plugin_id>.<export>"
+    ],
+    "http": [
+      "GET /health",
+      "GET /ready",
+      "GET /version",
+      "GET /.well-known/agent.json",
+      "GET /.well-known/mcp/rustyred_thg.json",
+      "POST /v1/theorem/agent/run",
+      "WS /v1/commonplace/acp/ws",
+      "WS /v1/head-calls/ws"
+    ],
+    "rust": [
+      "Constitution::refusal",
+      "assert_typed_claim",
+      "rustyred_thg_graph_lisp::execute_capability",
+      "theorem-evolve lifecycle",
+      "GEPA candidate lifecycle",
+      "ReasoningBank promotion lifecycle",
+      "A2A client/runtime",
+      "programmable WASM registry lifecycle"
+    ],
+    "behavior": [
+      "Plan transition lifecycle",
+      "practice promotion firewall",
+      "family-specific result contracts",
+      "verified cognition composition"
+    ]
+  },
+  "compatibility": [
+    {
+      "name": "code_search",
+      "status": "compatibility",
+      "replacement": "compute_code(operation=search) or Query.codeSearch",
+      "reason": "Dispatch-compatible but not advertised in the current flat catalog."
+    },
+    {
+      "name": "write_intent",
+      "status": "compatibility",
+      "replacement": "coordination_intent",
+      "reason": "Accepted dispatch alias but not advertised in tools/list."
+    },
+    {
+      "name": "theorem_harness_write_intent",
+      "status": "compatibility",
+      "replacement": "coordination_intent",
+      "reason": "Accepted legacy dispatch alias but not advertised in tools/list."
+    },
+    {
+      "name": "show-context",
+      "status": "removed",
+      "replacement": "context_status or context_explain",
+      "reason": "Retired plugin-only interface."
+    },
+    {
+      "name": "context-refresh",
+      "status": "removed",
+      "replacement": "harness_prepare or Mutation.refreshContext",
+      "reason": "Retired plugin-only interface."
+    },
+    {
+      "name": "code_theorem",
+      "status": "removed",
+      "replacement": "compute_code",
+      "reason": "Retired obsolete tool cluster."
+    },
+    {
+      "name": "harness_describe_current",
+      "status": "removed",
+      "replacement": "graphql_introspect and the focused family catalog",
+      "reason": "Never registered by the current Harness."
+    },
+    {
+      "name": "orchestrate_refresh",
+      "status": "removed",
+      "replacement": "harness_prepare or Mutation.refreshContext",
+      "reason": "Never registered by the current Harness."
+    },
+    {
+      "name": "harness_begin",
+      "status": "removed",
+      "replacement": "plan or harness_run",
+      "reason": "Obsolete replay teaching alias."
+    },
+    {
+      "name": "harness_context",
+      "status": "removed",
+      "replacement": "harness_prepare",
+      "reason": "Obsolete replay teaching alias."
+    },
+    {
+      "name": "harness_fork",
+      "status": "removed",
+      "replacement": "plan refine or multihead_refine",
+      "reason": "Obsolete replay teaching alias."
+    },
+    {
+      "name": "harness_compare",
+      "status": "removed",
+      "replacement": "replay_last_run or harness_replay",
+      "reason": "Obsolete replay teaching alias."
+    },
+    {
+      "name": "coordination_reflection",
+      "status": "removed",
+      "replacement": "coordination_record(record_type=reflection)",
+      "reason": "Record kinds are values, not dedicated tools."
+    },
+    {
+      "name": "coordination_decision",
+      "status": "removed",
+      "replacement": "coordination_record(record_type=decision)",
+      "reason": "Record kinds are values, not dedicated tools."
+    },
+    {
+      "name": "coordination_tension",
+      "status": "removed",
+      "replacement": "coordination_record(record_type=tension)",
+      "reason": "Record kinds are values, not dedicated tools."
+    },
+    {
+      "name": "mentions_wait",
+      "status": "removed",
+      "replacement": "mentions or stream_read at a bounded checkpoint",
+      "reason": "No long-poll mentions tool is advertised."
+    },
+    {
+      "name": "spawn_handoff_session",
+      "status": "removed",
+      "replacement": "spawn_session",
+      "reason": "The real spawn surface is GitHub repository dispatch."
+    },
+    {
+      "name": "subscribe",
+      "status": "removed",
+      "replacement": "stream_subscribe",
+      "reason": "There is no generic coordination subscribe tool."
+    },
+    {
+      "name": "ponytail",
+      "status": "removed",
+      "replacement": "practice-system",
+      "reason": "The retired practice layer was replaced by source-attributed practices."
+    }
+  ],
+  "families": [
+    {
+      "id": "plans",
+      "title": "Plans and execution",
+      "skill": "planning-theorem",
+      "reference": "PLAN_TEMPLATE.md",
+      "summary": "Durable Plan creation and the proof-bound transition lifecycle remain separate from work graphs and jobs.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "plan", "guidance": "canonical flat Plan membrane", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:plan"},
+        {"surface": "flat_mcp", "name": "harness_replay", "guidance": "bounded Plan event replay", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:harness_replay"},
+        {"surface": "graphql", "name": "Mutation.createPlan", "guidance": "preferred typed creation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.createPlan"},
+        {"surface": "graphql", "name": "Mutation.spawnPlanVerify", "guidance": "independent verify sibling", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.spawnPlanVerify"},
+        {"surface": "graphql", "name": "Mutation.provePlanTask", "guidance": "proof receipt transition", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.provePlanTask"},
+        {"surface": "behavior", "name": "Plan transition lifecycle", "guidance": "claim through done with patch generation", "maturity": "stable contract", "live_status": "behavioral; runtime proof required", "schema": "skills/execute/SKILL.md"}
+      ]
+    },
+    {
+      "id": "identity",
+      "title": "Identity and bindings",
+      "skill": "identity-bindings",
+      "reference": "IDENTITY_CAPABILITY.md",
+      "summary": "Ambient admission resolves tenant, principal, project, actor, scopes, budget, and composed binding without caller identity arguments.",
+      "entries": [
+        {"surface": "graphql", "name": "Query.identityBindingStatus", "guidance": "preferred typed status", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.identityBindingStatus"},
+        {"surface": "graphql", "name": "Query.identityBindingExplain", "guidance": "preferred typed explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.identityBindingExplain"},
+        {"surface": "flat_mcp", "name": "identity_binding_status", "guidance": "flat compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:identity_binding_status"},
+        {"surface": "flat_mcp", "name": "identity_binding_explain", "guidance": "flat compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:identity_binding_explain"}
+      ]
+    },
+    {
+      "id": "context",
+      "title": "Context management",
+      "skill": "context-management",
+      "reference": "CONTEXT_CAPABILITY.md",
+      "summary": "Context leases, generations, preparation, and explicit invalidation expose an admitted-session boundary.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "harness_prepare", "guidance": "prepare or reuse context", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:harness_prepare"},
+        {"surface": "flat_mcp", "name": "context_status", "guidance": "flat diagnostic", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:context_status"},
+        {"surface": "flat_mcp", "name": "context_invalidate", "guidance": "explicit epoch advance", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:context_invalidate"},
+        {"surface": "graphql", "name": "Query.contextExplain", "guidance": "preferred typed explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.contextExplain"},
+        {"surface": "graphql", "name": "Mutation.refreshContext", "guidance": "preferred typed compilation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.refreshContext"},
+        {"surface": "graphql", "name": "Mutation.invalidateContext", "guidance": "preferred typed epoch advance", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.invalidateContext"}
+      ]
+    },
+    {
+      "id": "code",
+      "title": "Code intelligence",
+      "skill": "compute_code",
+      "reference": "CODE_CAPABILITY.md",
+      "summary": "Typed code ingest, discovery, compiler views, and revision evidence replace the obsolete code tool cluster.",
+      "entries": [
+        {"surface": "graphql", "name": "Mutation.ingestCodebase", "guidance": "preferred typed ingest", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.ingestCodebase"},
+        {"surface": "graphql", "name": "Query.codeSearch", "guidance": "preferred typed search", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.codeSearch"},
+        {"surface": "graphql", "name": "Query.codeContext", "guidance": "preferred typed context", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.codeContext"},
+        {"surface": "graphql", "name": "Query.codeObligations", "guidance": "preferred typed compiler obligations", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.codeObligations"},
+        {"surface": "flat_mcp", "name": "compute_code", "guidance": "consolidated flat compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:compute_code"},
+        {"surface": "flat_mcp", "name": "code_ingest", "guidance": "flat ingest compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:code_ingest"}
+      ]
+    },
+    {
+      "id": "data",
+      "title": "Data and reconstruction",
+      "skill": "data-reconstruction",
+      "reference": "DATA_RECONSTRUCTION_CAPABILITY.md",
+      "summary": "Data, instant KG, resolution, DATAWAVE, and staged reconstruction preserve provenance and unresolved obligations.",
+      "entries": [
+        {"surface": "graphql", "name": "Query.dataQuery", "guidance": "preferred typed Data query", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.dataQuery"},
+        {"surface": "graphql", "name": "Query.harnessKgSearch", "guidance": "preferred typed instant-KG search", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.harnessKgSearch"},
+        {"surface": "graphql", "name": "Mutation.reverseEngineerCompose", "guidance": "typed staged reconstruction", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.reverseEngineerCompose"},
+        {"surface": "flat_mcp", "name": "query_data", "guidance": "flat Data compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:query_data"},
+        {"surface": "flat_mcp", "name": "resolve_ingest", "guidance": "flat-only entity resolution", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:resolve_ingest"},
+        {"surface": "flat_mcp", "name": "datawave_ingest", "guidance": "flat-only DATAWAVE ingestion", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:datawave_ingest"},
+        {"surface": "flat_mcp", "name": "reconstruct_binary", "guidance": "flat-only binary reconstruction", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:reconstruct_binary"}
+      ]
+    },
+    {
+      "id": "verification",
+      "title": "Verification and calibration",
+      "skill": "symbolic",
+      "reference": "VERIFICATION_CAPABILITY.md",
+      "summary": "Canonical receipts bind claim, evidence, verifier, graph version, result, and calibration without treating confidence as proof.",
+      "entries": [
+        {"surface": "graphql", "name": "Mutation.recordVerification", "guidance": "preferred typed write", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.recordVerification"},
+        {"surface": "graphql", "name": "Query.verificationReceipt", "guidance": "preferred typed receipt", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.verificationReceipt"},
+        {"surface": "graphql", "name": "Query.verificationExplain", "guidance": "preferred typed evidence explanation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.verificationExplain"},
+        {"surface": "flat_mcp", "name": "verification_record", "guidance": "flat compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:verification_record"},
+        {"surface": "flat_mcp", "name": "calibration_reliability", "guidance": "flat reliability diagnostic", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:calibration_reliability"}
+      ]
+    },
+    {
+      "id": "solvers",
+      "title": "Constraint solvers",
+      "skill": "solvers",
+      "reference": "SOLVER_CAPABILITY.md",
+      "summary": "Stable solver affordances are discovered and invoked dynamically with provider, bound, cancellation, and proof receipts.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "tool_search", "guidance": "discover dynamic affordances", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:tool_search"},
+        {"surface": "flat_mcp", "name": "describe", "guidance": "read dynamic schema", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:describe"},
+        {"surface": "flat_mcp", "name": "invoke", "guidance": "invoke selected affordance", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:invoke"},
+        {"surface": "dynamic", "name": "constraint.check", "guidance": "stable satisfiability affordance", "maturity": "stable dynamic", "live_status": "registry-declared; live-unverified", "schema": "describe:constraint.check"},
+        {"surface": "dynamic", "name": "constraint.optimize", "guidance": "stable bounded optimization affordance", "maturity": "stable dynamic", "live_status": "registry-declared; live-unverified", "schema": "describe:constraint.optimize"}
+      ]
+    },
+    {
+      "id": "graph-lisp",
+      "title": "Graph Lisp",
+      "skill": "graph-lisp",
+      "reference": "GRAPH_LISP_CAPABILITY.md",
+      "summary": "Bounded pure Graph Lisp execution is source-present but has no current MCP, GraphQL, or dynamic projection.",
+      "entries": [
+        {"surface": "rust", "name": "rustyred_thg_graph_lisp::execute_capability", "guidance": "repository-only execution seam", "maturity": "source-only", "live_status": "unmounted", "schema": "rustyred-thg-graph-lisp"}
+      ]
+    },
+    {
+      "id": "practices",
+      "title": "Practices",
+      "skill": "practice-system",
+      "reference": "LEARNINGS.md",
+      "summary": "Source-attributed practices promote only after evidence-clustered outcomes and remain ambient across planning and execution.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "skill_list", "guidance": "browse practice skill packs", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:skill_list"},
+        {"surface": "flat_mcp", "name": "skill_get", "guidance": "read a practice skill pack", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:skill_get"},
+        {"surface": "flat_mcp", "name": "skill_apply", "guidance": "apply and receipt a skill pack", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:skill_apply"},
+        {"surface": "behavior", "name": "practice promotion firewall", "guidance": "outcome-clustered promotion gate", "maturity": "stable contract", "live_status": "ambient proof incomplete", "schema": "references/MEMORY_CAPABILITY.md"}
+      ]
+    },
+    {
+      "id": "memory",
+      "title": "Memory",
+      "skill": "encode",
+      "reference": "MEMORY_CAPABILITY.md",
+      "summary": "One admitted tenant/project memory graph supports typed recall, revision, archive, outcomes, handoffs, and actor-memory compatibility.",
+      "entries": [
+        {"surface": "graphql", "name": "Query.memory", "guidance": "preferred typed recall", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.memory"},
+        {"surface": "graphql", "name": "Mutation.rememberMemory", "guidance": "preferred typed remember/encode", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.rememberMemory"},
+        {"surface": "graphql", "name": "Mutation.createHandoff", "guidance": "preferred typed handoff", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.createHandoff"},
+        {"surface": "flat_mcp", "name": "recall", "guidance": "flat compatibility", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:recall"},
+        {"surface": "flat_mcp", "name": "encode", "guidance": "outcome-bearing flat write", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:encode"},
+        {"surface": "flat_mcp", "name": "evidence_bundle", "guidance": "flat-only cited context packet", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:evidence_bundle"}
+      ]
+    },
+    {
+      "id": "learning",
+      "title": "Learning and evolution",
+      "skill": "learning-evolution",
+      "reference": "LEARNING_EVOLUTION_CAPABILITY.md",
+      "summary": "Callable outcome evidence and proposal validation remain separate from source-only trainer, promotion, and rollback lifecycles.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "programmable_graph", "guidance": "validate evolve proposals", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:programmable_graph"},
+        {"surface": "flat_mcp", "name": "programmable_graph_apply", "guidance": "write-gated graph materialization", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:programmable_graph_apply"},
+        {"surface": "rust", "name": "GEPA candidate lifecycle", "guidance": "repository-only training/evaluation", "maturity": "source-only", "live_status": "unmounted", "schema": "ensemble crate"},
+        {"surface": "rust", "name": "ReasoningBank promotion lifecycle", "guidance": "repository-only promotion seam", "maturity": "source-only", "live_status": "unmounted", "schema": "ensemble crate"},
+        {"surface": "rust", "name": "theorem-evolve lifecycle", "guidance": "repository-only train/promote/rollback", "maturity": "source-only", "live_status": "unmounted", "schema": "theorem-evolve"}
+      ]
+    },
+    {
+      "id": "agents",
+      "title": "Agent interoperability",
+      "skill": "agent-interop",
+      "reference": "AGENT_INTEROP_CAPABILITY.md",
+      "summary": "Composed turns and durable Head Calls are callable; A2A remains source-only and ACP is a server WebSocket.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "composed_agent_run", "guidance": "one admitted composed turn", "maturity": "beta", "live_status": "source-advertised; provider-live-unverified", "schema": "tools/list:composed_agent_run"},
+        {"surface": "http", "name": "POST /v1/theorem/agent/run", "guidance": "direct admitted agent route", "maturity": "beta", "live_status": "server-route; live-unverified", "schema": "openapi"},
+        {"surface": "http", "name": "WS /v1/head-calls/ws", "guidance": "Head Call switchboard", "maturity": "beta", "live_status": "server-route; live-unverified", "schema": "head-call protocol"},
+        {"surface": "http", "name": "WS /v1/commonplace/acp/ws", "guidance": "ACP server session", "maturity": "beta", "live_status": "server-route; agent-binary-dependent", "schema": "ACP protocol"},
+        {"surface": "rust", "name": "A2A client/runtime", "guidance": "crate-level membrane", "maturity": "source-only", "live_status": "unmounted", "schema": "A2A crate"}
+      ]
+    },
+    {
+      "id": "coordination",
+      "title": "Coordination and operations",
+      "skill": "coordination-operations",
+      "reference": "COORDINATION_OPERATIONS_CAPABILITY.md",
+      "summary": "Rooms, records, streams, task-reference rooms, jobs, work graphs, spawning, and operations retain distinct state machines.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "coordination_intent", "guidance": "footprint announcement", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:coordination_intent"},
+        {"surface": "flat_mcp", "name": "coordination_record", "guidance": "typed durable record", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:coordination_record"},
+        {"surface": "flat_mcp", "name": "stream_read", "guidance": "durable actor/topic delivery", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:stream_read"},
+        {"surface": "flat_mcp", "name": "stream_ack", "guidance": "explicit delivery acknowledgement", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:stream_ack"},
+        {"surface": "flat_mcp", "name": "job_submit", "guidance": "queue a durable job thread", "maturity": "beta", "live_status": "source-advertised; receiver-live-unverified", "schema": "tools/list:job_submit"},
+        {"surface": "flat_mcp", "name": "spawn_session", "guidance": "GitHub repository dispatch handoff", "maturity": "beta", "live_status": "source-advertised; dispatch-live-unverified", "schema": "tools/list:spawn_session"},
+        {"surface": "graphql", "name": "Query.turnStartDiscovery", "guidance": "GraphQL-only task-reference discovery", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.turnStartDiscovery"},
+        {"surface": "graphql", "name": "Mutation.recordClaim", "guidance": "GraphQL-only task-reference claim", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Mutation.recordClaim"},
+        {"surface": "http", "name": "GET /ready", "guidance": "store readiness observation", "maturity": "stable", "live_status": "server-route; live-unverified", "schema": "openapi:/ready"},
+        {"surface": "http", "name": "GET /version", "guidance": "build and catalog identity", "maturity": "stable", "live_status": "server-route; live-unverified", "schema": "openapi:/version"}
+      ]
+    },
+    {
+      "id": "graph",
+      "title": "Graph and storage",
+      "skill": "graph-storage",
+      "reference": "GRAPH_STORAGE_CAPABILITY.md",
+      "summary": "Typed graph reads and gated mutations coexist with flat diagnostics and caller-carried version values; storage internals remain unprojected.",
+      "entries": [
+        {"surface": "graphql", "name": "Query.graphAlgorithm", "guidance": "preferred typed algorithm", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.graphAlgorithm"},
+        {"surface": "graphql", "name": "Query.vectorSearch", "guidance": "preferred typed vector retrieval", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "graphql_introspect:Query.vectorSearch"},
+        {"surface": "graphql", "name": "Mutation.bulkNodes", "guidance": "admin-gated partial bulk mutation", "maturity": "stable", "live_status": "source-advertised; admin-live-unverified", "schema": "graphql_introspect:Mutation.bulkNodes"},
+        {"surface": "flat_mcp", "name": "rustyred_thg_graph_query", "guidance": "flat-only bounded diagnostic", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:rustyred_thg_graph_query"},
+        {"surface": "flat_mcp", "name": "rustyred_thg_relational_query", "guidance": "flat-only relational plan", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:rustyred_thg_relational_query"},
+        {"surface": "flat_mcp", "name": "rustyred_thg_graph_version_compile", "guidance": "compile caller-carried snapshot", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:rustyred_thg_graph_version_compile"},
+        {"surface": "flat_mcp", "name": "rustyred_thg_graph_version_checkout", "guidance": "reconstruct snapshot without live rollback", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:rustyred_thg_graph_version_checkout"},
+        {"surface": "flat_mcp", "name": "rustyred_thg_index_spine", "guidance": "inspect index artifacts", "maturity": "beta", "live_status": "source-advertised; live-unverified", "schema": "tools/list:rustyred_thg_index_spine"}
+      ]
+    },
+    {
+      "id": "contracts",
+      "title": "Agent contracts",
+      "skill": "agent-contracts",
+      "reference": "AGENT_CONTRACTS_CAPABILITY.md",
+      "summary": "MCP, GraphQL, domain pagination, truncation, retries, idempotency, and receipts are interpreted by family rather than one invented envelope.",
+      "entries": [
+        {"surface": "flat_mcp", "name": "graphql_introspect", "guidance": "discover typed schema", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:graphql_introspect"},
+        {"surface": "flat_mcp", "name": "tool_result_fetch", "guidance": "process-local byte continuation", "maturity": "stable", "live_status": "source-advertised; live-unverified", "schema": "tools/list:tool_result_fetch"},
+        {"surface": "behavior", "name": "family-specific result contracts", "guidance": "preserve protocol and domain layers", "maturity": "incomplete standardization", "live_status": "HCM-028 dependency", "schema": "references/AGENT_CONTRACTS_CAPABILITY.md"}
+      ]
+    },
+    {
+      "id": "wasm",
+      "title": "Programmable WASM",
+      "skill": "programmable-wasm",
+      "reference": "PROGRAMMABLE_WASM_CAPABILITY.md",
+      "summary": "Installed app exports may be dynamic affordances while the durable publish/promote/rollback registry remains source-only.",
+      "entries": [
+        {"surface": "dynamic", "name": "wasm_plugin:<plugin_id>.<export>", "guidance": "installed app export pattern", "maturity": "beta dynamic", "live_status": "manifest-dependent; live-unverified", "schema": "describe:wasm export"},
+        {"surface": "rust", "name": "programmable WASM registry lifecycle", "guidance": "repository-only publish/promote/rollback", "maturity": "source-only", "live_status": "unmounted", "schema": "programmable WASM kernel"}
+      ]
+    },
+    {
+      "id": "verified-cognition",
+      "title": "Verified cognition",
+      "skill": "verified-cognition",
+      "reference": "VERIFIED_COGNITION_CAPABILITY.md",
+      "summary": "Verified decision, consistency, reconstruction, and repair are explicit compositions of real surfaces, not a workflow tool.",
+      "entries": [
+        {"surface": "behavior", "name": "verified cognition composition", "guidance": "compose solver, reconstruction, verification, and Plan evidence", "maturity": "composition only", "live_status": "no dedicated orchestrator", "schema": "references/VERIFIED_COGNITION_CAPABILITY.md"}
+      ]
+    }
+  ]
+}

@@ -5,6 +5,8 @@ description: "Use when a task needs to inspect or explain the authenticated Harn
 
 # Harness identity and bindings
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/IDENTITY_CAPABILITY.md` before interpreting identity or
 using it to authorize a context operation.
 

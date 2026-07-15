@@ -5,6 +5,8 @@ description: "Use when interpreting or designing Harness MCP, GraphQL, HTTP, pag
 
 # Agent contracts
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/AGENT_CONTRACTS_CAPABILITY.md` before interpreting a
 cross-family agent result or proposing a contract.
 

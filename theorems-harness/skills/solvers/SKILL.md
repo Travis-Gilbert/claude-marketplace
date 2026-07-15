@@ -5,6 +5,8 @@ description: "Use when a task needs bounded constraint checking or pack optimiza
 
 # Stable constraint solvers
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Use this focused workflow for solver work. Read
 `../../references/SOLVER_CAPABILITY.md` before calling the surface.
 

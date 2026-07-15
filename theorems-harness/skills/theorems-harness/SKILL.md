@@ -302,6 +302,11 @@ Do not maintain a second global tool catalog here. Discover the active MCP and
 GraphQL contracts, then load the focused family skill/reference selected above.
 The generated compact compatibility projection belongs to HCM-031.
 
+Use `references/CAPABILITY_CATALOG.generated.md` as the compact family index
+and `references/COMPATIBILITY.generated.md` for accepted compatibility names
+and removed aliases. Each focused family skill carries its own generated
+catalog beside `SKILL.md`; do not copy those rows back into this adaptive skill.
+
 ### Preferred GraphQL code fields
 
 Use `graphql_query` for `codeStatus`, `codeSearch`, `codeContext`,

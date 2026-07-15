@@ -5,6 +5,8 @@ description: "Use when a task needs Harness Context Brief status, explanation, l
 
 # Harness context management
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/CONTEXT_CAPABILITY.md` before preparing, invalidating, or
 reporting context state.
 

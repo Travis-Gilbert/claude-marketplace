@@ -5,6 +5,8 @@ description: "Use when invoking the composed agent, sending durable Head Calls, 
 
 # Agent interoperability
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/AGENT_INTEROP_CAPABILITY.md` before selecting a
 transport.
 

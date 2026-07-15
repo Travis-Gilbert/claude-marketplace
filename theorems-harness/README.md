@@ -13,6 +13,10 @@ Dual-host plugin: works in both Codex and Claude Code from a single source. `plu
   engineering surfaces.
 - Agent profiles under `agents/*.md`.
 - Shared references under `references/*.md`.
+- Byte-stable per-family surface maps generated from
+  `capabilities/families.json` and the source-derived MCP/GraphQL snapshot. See
+  `references/CAPABILITY_CATALOG.generated.md` and
+  `references/COMPATIBILITY.generated.md`.
 
 A change to any of these flows to both hosts on next install / sync. There is no port to keep up to date.
 
@@ -332,6 +336,30 @@ graph/storage, agent contracts, solvers, verified cognition composition,
 programmable WASM, writing, identity and bindings, context management,
 commitments/policy, Graph Lisp, design, and specialist skills. Use
 `--claude-only` or `--codex-only` for one host.
+
+### Capability projection validation
+
+Regenerate checked-in family catalogs after refreshing the source snapshot,
+then validate semantic links and byte stability:
+
+```bash
+python3 scripts/generate_harness_capability_projections.py theorems-harness
+python3 scripts/validate_plugin.py theorems-harness
+```
+
+The release gate also requires a compact live catalog and the installed cache:
+
+```bash
+THEOREM_CAPABILITY_LIVE_CATALOG=/path/to/live-surfaces.json \
+  scripts/check-harness-capability-drift.sh --plugin --installed-cache
+```
+
+The compact live artifact has sorted `flat_mcp`, `graphql`, and `dynamic`
+name arrays. HCM-004's live collector owns producing that observation; the
+plugin does not relabel its source snapshot as live evidence.
+
+`capabilities/source-surfaces.json` is generated from
+`rustyred-thg-mcp::harness_capability_source_catalog`; it is not edited by hand.
 
 ## Install (Codex)
 

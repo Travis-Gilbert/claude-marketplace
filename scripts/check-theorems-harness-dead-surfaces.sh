@@ -93,6 +93,7 @@ if tr '\n' ' ' < "$PLUGIN_ROOT/skills/execute/SKILL.md" \
 fi
 
 "$PLUGIN_ROOT/tests/install-harness-upgrade.sh"
+"$PLUGIN_ROOT/tests/capability-projection-generation.sh"
 node "$PLUGIN_ROOT/sdk/route-policy.test.mjs"
 "$PLUGIN_ROOT/tests/agent-contracts-capability-surface.sh"
 "$PLUGIN_ROOT/tests/agent-interop-capability-surface.sh"

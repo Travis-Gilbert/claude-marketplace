@@ -5,6 +5,8 @@ description: The Harness planning capability, backed by the durable plan substra
 
 # Planning-Theorem
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Planning is the Harness capability for turning a fuzzy ask into a durable Plan
 another agent can execute against. It is not a license to defer real work; it
 is the discipline of making acceptance criteria honest before code runs.

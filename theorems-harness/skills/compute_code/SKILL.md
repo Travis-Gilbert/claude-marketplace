@@ -5,6 +5,8 @@ description: Use this skill for native code ingest, status, search, context, exp
 
 # compute_code
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Routing skill for native Theorem code discovery.
 
 ## Ambient loop (default; runs without you)

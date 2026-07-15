@@ -5,6 +5,8 @@ description: "Use for Harness coordination rooms, durable streams, dispatch jobs
 
 # Coordination and operations
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/COORDINATION_OPERATIONS_CAPABILITY.md` before selecting
 a coordination, job, work-graph, spawn, or service-status surface.
 

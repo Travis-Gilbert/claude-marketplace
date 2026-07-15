@@ -5,6 +5,8 @@ description: "Use when a task involves installed Theorem app WASM exports or the
 
 # Programmable WASM
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/PROGRAMMABLE_WASM_CAPABILITY.md` before acting. First
 classify the request into one of two lanes.
 

@@ -5,6 +5,8 @@ description: "Use when repository work needs Graph Lisp pure read, eval, diff, o
 
 # Graph Lisp agent capability
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/GRAPH_LISP_CAPABILITY.md` before claiming Graph Lisp can
 be invoked by an agent session.
 

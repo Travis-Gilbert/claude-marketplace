@@ -5,6 +5,8 @@ description: "Use when a task concerns Harness outcomes, calibration, ReasoningB
 
 # Learning and evolution
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/LEARNING_EVOLUTION_CAPABILITY.md` before routing a
 learning request.
 

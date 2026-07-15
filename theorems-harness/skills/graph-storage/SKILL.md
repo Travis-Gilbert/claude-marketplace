@@ -5,6 +5,8 @@ description: "Use for Harness graph reads, algorithms, designated indexes, admin
 
 # Graph and storage
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Read `../../references/GRAPH_STORAGE_CAPABILITY.md` before selecting a graph or
 storage surface.
 

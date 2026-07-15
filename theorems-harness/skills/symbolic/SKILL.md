@@ -5,6 +5,8 @@ description: Neuro-symbolic reasoning over the RustyRed substrate. Use when the 
 
 # symbolic
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 The neuro-symbolic layer: deterministic rule derivation plus probabilistic
 judgments over the graph. It answers three questions the plain read tools
 cannot: what new facts follow from a ruleset, how much a given source should be
