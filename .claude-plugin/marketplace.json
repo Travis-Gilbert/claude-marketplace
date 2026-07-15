@@ -54,7 +54,10 @@
     {
       "name": "theorems-harness",
       "version": "0.9.2",
-      "source": "./theorems-harness"
+      "source": "./theorems-harness",
+      "keywords": [
+        "artifact-sha256:ce5c043c5cd5fed74adcd9f0fedabc5119c6a37c06012dd936743316214ccfb3"
+      ]
     },
     {
       "name": "scipy-pro",

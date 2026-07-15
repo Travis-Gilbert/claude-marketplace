@@ -45,20 +45,38 @@
       "verified-workflow"
     ]
   },
+  "mcpServers": {
+    "theorems-harness": {
+      "type": "http",
+      "url": "https://rustyredcore-theorem-production.up.railway.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${THEOREM_HARNESS_API_TOKEN}"
+      }
+    }
+  },
+  "release": {
+    "include": [
+      ".claude-plugin",
+      ".codex-plugin",
+      ".mcp.json",
+      "AGENTS.md",
+      "README.md",
+      "plugin.manifest.json",
+      "agents",
+      "capabilities",
+      "commands",
+      "hooks",
+      "references",
+      "scripts",
+      "sdk",
+      "skills"
+    ]
+  },
   "hosts": {
     "claude": {
       "output": ".claude-plugin/plugin.json",
-      "manifest": {
-        "mcpServers": {
-          "theorems-harness": {
-            "type": "http",
-            "url": "https://rustyredcore-theorem-production.up.railway.app/mcp",
-            "headers": {
-              "Authorization": "Bearer ${THEOREM_HARNESS_API_TOKEN}"
-            }
-          }
-        }
-      }
+      "include_mcp_servers": true,
+      "manifest": {}
     },
     "codex": {
       "output": ".codex-plugin/plugin.json",

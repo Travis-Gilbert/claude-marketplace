@@ -47,7 +47,7 @@ surfaces documented in `references/CONTEXT_CAPABILITY.md`.
 
 | File | Read by | Purpose |
 |---|---|---|
-| `plugin.manifest.json` | maintainer tooling | Canonical source for shared plugin metadata, Claude manifest payload, and Codex manifest payload |
+| `plugin.manifest.json` | maintainer tooling | Canonical source for the release version, shared metadata, MCP payload, release file set, and host manifest payloads |
 | `.claude-plugin/plugin.json` | Claude Code | Identity + `mcpServers` registration |
 | `.codex-plugin/plugin.json` | Codex | Identity + `interface` block (displayName, capabilities, defaultPrompt) + Codex hook manifest pointer |
 
@@ -57,6 +57,26 @@ Regenerate and verify the host manifests with:
 python3 scripts/sync-plugin-manifests.py theorems-harness --check
 python3 scripts/sync-plugin-manifests.py theorems-harness
 ```
+
+The same generator writes `.mcp.json` from the canonical `mcpServers` block.
+Keep local MCP endpoints and credentials in host/user configuration or the
+documented environment variables; never write them into a release artifact.
+
+Before a release, build and verify an isolated cache artifact with:
+
+```bash
+scripts/check-plugin-release-parity.sh theorems-harness
+```
+
+The gate reports the canonical version, artifact content hash, MCP fingerprint,
+and rollback shape. The marketplace catalog records the same artifact content
+hash next to the generated version. The clean-install and resync fixtures use a
+temporary home; they do not touch the real installed cache. For a manual
+reversible cache materialization, use `scripts/plugin_release.py install` with
+`--backup-dir` and keep the emitted receipt. Roll back by restoring both the
+previous version directory and the matching `installed_plugins.json` backup,
+then start a new host session. Release publication and the live installed-cache
+refresh remain separate, explicitly authorized operations.
 
 ## Hook manifests and shared runtime
 

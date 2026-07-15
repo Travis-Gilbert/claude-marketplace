@@ -38,6 +38,9 @@ Three gates must all be satisfied for a plugin to load:
 
 Run `./sync-plugins.sh` to symlink all plugins to the Claude Code install path.
 Run `./sync-plugins.sh --status` to check which plugins are linked.
+Use `./sync-plugins.sh --preserve-user-config <plugin>` when resyncing must not
+edit `~/.claude/settings.json`; this keeps user-owned MCP overrides and
+enablement policy outside the released artifact.
 
 ## Slash Command Resolution and the Orphan Plugin Trap
 
