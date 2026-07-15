@@ -113,7 +113,18 @@ memory") and include the wire-level identifier only when it matters.
 - Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
 - Coordination: `coordination_room`, `coordination_intent`, `write_intent`, `read_intents_for_room`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
 - Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`
-- Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
+- Memory and learning: `recall`, `remember`, `relate`, `observe`, `self_note`,
+  `self_revise`, `self_archive`, `self_recall_archive`, `encode`, `forget`,
+  `handoff`, `retrieve_memory`, `turn_start`, and `evidence_bundle`
+
+For memory, prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`, nested
+`links`/`related`, and the `rememberMemory`, `reviseMemory`, `forgetMemory`, and
+`createHandoff` mutations. Outcome-bearing `rememberMemory` is the typed encode
+path. Flat tools remain compatibility or flat-only operational paths. Preserve
+`projectSlug`, `provenance`, `rankSignals`, `episodeProvenance`, and
+`episodeProvenanceContentAddress` with recalled evidence. The exact mapping,
+scope rules, opt-out marker, retro-import recovery contract, and
+practice-promotion firewall live in `references/MEMORY_CAPABILITY.md`.
 
 The ambient practice graph is selected through Ensemble and compounds through
 the ordinary run/event/episode path. It does not add a second workflow engine

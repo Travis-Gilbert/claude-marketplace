@@ -83,5 +83,6 @@ fi
 
 "$PLUGIN_ROOT/tests/install-harness-upgrade.sh"
 "$PLUGIN_ROOT/tests/code-capability-surface.sh"
+"$PLUGIN_ROOT/tests/memory-capability-surface.sh"
 
 printf 'theorems-harness dead surfaces: clean\n'

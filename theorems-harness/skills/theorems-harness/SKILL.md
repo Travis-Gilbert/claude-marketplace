@@ -218,6 +218,24 @@ typed repository revision claim; keep tenant, repository, generation, head SHA,
 evidence ids, and missing evidence attached to the result. See
 `references/CODE_CAPABILITY.md` for the exact GraphQL-to-flat mapping.
 
+### Preferred GraphQL memory fields
+
+Use `graphql_query` for `memory`, `memoryDoc`, `memoryArchive`, and nested
+`MemoryDoc.links`/`MemoryDoc.related`. Use `graphql_mutate` for
+`rememberMemory`, `reviseMemory`, `forgetMemory`, and `createHandoff`.
+`rememberMemory` without `input.outcome` lowers to `remember`; with an outcome
+it lowers to `encode`. Flat `recall`, `relate`, `self_recall_archive`,
+`self_revise`, `forget`, and `handoff` are compatibility paths. `observe`,
+`self_note`, `self_archive`, `retrieve_memory`, `turn_start`, and
+`evidence_bundle` remain distinct flat-only operations when advertised.
+
+Treat admission as the tenant/project authority. Keep `projectSlug`,
+`rankSignals`, `episodeProvenance`, and `episodeProvenanceContentAddress` with
+recalled evidence. Honor episode opt-out before capture, accept deterministic
+deduplication on replay/import, and keep a raw episode out of canonical practice
+until a same-scope clustered-outcome promotion receipt exists. See
+`references/MEMORY_CAPABILITY.md` for the exact mapping and guardrails.
+
 ## Slim MCP Launch Aliases
 
 The local `theorems-harness` MCP server also exposes launch-facing aliases:

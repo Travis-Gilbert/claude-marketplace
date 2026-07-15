@@ -13,12 +13,20 @@ revise that choice as evidence changes.
 | `/coordinate` | Room digest, intent/reflection writes, presence, mentions, waits, and handoffs. |
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
-| `/encode` | Durable feedback, solution, or postmortem write. |
+| `/encode` | Durable feedback, solution, or postmortem write through GraphQL `rememberMemory` with outcome metadata, or flat `encode` when needed. |
 | `/compute_code` | GraphQL-first code ingest, discovery, explanation, specification, drift, features, and obligations, with consolidated flat MCP and graph-structural fallbacks. |
 
 Context compilation is ambient. Inspect or refresh it only through a registered
 typed context capability; the retired `/context-refresh` command is not an
 alias for an unregistered tool.
+
+Memory is one tenant/project-bound capability, not separate recall, episode,
+and practice stores. Prefer GraphQL `memory`, `memoryDoc`, `memoryArchive`,
+nested `links`/`related`, and the typed memory mutations. Route flat-only actor
+memory and Data API packets only when their advertised capability is needed.
+Keep `rankSignals` and episode provenance attached to retrieved context. Apply
+the opt-out, deduplication, retro-import reentrancy, and evidence-clustered
+practice-promotion rules in `MEMORY_CAPABILITY.md`.
 
 Compatibility phase commands such as `/execute` can remain installed, but new
 general work should enter through `/harness`.

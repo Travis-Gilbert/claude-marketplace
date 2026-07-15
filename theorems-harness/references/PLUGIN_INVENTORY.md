@@ -88,6 +88,13 @@ Utility commands:
 ingest/reindex/status/search/context/explain/spec/drift/features/obligations,
 with the consolidated flat MCP fallbacks documented in `CODE_CAPABILITY.md`.
 
+Harness memory teaching is GraphQL-first across `memory`, `memoryDoc`, nested
+`links`/`related`, `memoryArchive`, `rememberMemory`, `reviseMemory`,
+`forgetMemory`, and `createHandoff`. It preserves ranked episode provenance and
+keeps actor-memory/Data API tools, retro-import, opt-out, deduplication,
+reentrancy, and practice promotion in their real boundaries. See
+`MEMORY_CAPABILITY.md`.
+
 Internal capability language:
 
 - `theorize` -> `/harness mode=theorize`
@@ -120,6 +127,7 @@ Internal capability language:
 - `EPISTEMIC_PRIMITIVES.md`
 - `HOST_REPO_OPT_IN.md`
 - `LEARNINGS.md`
+- `MEMORY_CAPABILITY.md`
 - `ORCHESTRATE_REPORTING.md`
 - `PLAN_TEMPLATE.md`
 - `PLANNED-CAPABILITY-PLUGIN-IDEAS.md`
