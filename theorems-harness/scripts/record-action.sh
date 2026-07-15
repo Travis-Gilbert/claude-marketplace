@@ -43,9 +43,8 @@ if [ -z "$tool_event_id" ]; then
   tool_event_id=$(printf '%s' "$input" | jq -cS . 2>/dev/null | shasum -a 256 | awk '{print $1}')
 fi
 request_key="tool-use:$sid:$tool_event_id"
-order_hash=$(printf '%s' "$request_key" | shasum -a 256 | awk '{print substr($1, 1, 16)}')
 theorem_ambient_queue_transition \
-  "$cwd" "$sid" "200-$order_hash" "$run_id" "SESSION.EVENT_RECORDED" \
+  "$cwd" "$sid" "500" "$run_id" "SESSION.EVENT_RECORDED" \
   "${THEOREM_ACTOR:-$(theorem_host)}" "$step_body" "$request_key" \
   >/dev/null 2>&1 || true
 

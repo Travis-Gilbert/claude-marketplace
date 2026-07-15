@@ -34,8 +34,20 @@ THEOREM_STATE_DIR=$(theorem_init_state_dir "$cwd")
 ambient_dir=$(theorem_ambient_dir "$cwd" "$sid")
 queue_dir="$ambient_dir/queue"
 receipt_dir="$ambient_dir/receipts"
+dead_letter_dir="$ambient_dir/dead-letter"
 lock_dir="$ambient_dir/drain.lock"
-mkdir -p "$queue_dir" "$receipt_dir" 2>/dev/null || exit 0
+mkdir -p "$queue_dir" "$receipt_dir" "$dead_letter_dir" 2>/dev/null || exit 0
+
+dead_letter() {
+  local queue_file="$1"
+  local reason="$2"
+  local tmp_file="$queue_file.tmp.$$"
+  jq --arg failed_at "$(theorem_now_iso)" --arg error "$reason" \
+    '.dead_lettered_at = $failed_at | .last_error = $error' \
+    "$queue_file" > "$tmp_file" 2>/dev/null || cp "$queue_file" "$tmp_file"
+  mv "$tmp_file" "$dead_letter_dir/$(basename "$queue_file")"
+  rm -f "$queue_file"
+}
 
 acquire_lock() {
   if mkdir "$lock_dir" 2>/dev/null; then
@@ -69,8 +81,9 @@ while :; do
   request_key=$(jq -r '.request_key // empty' "$queue_file" 2>/dev/null || printf '')
   capability=$(jq -r '.capability // "ambient"' "$queue_file" 2>/dev/null || printf 'ambient')
   if [ -z "$tool" ] || [ -z "$args" ] || [ -z "$request_key" ]; then
-    theorem_ambient_refresh_local_status "$cwd" "$sid" degraded "malformed ambient queue record: $(basename "$queue_file")" || true
-    exit 0
+    dead_letter "$queue_file" "malformed ambient queue record"
+    theorem_ambient_refresh_local_status "$cwd" "$sid" degraded "malformed ambient queue record moved to dead letter: $(basename "$queue_file")" || true
+    continue
   fi
 
   response=$(theorem_native_json "$tool" "$args" 2>/dev/null || printf '')

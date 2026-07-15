@@ -200,8 +200,9 @@ theorem_session_key() {
 }
 
 # Durable, session-scoped ambient queue. Hook processes enqueue work and return;
-# one short-lived worker drains calls in lexical order. The request key is both
-# the local dedupe key and, for harness transitions, the server idempotency key.
+# one short-lived worker drains calls by lifecycle phase and durable enqueue
+# sequence. The request key is both the local dedupe key and, for harness
+# transitions, the server idempotency key.
 # Local receipts only prove transport acknowledgement. Runtime effects remain
 # observable through their real MCP/read surfaces.
 theorem_ambient_dir() {
@@ -221,13 +222,19 @@ theorem_ambient_refresh_local_status() {
   local sid="$2"
   local state="${3:-ready}"
   local detail="${4:-}"
-  local ambient_dir queue_dir receipt_dir pending acknowledged status_file tmp_file run_id
+  local ambient_dir queue_dir receipt_dir dead_letter_dir pending acknowledged dead_letter status_file tmp_file run_id
   ambient_dir=$(theorem_ambient_dir "$cwd" "$sid")
   queue_dir="$ambient_dir/queue"
   receipt_dir="$ambient_dir/receipts"
-  mkdir -p "$queue_dir" "$receipt_dir" 2>/dev/null || return 1
+  dead_letter_dir="$ambient_dir/dead-letter"
+  mkdir -p "$queue_dir" "$receipt_dir" "$dead_letter_dir" 2>/dev/null || return 1
   pending=$(find "$queue_dir" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
   acknowledged=$(find "$receipt_dir" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  dead_letter=$(find "$dead_letter_dir" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "${dead_letter:-0}" -gt 0 ] && [ "$state" = "ready" ]; then
+    state="degraded"
+    detail="${dead_letter} ambient call(s) require dead-letter inspection"
+  fi
   status_file=$(theorem_ambient_status_file "$cwd" "$sid")
   run_id=$(theorem_run_id "$sid" 2>/dev/null || printf '')
   tmp_file="$status_file.tmp.$$"
@@ -239,6 +246,7 @@ theorem_ambient_refresh_local_status() {
     --arg updated_at "$(theorem_now_iso)" \
     --argjson pending "${pending:-0}" \
     --argjson acknowledged "${acknowledged:-0}" \
+    --argjson dead_letter "${dead_letter:-0}" \
     '{
       schema_version: 1,
       state: $state,
@@ -248,9 +256,43 @@ theorem_ambient_refresh_local_status() {
       run_id: $run_id,
       pending_calls: $pending,
       acknowledged_calls: $acknowledged,
+      dead_letter_calls: $dead_letter,
       updated_at: $updated_at
     }' > "$tmp_file" || return 1
   mv "$tmp_file" "$status_file"
+}
+
+theorem_ambient_next_sequence() {
+  local ambient_dir="$1"
+  local lock_dir="$ambient_dir/enqueue.lock"
+  local counter_file="$ambient_dir/enqueue-sequence"
+  local attempt=0 current=0 next tmp_file owner
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    owner=$(cat "$lock_dir/pid" 2>/dev/null || printf '')
+    case "$owner" in
+      ''|*[!0-9]*) ;;
+      *)
+        if ! kill -0 "$owner" 2>/dev/null; then
+          rm -rf "$lock_dir" 2>/dev/null || true
+          continue
+        fi
+        ;;
+    esac
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 100 ] || return 1
+    sleep 0.01
+  done
+  printf '%s\n' "$$" > "$lock_dir/pid"
+  if [ -f "$counter_file" ]; then
+    current=$(cat "$counter_file" 2>/dev/null || printf '0')
+  fi
+  case "$current" in ''|*[!0-9]*) current=0 ;; esac
+  next=$((current + 1))
+  tmp_file="$counter_file.tmp.$$"
+  printf '%s\n' "$next" > "$tmp_file" || { rm -rf "$lock_dir"; return 1; }
+  mv "$tmp_file" "$counter_file" || { rm -rf "$lock_dir"; return 1; }
+  rm -rf "$lock_dir"
+  printf '%012d' "$next"
 }
 
 theorem_ambient_spawn_drain() {
@@ -275,24 +317,29 @@ theorem_ambient_queue_call() {
   local tool="$5"
   local args="$6"
   local request_key="$7"
-  local ambient_dir queue_dir receipt_dir digest queue_file receipt_file tmp_file
+  local ambient_dir queue_dir receipt_dir digest sequence queue_file receipt_file tmp_file existing_queue queued_at
   ambient_dir=$(theorem_ambient_dir "$cwd" "$sid")
   queue_dir="$ambient_dir/queue"
   receipt_dir="$ambient_dir/receipts"
   mkdir -p "$queue_dir" "$receipt_dir" 2>/dev/null || return 1
   digest=$(printf '%s' "$request_key" | shasum -a 256 | awk '{print $1}') || return 1
-  queue_file="$queue_dir/${order}-${digest}.json"
   receipt_file="$receipt_dir/${digest}.json"
-  if [ -f "$receipt_file" ] || [ -f "$queue_file" ]; then
+  existing_queue=$(find "$queue_dir" -maxdepth 1 -type f -name "*-${digest}.json" -print -quit 2>/dev/null || printf '')
+  if [ -f "$receipt_file" ] || [ -n "$existing_queue" ]; then
     theorem_ambient_spawn_drain "$cwd" "$sid"
     return 0
   fi
+  sequence=$(theorem_ambient_next_sequence "$ambient_dir") || return 1
+  queue_file="$queue_dir/${order}-${sequence}-${digest}.json"
   tmp_file="$queue_file.tmp.$$"
+  queued_at=$(theorem_now_iso)
   jq -n \
     --arg capability "$capability" \
     --arg tool "$tool" \
     --arg request_key "$request_key" \
-    --arg queued_at "$(theorem_now_iso)" \
+    --arg queued_at "$queued_at" \
+    --arg order "$order" \
+    --argjson sequence "$((10#$sequence))" \
     --argjson arguments "$args" \
     '{
       schema_version: 1,
@@ -300,6 +347,8 @@ theorem_ambient_queue_call() {
       tool: $tool,
       request_key: $request_key,
       arguments: $arguments,
+      order: $order,
+      sequence: $sequence,
       attempts: 0,
       queued_at: $queued_at
     }' > "$tmp_file" || return 1
@@ -390,7 +439,11 @@ theorem_native_json() {
   local args="${2-}"
   local response
   response=$(theorem_native_call "$tool" "$args") || return 1
-  if ! printf '%s' "$response" | jq -e 'type == "object" and (.error | not)' >/dev/null 2>&1; then
+  if ! printf '%s' "$response" | jq -e '
+    type == "object" and
+    (.error | not) and
+    (.result.isError? != true)
+  ' >/dev/null 2>&1; then
     return 1
   fi
   printf '%s' "$response" | jq -ce '

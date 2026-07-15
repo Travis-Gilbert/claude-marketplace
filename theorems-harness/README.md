@@ -294,9 +294,13 @@ pack and receipt; there is no parallel Elements mode.
 
 Lifecycle writes use a durable session queue under
 `.theorem/ambient/<session>/`. Stable request keys make hook retries and lost
-responses idempotent; one short-lived worker preserves run ordering without
-blocking the agent. Transport or MCP refusals leave the call queued and mark
-`status.json` degraded. `scripts/ambient-health-hook.sh` surfaces that state at
+responses idempotent; an atomic enqueue sequence preserves host event order
+across prompt, tool, and compaction boundaries while one short-lived worker
+drains without blocking the agent. Transport or MCP refusals, including MCP
+`result.isError`, leave the call queued and mark `status.json` degraded.
+Malformed records move to an explicit `dead-letter/` directory so they cannot
+starve later valid calls; the degraded status reports pending, acknowledged,
+and dead-letter counts. `scripts/ambient-health-hook.sh` surfaces that state at
 SessionStart and prompt boundaries, while `scripts/ambient-status.sh --cwd
 <repo> --session <id> --refresh` combines local delivery health with the real
 `harness_run`, `context_status`, and `context_explain` reads.

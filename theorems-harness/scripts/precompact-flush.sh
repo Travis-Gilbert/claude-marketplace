@@ -61,7 +61,7 @@ if [ -z "$compact_event_id" ]; then
 fi
 remember_key="precompact-memory:$sid:$compact_event_id"
 theorem_ambient_queue_call \
-  "$cwd" "$sid" "240" "compaction_memory" "remember" "$payload" "$remember_key" \
+  "$cwd" "$sid" "500" "compaction_memory" "remember" "$payload" "$remember_key" \
   >/dev/null 2>&1 || true
 
 if [ -n "$run_id" ]; then
@@ -80,7 +80,7 @@ if [ -n "$run_id" ]; then
       working_summary_count: $summary_count
     }')
   theorem_ambient_queue_transition \
-    "$cwd" "$sid" "250" "$run_id" "SESSION.EVENT_RECORDED" \
+    "$cwd" "$sid" "500" "$run_id" "SESSION.EVENT_RECORDED" \
     "${THEOREM_ACTOR:-$(theorem_host)}" "$boundary_payload" \
     "precompact-boundary:$sid:$compact_event_id" >/dev/null 2>&1 || true
 fi

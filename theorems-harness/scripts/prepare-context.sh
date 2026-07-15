@@ -113,7 +113,7 @@ if [ -z "$artifact_body" ]; then
       --arg lease_id "$(printf '%s' "$artifact_response" | jq -r '.context_lease.lease_id // empty')" \
       '{event_subtype:"context_boundary",brief_id:$brief_id,context_action:"reuse",generation_id:$generation_id,lease_id:$lease_id}')
     theorem_ambient_queue_transition \
-      "$cwd" "$sid" "190-$prompt_event_id" "$run_id" "SESSION.EVENT_RECORDED" "$actor" "$context_boundary" \
+      "$cwd" "$sid" "500" "$run_id" "SESSION.EVENT_RECORDED" "$actor" "$context_boundary" \
       "context-boundary:$sid:$artifact_id:$prompt_event_id" >/dev/null 2>&1 || true
     printf '{"continue":true,"suppressOutput":true}\n'
     exit 0
@@ -222,7 +222,7 @@ if [ -n "$artifact_id" ]; then
       lease_id: $lease_id
     }')
   theorem_ambient_queue_transition \
-    "$cwd" "$sid" "190-$prompt_event_id" "$run_id" "SESSION.EVENT_RECORDED" "$actor" "$context_boundary" \
+    "$cwd" "$sid" "500" "$run_id" "SESSION.EVENT_RECORDED" "$actor" "$context_boundary" \
     "context-boundary:$sid:$artifact_id:$prompt_event_id" >/dev/null 2>&1 || true
 fi
 

@@ -92,6 +92,10 @@ if [ "${THEOREM_AMBIENT_FIXTURE_FAIL:-0}" = "1" ]; then
 fi
 tool=$(printf '%s' "$payload" | jq -r '.params.name')
 args=$(printf '%s' "$payload" | jq -c '.params.arguments // {}')
+if [ "${THEOREM_AMBIENT_FIXTURE_TOOL_ERROR:-0}" = "1" ]; then
+  printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"isError":true,"structuredContent":{"code":"fixture_refusal","message":"fixture tool refusal"}}}'
+  exit 0
+fi
 case "$tool" in
   harness_append_transition)
     key=$(printf '%s' "$args" | jq -r '.idempotency_key')
@@ -226,5 +230,59 @@ unset THEOREM_AMBIENT_FIXTURE_FAIL
 printf '%s' "$degraded_json" | "$plugin_root/scripts/begin-run.sh" >/dev/null
 recovered_status=$("$plugin_root/scripts/ambient-status.sh" --cwd "$degraded_repo" --session "$degraded_sid")
 printf '%s' "$recovered_status" | jq -e '.delivery.degraded == false and .delivery.pending_calls == 0' >/dev/null
+
+# MCP tool-level refusals are delivery failures, not acknowledgements. The
+# identical request remains queued until the host accepts it.
+tool_error_repo="$fixture/tool-error-repo"
+git clone -q "$repo" "$tool_error_repo"
+tool_error_sid="ambient-tool-error-session"
+tool_error_json=$(jq -cn --arg cwd "$tool_error_repo" --arg sid "$tool_error_sid" '{cwd:$cwd,session_id:$sid,hook_event_name:"SessionStart"}')
+export THEOREM_AMBIENT_FIXTURE_TOOL_ERROR=1
+printf '%s' "$tool_error_json" | "$plugin_root/scripts/begin-run.sh" >/dev/null
+tool_error_status=$("$plugin_root/scripts/ambient-status.sh" --cwd "$tool_error_repo" --session "$tool_error_sid")
+printf '%s' "$tool_error_status" | jq -e '.delivery.degraded == true and .delivery.pending_calls == 1 and .delivery.acknowledged_calls == 0' >/dev/null
+unset THEOREM_AMBIENT_FIXTURE_TOOL_ERROR
+printf '%s' "$tool_error_json" | "$plugin_root/scripts/begin-run.sh" >/dev/null
+tool_recovered_status=$("$plugin_root/scripts/ambient-status.sh" --cwd "$tool_error_repo" --session "$tool_error_sid")
+printf '%s' "$tool_recovered_status" | jq -e '.delivery.degraded == false and .delivery.pending_calls == 0 and .delivery.acknowledged_calls == 1' >/dev/null
+
+# A malformed head record is quarantined instead of permanently blocking the
+# next valid call. Dead letters remain explicit degraded-state diagnostics.
+poison_repo="$fixture/poison-repo"
+git clone -q "$repo" "$poison_repo"
+poison_sid="ambient-poison-session"
+poison_json=$(jq -cn --arg cwd "$poison_repo" --arg sid "$poison_sid" '{cwd:$cwd,session_id:$sid,hook_event_name:"SessionStart"}')
+poison_dir=$(PLUGIN_ROOT="$plugin_root" bash -c 'source "$1/scripts/lib.sh"; THEOREM_STATE_DIR=$(theorem_init_state_dir "$2"); theorem_ambient_dir "$2" "$3"' _ "$plugin_root" "$poison_repo" "$poison_sid")
+mkdir -p "$poison_dir/queue"
+printf '%s\n' '{"schema_version":1,"request_key":"malformed-fixture"}' > "$poison_dir/queue/000-000000000000-malformed.json"
+printf '%s' "$poison_json" | "$plugin_root/scripts/begin-run.sh" >/dev/null
+poison_status=$("$plugin_root/scripts/ambient-status.sh" --cwd "$poison_repo" --session "$poison_sid")
+printf '%s' "$poison_status" | jq -e '.delivery.degraded == true and .delivery.pending_calls == 0 and .delivery.acknowledged_calls == 1 and .delivery.dead_letter_calls == 1' >/dev/null
+test "$(find "$poison_dir/dead-letter" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')" = 1
+
+# Same-phase events retain host enqueue order during an outage. Their content
+# hashes deliberately sort in the opposite order, so this fails if filenames
+# regress to hash ordering instead of using the durable sequence.
+ordered_repo="$fixture/ordered-repo"
+git clone -q "$repo" "$ordered_repo"
+ordered_sid="ambient-ordered-session"
+ordered_json=$(jq -cn --arg cwd "$ordered_repo" --arg sid "$ordered_sid" '{cwd:$cwd,session_id:$sid,hook_event_name:"SessionStart"}')
+export THEOREM_AMBIENT_FIXTURE_FAIL=1
+printf '%s' "$ordered_json" | "$plugin_root/scripts/begin-run.sh" >/dev/null
+ordered_run_id="run:${ordered_sid}"
+for marker in first second; do
+  PLUGIN_ROOT="$plugin_root" bash -c '
+    source "$1/scripts/lib.sh"
+    THEOREM_STATE_DIR=$(theorem_init_state_dir "$2")
+    payload=$(jq -n --arg marker "$5" "{event_subtype:\"ordering_fixture\",marker:\$marker}")
+    theorem_ambient_queue_transition "$2" "$3" "500" "$4" "SESSION.EVENT_RECORDED" "fixture" "$payload" "ordering:$3:$5"
+  ' _ "$plugin_root" "$ordered_repo" "$ordered_sid" "$ordered_run_id" "$marker" >/dev/null
+done
+ordered_dir=$(PLUGIN_ROOT="$plugin_root" bash -c 'source "$1/scripts/lib.sh"; THEOREM_STATE_DIR=$(theorem_init_state_dir "$2"); theorem_ambient_dir "$2" "$3"' _ "$plugin_root" "$ordered_repo" "$ordered_sid")
+test "$(find "$ordered_dir/queue" -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')" = 3
+test "$(jq -s -r 'sort_by(.sequence) | map(select(.arguments.payload.marker != null) | .arguments.payload.marker) | join(",")' "$ordered_dir"/queue/*.json)" = "first,second"
+unset THEOREM_AMBIENT_FIXTURE_FAIL
+printf '%s' "$ordered_json" | "$plugin_root/scripts/begin-run.sh" >/dev/null
+test "$(jq -s -r '[.[] | select(.payload.event_subtype == "ordering_fixture") | .payload.marker] | join(",")' "$events")" = "first,second"
 
 printf 'ambient session fixture: ok (tenant=%s; live_evidence=false)\n' "$tenant"
