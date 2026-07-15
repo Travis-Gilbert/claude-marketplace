@@ -184,8 +184,12 @@ treat it as expected.
 | `harness_step` | Record a step inside an open run. |
 | `harness_search` | Search inside the run, recording tool-call and observation steps. |
 | `harness_fractal_expansion` | Query-driven fractal search; optionally records into a run. |
-| `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path; `provider_search` reaches live GitHub/GitLab code search. |
+| `compute_code` | Flat fallback for CodeCrawler status, search, context, explain, recognize, explore, and provider search operations. Context is an operation, not a separate flat tool. |
 | `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
+| `code_compile_spec` | Flat fallback for compiling a revision-bound code specification. |
+| `code_spec_drift` | Flat fallback for comparing a specification with the current indexed revision. |
+| `code_extract_features` | Flat fallback for extracting revision-bound code connection features. |
+| `code_implementation_obligations` | Flat fallback for compiling evidence-backed implementation obligations and unknowns. |
 | `harness_patch` | Propose a patch to the harness belief state. |
 | `plan` | Create and operate durable graph-backed plans: create, add_task, add_tasks, refine, claim, transition, spawn_verify, submit_verify, prove, render, inspect, migrate_task_ids, import, query, what_changed, analyze, converge, replay. The task happy path is claim -> patch_proposed (with `patch_digest`) -> spawn_verify -> submit_verify -> prove -> done; `add_tasks` atomically resumes or bootstraps up to 100 declarative tasks and refuses the full batch on a definition conflict. |
 | `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
@@ -203,6 +207,16 @@ treat it as expected.
 | `presence` | Refresh, end, or read short-TTL actor presence. |
 | `subscribe` | Register an actor as polling a mention channel. |
 | `continuity_pack` | Persist graph-backed and disk-mirrored continuity before compaction or handoff. |
+
+### Preferred GraphQL code fields
+
+Use `graphql_query` for `codeStatus`, `codeSearch`, `codeContext`,
+`codeExplain`, `codeSpec`, `codeDrift`, `codeFeatures`, and `codeObligations`.
+Use `graphql_mutate` for `ingestCodebase` and `reindexCodebase`. Introspect first
+when the current schema is not in context. Status and compiler fields return a
+typed repository revision claim; keep tenant, repository, generation, head SHA,
+evidence ids, and missing evidence attached to the result. See
+`references/CODE_CAPABILITY.md` for the exact GraphQL-to-flat mapping.
 
 ## Slim MCP Launch Aliases
 

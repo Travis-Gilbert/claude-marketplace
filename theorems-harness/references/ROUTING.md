@@ -14,7 +14,7 @@ revise that choice as evidence changes.
 | `/peer-review` | Cross-frontier-model review before commit, PR, launch report, or risky closeout. |
 | `/research` | Direct fractal expansion, gap-frontier discovery, or code-symbol discovery. |
 | `/encode` | Durable feedback, solution, or postmortem write. |
-| `/compute_code` | Native CodeCrawler-backed code discovery, with graph-structural ranking fallback. |
+| `/compute_code` | GraphQL-first code ingest, discovery, explanation, specification, drift, features, and obligations, with consolidated flat MCP and graph-structural fallbacks. |
 
 Context compilation is ambient. Inspect or refresh it only through a registered
 typed context capability; the retired `/context-refresh` command is not an

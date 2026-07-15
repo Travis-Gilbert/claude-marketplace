@@ -84,6 +84,10 @@ Utility commands:
 - `/replay-last-run`
 - `/writing-engineering`
 
+`/compute_code` teaches the complete code capability: GraphQL-first
+ingest/reindex/status/search/context/explain/spec/drift/features/obligations,
+with the consolidated flat MCP fallbacks documented in `CODE_CAPABILITY.md`.
+
 Internal capability language:
 
 - `theorize` -> `/harness mode=theorize`
@@ -110,6 +114,7 @@ Internal capability language:
 - `ARTIFACT_SCHEMAS.md`
 - `BRIEF_TEMPLATE.md`
 - `CHECKLIST_MANIFESTO.md`
+- `CODE_CAPABILITY.md`
 - `CONCISE_ACTION.md`
 - `ENGINEERS_MINDSET.md`
 - `EPISTEMIC_PRIMITIVES.md`

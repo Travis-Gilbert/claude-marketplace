@@ -26,8 +26,10 @@ For a task that will also modify files, validate, or report, use `/harness`.
 
 1. Prefer `harness_fractal_expansion` with `query`, `run_id` (if a run is
    open), `top_k`, `budget`, and `scope`.
-2. For code-specific discovery, run `compute_code` first, then `code_context`
-   on the most relevant symbol if the code-theorem tool family is available.
+2. For code-specific discovery, prefer GraphQL `codeSearch`, then
+   `codeContext` or `codeExplain` on the most relevant symbol. If GraphQL is
+   unavailable, call `compute_code` with operation `search`, followed by the
+   same tool with operation `context` or `explain`.
 3. If `harness_fractal_expansion` is unavailable, fall back to the full
    Theseus search or GraphRAG tool available in the host and surface that the
    direct Harness path was unavailable.

@@ -82,5 +82,6 @@ if tr '\n' ' ' < "$PLUGIN_ROOT/skills/execute/SKILL.md" \
 fi
 
 "$PLUGIN_ROOT/tests/install-harness-upgrade.sh"
+"$PLUGIN_ROOT/tests/code-capability-surface.sh"
 
 printf 'theorems-harness dead surfaces: clean\n'

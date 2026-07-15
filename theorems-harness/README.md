@@ -100,7 +100,14 @@ memory") and include the wire-level identifier only when it matters.
 
 - Context and runs: `harness_prepare`, `harness_append_transition`,
   `harness_run`, `replay_last_run`, `harness_kg_status`
-- Code: `compute_code` for reads and `code_ingest` for ingest/reindex/session overlay writes. The old `code_search` name is dispatch-compatible only; it is not advertised.
+- Code: prefer GraphQL `codeStatus`, `codeSearch`, `codeContext`,
+  `codeExplain`, `codeSpec`, `codeDrift`, `codeFeatures`, and `codeObligations`,
+  with `ingestCodebase`/`reindexCodebase` mutations. Flat compatibility uses
+  `compute_code` operations for status/search/context/explain, `code_ingest`
+  for ingest/reindex, and `code_compile_spec`, `code_spec_drift`,
+  `code_extract_features`, and `code_implementation_obligations` for compiler
+  reads. The old `code_search` name is dispatch-compatible only; it is not
+  advertised.
 - Graph and reasoning: `rustyred_thg_graph_*`, `rustyred_thg_algorithm_*`, `rustyred_thg_symbolic_*`, and graph-version tools.
 - Web: `rustyweb_search_acquisition`, `browse_for_me`, `browse_with_me`, `web_consume`
 - Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
@@ -191,7 +198,9 @@ plugin_hooks = true
 - `harness_prepare` (compile the Context Brief from Ensemble selection plus memory recall)
 - `harness_append_transition` (append run lifecycle events)
 - `harness_run` (read run event ledgers)
-- `compute_code` and `code_ingest` (read code graph context and ingest/reindex when needed)
+- GraphQL code fields for ingest/reindex/status/search/context/explain/spec,
+  drift, features, and obligations; flat hooks use `compute_code` and
+  `code_ingest` where needed
 - `coordination_room`, `coordination_intent`, `coordination_record`, `coordination_reflection`, `coordinate`, `mentions`, `presence`
 - `remember`, `recall`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 
