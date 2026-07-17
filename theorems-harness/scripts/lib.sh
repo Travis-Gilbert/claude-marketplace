@@ -140,8 +140,15 @@ theorem_code_repo_id() {
   if [ -n "$origin_url" ]; then
     slug="${origin_url%/}"
     slug="${slug%.git}"
-    slug="${slug##*/}"
-    slug="${slug##*:}"
+    case "$slug" in
+      *://*)
+        slug="${slug#*://}"
+        slug="${slug#*/}"
+        ;;
+      *:*) slug="${slug#*:}" ;;
+    esac
+    slug="${slug#/}"
+    slug="${slug%/}"
   fi
   [ -n "$slug" ] || slug=$(theorem_repo_label "$repo_root")
   printf 'repo:%s' "$slug"

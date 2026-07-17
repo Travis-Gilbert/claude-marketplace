@@ -3,6 +3,9 @@
 set -euo pipefail
 
 plugin_root=$(cd "$(dirname "$0")/.." && pwd)
+source "$plugin_root/scripts/lib.sh"
+test "$(theorem_code_repo_id /tmp/worktree git@github.com:org-a/api.git)" = "repo:org-a/api"
+test "$(theorem_code_repo_id /tmp/worktree https://github.com/org-b/api.git)" = "repo:org-b/api"
 fixture=$(mktemp -d)
 repo="$fixture/disposable-worktree-a17"
 mock_bin="$fixture/bin"
@@ -139,7 +142,7 @@ assert_operation_request() {
   local tool="$2"
   jq -e --arg operation "$operation" --arg tool "$tool" '
     select(.operation == $operation) |
-    .name == $tool and .arguments.repo_id == "repo:private-fixture"
+    .name == $tool and .arguments.repo_id == "repo:Travis-Gilbert/private-fixture"
   ' "$request_log" >/dev/null
 }
 
@@ -183,7 +186,7 @@ test "$(operation_count context_pack)" = "0"
 assert_operation_request kg_status compute_code
 assert_operation_request ingest code_ingest
 jq -e --arg head "$head_sha" '
-  .repo_id == "repo:private-fixture" and
+  .repo_id == "repo:Travis-Gilbert/private-fixture" and
   .repo_url == "git@github.com:Travis-Gilbert/private-fixture.git" and
   .requested_head_sha == $head and
   .operation == "ingest" and
@@ -213,7 +216,7 @@ assert_operation_request context_pack compute_code
 test "$(operation_count ingest)" = "0"
 test "$(operation_count reindex)" = "0"
 jq -e --arg head "$head_sha" '
-  .repo_id == "repo:private-fixture" and
+  .repo_id == "repo:Travis-Gilbert/private-fixture" and
   .repo_url == "git@github.com:Travis-Gilbert/private-fixture.git" and
   .observed_head_sha == $head and
   .server_status.status == "current" and
