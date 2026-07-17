@@ -3,7 +3,7 @@
 
 Composed turns and durable Head Calls are callable; A2A remains source-only and ACP is a server WebSocket.
 
-Plugin version: `0.9.3`. Source server version: `0.5.0`.
+Plugin version: `0.9.4`. Source server version: `0.5.0`.
 Source catalog SHA-256: `feb39dae1c91bf89c5050323c4922f9fbbc5092b6ac5f85fffa34396a173701b`.
 
 | Capability | Surface | Guidance | Maturity | Live status | Schema/source | Canonical descriptor |

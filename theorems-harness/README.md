@@ -101,7 +101,7 @@ through `theorem_native_call`.
 
 ## GraphQL MCP surface
 
-Version `0.9.3` is the capability-complete-mirror plugin contract. When
+Version `0.9.4` is the capability-complete-mirror plugin contract. When
 `tools/list` exposes
 `graphql_query`, `graphql_mutate`, and `graphql_introspect`, agents should use
 `graphql_introspect` to discover the schema and then read or write memory,

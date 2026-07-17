@@ -129,6 +129,31 @@ theorem_repo_label() {
   basename "$repo_root"
 }
 
+# Stable code-graph identity follows the origin repository, not the current
+# checkout directory. Worktree names are intentionally disposable and would
+# otherwise create a fresh graph every time an agent enters a new worktree.
+theorem_code_repo_id() {
+  local repo_root="$1"
+  local origin_url="${2:-}"
+  local slug=""
+
+  if [ -n "$origin_url" ]; then
+    slug="${origin_url%/}"
+    slug="${slug%.git}"
+    case "$slug" in
+      *://*)
+        slug="${slug#*://}"
+        slug="${slug#*/}"
+        ;;
+      *:*) slug="${slug#*:}" ;;
+    esac
+    slug="${slug#/}"
+    slug="${slug%/}"
+  fi
+  [ -n "$slug" ] || slug=$(theorem_repo_label "$repo_root")
+  printf 'repo:%s' "$slug"
+}
+
 theorem_git_branch() {
   local repo_root="$1"
   git -C "$repo_root" rev-parse --abbrev-ref HEAD 2>/dev/null || printf ''
