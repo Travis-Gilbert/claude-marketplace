@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "plugin_version": "0.9.3",
+  "plugin_version": "0.9.4",
   "registries": {
     "dynamic": [
       "constraint.check",

@@ -4,7 +4,7 @@ set -euo pipefail
 
 plugin_root=$(cd "$(dirname "$0")/.." && pwd)
 fixture=$(mktemp -d)
-repo="$fixture/private-fixture"
+repo="$fixture/disposable-worktree-a17"
 mock_bin="$fixture/bin"
 request_log="$fixture/requests.jsonl"
 claim_root="$fixture/claims"
@@ -62,8 +62,8 @@ fi
 if [[ "$operation" == "kg_status" ]]; then
   case "${THEOREM_TEST_STATUS:-unknown}" in
     unknown) status='{"indexed":false,"head_sha":""}' ;;
-    changed) status='{"indexed":true,"head_sha":"older-sha"}' ;;
-    current) status=$(jq -cn --arg head "$THEOREM_TEST_HEAD" '{indexed:true,head_sha:$head}') ;;
+    changed) status='{"indexed":true,"manifest":{}}' ;;
+    current) status=$(jq -cn --arg head "$THEOREM_TEST_HEAD" '{indexed:true,manifest:{head_sha:$head}}') ;;
     unavailable)
       printf '%s\n' '{"jsonrpc":"2.0","error":{"code":-32000,"message":"status unavailable"}}'
       exit 0
@@ -134,6 +134,15 @@ operation_count() {
   jq -r --arg operation "$operation" 'select(.operation == $operation) | .operation' "$request_log" 2>/dev/null | wc -l | tr -d ' '
 }
 
+assert_operation_request() {
+  local operation="$1"
+  local tool="$2"
+  jq -e --arg operation "$operation" --arg tool "$tool" '
+    select(.operation == $operation) |
+    .name == $tool and .arguments.repo_id == "repo:private-fixture"
+  ' "$request_log" >/dev/null
+}
+
 wait_for_manifest_status() {
   local expected="$1"
   local manifest="$repo/.harness/code-kg-manifest.json"
@@ -171,16 +180,18 @@ invoke_hook unknown-session >/dev/null
 wait_for_manifest_status accepted
 test "$(operation_count ingest)" = "1"
 test "$(operation_count context_pack)" = "0"
+assert_operation_request kg_status compute_code
+assert_operation_request ingest code_ingest
 jq -e --arg head "$head_sha" '
-  .repo_id == "private-fixture" and
+  .repo_id == "repo:private-fixture" and
   .repo_url == "git@github.com:Travis-Gilbert/private-fixture.git" and
   .requested_head_sha == $head and
   .operation == "ingest" and
   .certifies_indexed == false
 ' "$repo/.harness/code-kg-manifest.json" >/dev/null
 
-# Changed repository: status drives reindex even if an old local manifest says
-# the current SHA was previously submitted.
+# An indexed repository with no authoritative head is stale: status drives
+# reindex even if an old local manifest says the current SHA was submitted.
 reset_case
 mkdir -p "$repo/.harness"
 jq -cn --arg head "$head_sha" '{head_sha:$head,certifies_indexed:true}' > "$repo/.harness/code-kg-manifest.json"
@@ -188,6 +199,7 @@ export THEOREM_TEST_STATUS=changed THEOREM_TEST_STATUS_SHAPE=structured THEOREM_
 invoke_hook changed-session >/dev/null
 wait_for_manifest_status accepted
 test "$(operation_count reindex)" = "1"
+assert_operation_request reindex code_ingest
 test "$(jq -r '.operation' "$repo/.harness/code-kg-manifest.json")" = "reindex"
 
 # Current repository: request context without repo_url and inject either public
@@ -197,10 +209,11 @@ export THEOREM_TEST_STATUS=current THEOREM_TEST_STATUS_SHAPE=nested THEOREM_TEST
 current_output=$(invoke_hook current-session)
 printf '%s' "$current_output" | jq -e '.hookSpecificOutput.additionalContext | contains("Nested map")' >/dev/null
 jq -e 'select(.operation == "context_pack") | (.arguments | has("repo_url") | not)' "$request_log" >/dev/null
+assert_operation_request context_pack compute_code
 test "$(operation_count ingest)" = "0"
 test "$(operation_count reindex)" = "0"
 jq -e --arg head "$head_sha" '
-  .repo_id == "private-fixture" and
+  .repo_id == "repo:private-fixture" and
   .repo_url == "git@github.com:Travis-Gilbert/private-fixture.git" and
   .observed_head_sha == $head and
   .server_status.status == "current" and

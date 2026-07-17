@@ -53,10 +53,10 @@
     },
     {
       "name": "theorems-harness",
-      "version": "0.9.3",
+      "version": "0.9.4",
       "source": "./theorems-harness",
       "keywords": [
-        "artifact-sha256:ebd66a8d181cdc9484bbd3ae3deb1d7fb0eb46c1e89cb4cc48711e30566c9a61"
+        "artifact-sha256:9a02ed10189a5c002a97932ce45041a0c34b735b63d97b7b9ceedd73f8bc39ce"
       ]
     },
     {
