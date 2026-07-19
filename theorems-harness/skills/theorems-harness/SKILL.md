@@ -36,8 +36,9 @@ When the user invokes `/harness`, "Theorem's Harness", or an equivalent phrase:
 
 1. Treat it as consent to use harness abilities for the active task.
 2. Resolve the current task from the user's words and live repo state.
-3. Select the first capability mix. Use `harness_route` when available; otherwise
-   apply the routing rules below directly.
+3. Select the first capability mix by applying the routing rules below plus the
+   injected Product Packet (see Liveness). For anything outside the taught
+   families, discover it at runtime: `tool_search` -> `describe` -> `invoke`.
 4. Work through short cycles: observe, choose, act, check, and decide whether to
    continue, pivot, coordinate, validate, remember, or report.
 5. Keep the harness visible only where it helps the user trust the work. Do not
@@ -151,6 +152,21 @@ Use these as abilities inside one run, not as competing products:
   the Rust-only lifecycle is remotely callable.
 - If the user asks for review or a second model's view, start with
   `peer_review`; do not convert that into implementation unless asked.
+- If a single claim must be checked against graph evidence, use `oracle`; it
+  writes a learn_pattern receipt only in explicit write mode. For durable
+  proof, pair it with the `verification_*` receipt surface.
+- If work should run in the background or on another head, use Dispatch
+  (`job_submit` / `job_list` / `job_note` / `job_archive`) or `spawn_session`
+  for a room-visible spawned session. Both are local-node surfaces.
+- If the user asks to rebuild, port, or establish parity with an existing
+  system, route to `reverse_engineer_*` (target_plan, slice, compose, port,
+  emit, validate) and `reconstruct` / `reconstruct_binary`.
+- If the task is design-system or UI-audit shaped, the Design Scout tools
+  (`design_extract`, `design_audit`, `design_drift`, `design_report`,
+  `design_tokens`) are first-class; pair them with `design-engineering`.
+- At the start of Rust-shaped work, `skill_apply` the Rust skill-pack so this
+  head starts warm; `ensemble_select` chooses packs under budget when several
+  could serve. Both are local-node surfaces.
 - If the task is broad but actionable, use a short `theorize` pass, choose a
   default, and continue. Do not park in brainstorming.
 - If hooks already injected a useful context brief, use it. If it is missing,
@@ -159,6 +175,32 @@ Use these as abilities inside one run, not as competing products:
 Re-route whenever a material discovery changes the shape of the work, when a
 third workaround appears in the same layer, before overlapping edits, and before
 final claims.
+
+## Liveness: the Product Packet is the live inventory
+
+The family catalogs and this file teach what capabilities *mean*. They do not
+tell you what is reachable right now. Hooks inject a "Theorems Harness Product
+Packet" per session event carrying active and degraded capabilities, and that
+packet is the live inventory:
+
+- An active capability's directive and validation defaults are usable now.
+- A degraded capability (`remote_unavailable`, `no_manifest`, ...) must not be
+  taught, attempted, or silently worked around. Name the degradation in the
+  report and use the documented fallback if one exists.
+- When the packet and any document disagree, the packet wins.
+
+Two further liveness rules:
+
+- **Never teach a retired name.** `references/COMPATIBILITY.generated.md` is
+  the authority on removed names and their replacements; removed names are
+  documentation-only and must never re-enter routing prose or family catalogs.
+- **Surfaces differ by deployment.** The bundled remote node exposes a subset
+  of the local node. Memory writes (`encode`, `remember`, `relate`, `handoff`),
+  the plugin host (`skill_*`), pack selection (`ensemble_*`), Dispatch
+  (`job_*`), practice (`practice_*`), and `replay_last_run` are local-node
+  surfaces today. Treat a missing verb as a degraded capability: name it, do
+  not emulate it. Confirm with `tools/list` or `tool_search` rather than
+  assuming this list is current.
 
 ## Adaptive Workflow
 

@@ -9,7 +9,7 @@ Run the `theorems-harness:research` skill against the user's query.
 1. Parse the user's argument as a research query, seed list, or code-symbol
    discovery request.
 2. Invoke the `theorems-harness:research` skill with the full argument string.
-3. Prefer `harness_fractal_expansion` for general research. For code-specific
+3. Prefer `fractal_expansion` for general research. For code-specific
    discovery, prefer GraphQL `codeSearch` followed by `codeContext` or
    `codeExplain`; fall back to `compute_code` operations `search`, `context`,
    and `explain` when GraphQL is unavailable.

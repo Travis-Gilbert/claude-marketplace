@@ -3,7 +3,7 @@
 
 This is a compact index, not a second global tool catalog. Each family catalog is generated from `capabilities/families.json` and checked against the source-derived surface snapshot.
 
-Plugin version: `0.9.4`. Source server version: `0.5.0`.
+Plugin version: `0.10.0`. Source server version: `0.5.0`.
 Source catalog SHA-256: `feb39dae1c91bf89c5050323c4922f9fbbc5092b6ac5f85fffa34396a173701b`.
 
 | Family | Skill | Generated catalog | Behavioral reference |

@@ -439,3 +439,29 @@ Use `--mode local --mcp-url http://127.0.0.1:<port>/mcp` for an explicit local
 host. Live mode additionally requires `THEOREM_AMBIENT_LIVE=1` and an admitted
 token; it remains blocked until the server projects direct practice and
 close-harvest diagnostics. Fixture success is never reported as live evidence.
+
+## Live tool-surface drift gate
+
+Capability teaching is generated into `capabilities/families.json` and the
+family catalogs; retired names live in `references/COMPATIBILITY.generated.md`
+and are documentation-only. Those artifacts are pinned to a source-catalog
+snapshot, so they cannot tell you whether the *running* server has drifted from
+what the plugin teaches. `scripts/regen-routing.sh` closes that gap by asking a
+live server directly:
+
+```sh
+# refresh the snapshot from a live node
+scripts/regen-routing.sh --url http://127.0.0.1:8380/mcp
+
+# or from a Theorem checkout / an existing source-catalog dump
+scripts/regen-routing.sh --cargo /path/to/Theorem/rustyredcore_THG
+scripts/regen-routing.sh --from-file catalog.json
+
+# pre-bump drift gate
+scripts/regen-routing.sh --url http://127.0.0.1:8380/mcp --check
+```
+
+It writes only `references/TOOL_SURFACE.md` — drift evidence, never a second
+teaching catalog, and never a skill. Run `--check` before a version bump. A
+real skew is expected whenever the running node predates or postdates the
+pinned snapshot; read the diff before assuming it is noise.

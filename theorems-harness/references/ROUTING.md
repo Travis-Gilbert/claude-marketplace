@@ -168,8 +168,10 @@ context refresh, or memory when the work demands it.
 ## Adaptive Algorithm
 
 1. Start with `observe`.
-2. Use `harness_route` if available; otherwise apply this file and the
-   `theorems-harness` skill directly.
+2. Read the injected Product Packet for live and degraded capabilities, then
+   apply this file and the `theorems-harness` skill. For anything outside the
+   taught families, discover it with `tool_search` -> `describe` -> `invoke`
+   rather than guessing a tool name.
 3. Add capabilities from task signals:
    - another agent, Claude, Codex, ping, handoff, overlap -> `coordinate`
    - plan, spec, migration, checklist, roadmap -> `plan`
@@ -257,16 +259,12 @@ Use `codex-sdk-harness-product` when work references:
 - `ContextArtifact`
 - TypeScript/Python SDK parity
 
-Use `redis-harness-operator` for Redis-backed harness runs/events/cache,
-semantic cache, ContextArtifact cache behavior, replay/fork/compare/patch,
-local Redis fallback, and operational-state boundaries.
-
-Use `redis-product-safety` for `thg-product-server`, tenant routes under
-`/v1/tenants/{tenant_id}/`, `TheoremHotGraphClient`, THG auth/env/deploy gates,
-RESP/Valkey facade behavior, OpenAPI, metrics, CORS, and product smoke tests.
-
-Treat these specialists as read-only context by default unless the parent has
-assigned write-scoped work.
+Treat this specialist as read-only context by default unless the parent has
+assigned write-scoped work. (The former `redis-harness-operator` and
+`redis-product-safety` escalations are retired: neither agent is installed in
+this plugin. Route Redis/THG-product operational questions through
+`epistemic-graphrag-specialist` or `codex-sdk-harness-product`, or handle them
+inline.)
 
 ## Harness Event Mapping
 
