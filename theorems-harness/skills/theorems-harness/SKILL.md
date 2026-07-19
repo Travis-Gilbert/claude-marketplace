@@ -36,9 +36,9 @@ When the user invokes `/harness`, "Theorem's Harness", or an equivalent phrase:
 
 1. Treat it as consent to use harness abilities for the active task.
 2. Resolve the current task from the user's words and live repo state.
-3. Select the first capability mix by applying the routing rules below, the
-   injected Product Packet (see Liveness), and — for the long tail — the
-   `tool_search` discovery loop.
+3. Select the first capability mix by applying the routing rules below plus the
+   injected Product Packet (see Liveness). For anything outside the taught
+   families, discover it at runtime: `tool_search` -> `describe` -> `invoke`.
 4. Work through short cycles: observe, choose, act, check, and decide whether to
    continue, pivot, coordinate, validate, remember, or report.
 5. Keep the harness visible only where it helps the user trust the work. Do not
@@ -61,8 +61,20 @@ Use these as abilities inside one run, not as competing products:
 | `diagnose` | A failure, regression, flaky test, deploy issue, or runtime surprise appears. |
 | `coordinate` | Claude Code, Codex, Claude.ai, or another agent may overlap the work. |
 | `ambition` | A build, plan, or handoff could be underscoped relative to what was asked. |
-| `compile_context` | The prompt/context is stale, broad, or missing the source surface. |
+| `identity` | The admitted principal, project selection, actor, binding, active heads, scopes, budget, or provenance must be inspected. |
+| `compile_context` | Context status, lease reuse, explicit compilation/invalidation, generations, or span disposition matters. |
+| `governance` | A standing decision, structured claim, typed witness, constitution refusal, or policy receipt must be created or interpreted. |
+| `graph_lisp` | Repository work needs bounded pure Graph Lisp read/eval/diff/explain or its receipt/refusal contract. |
+| `data_reconstruction` | Typed Data or instant-KG reads, flat DATAWAVE/resolve, or receipt- and obligation-preserving source reconstruction is needed. |
+| `learning_evolution` | Outcomes, calibration, GEPA, ReasoningBank, or evolution work must distinguish callable evidence seams from Rust-only lifecycle APIs. |
+| `agent_interop` | A composed-agent turn, durable Head Call, A2A boundary, ACP session, or live provider claim must be routed exactly. |
+| `coordination_operations` | Rooms, durable streams, dispatch jobs, work graphs, spawning, or service readiness must use their real distinct state machines. |
+| `graph_storage` | Graph reads, algorithms, administrative mutations, version values, or storage readiness must be routed without exposing internals. |
+| `agent_contracts` | A result crosses MCP, GraphQL, HTTP, pagination, truncation, error, idempotency, or receipt boundaries. |
 | `research` | Evidence, graph search, code search, or external/current reality is needed. |
+| `solve` | A bounded constraint check or pack optimization needs typed provider and proof receipts. |
+| `verified_cognition` | A decision, consistency, reconstruction, or repair claim must compose proposals and real proof surfaces without inventing a workflow. |
+| `programmable_wasm` | An installed app export must be invoked, or a durable WASM lifecycle boundary must be inspected honestly. |
 | `validate` | A claim needs tests, screenshots, deploy proof, replay, or runtime evidence. |
 | `peer_review` | A risky diff, multi-agent edit, commit, PR, or launch-ready claim is near. |
 | `remember` | The session produced a reusable lesson, decision, postmortem, or correction. |
@@ -78,35 +90,83 @@ Use these as abilities inside one run, not as competing products:
   strategy, start with `plan`; allow a bounded execution handoff only when the
   first slice is obvious or requested.
 - Plan-shaped work routes through the durable plan substrate: `plan create` is
-  the canonical act, heads claim and transition tasks on the plan, and plans
+  the canonical act. Execute each task through `claim` -> `patch_proposed`
+  (with the exact `patch_digest`) ->
+  `spawn_verify` -> `submit_verify` -> `prove` -> `done`, with the verify
+  sibling assigned to a reviewer distinct from the author and claimant. Plans
   are referenced by id/digest — never re-encoded into coordination records,
   messages, or reflections.
 - If the user asks for research, evidence, graph search, code discovery, or
   current external facts, start with `research` or `compile_context`.
+- If identity, project selection, actor, binding, active heads, scopes, or
+  budget authority matters, load `identity-bindings`. Use only
+  `identityBindingStatus` / `identityBindingExplain` or the flat
+  `identity_binding_status` / `identity_binding_explain` compatibility tools;
+  pass no identity arguments.
+- If context state, lease, compilation, invalidation, generation, or span
+  disposition matters, load `context-management`. Use `harness_prepare` or
+  GraphQL `refreshContext` for preparation and `context_invalidate` or
+  `invalidateContext` for an epoch advance. Do not claim the current hooks
+  perform that invalidation.
+- If a standing decision, claim conflict, constitution rule, or policy receipt
+  matters, load `commitments-policy`. Use GraphQL `writeCoordinationRecord` /
+  `recordClaim` and the real flat lifecycle including `commitment_check` for
+  remote coordination; reserve `assert_typed_claim` and the canonical typed
+  lifecycle for Rust repository work until it is projected.
+- If Graph Lisp matters, load `graph-lisp`. The only current agent envelope is
+  Rust `rustyred_thg_graph_lisp::execute_capability`; it has no remote
+  projection, and effect requests refuse with `external_executor_required`.
+- If Data, instant KG, DATAWAVE, resolve, or source reconstruction matters,
+  load `data-reconstruction`. Prefer typed GraphQL where it exists; keep
+  `resolve_ingest`, `resolve_entities`, `resolve_explain`, `datawave_ingest`,
+  `reconstruct`, and `reconstruct_binary` flat-only. Preserve source SHAs,
+  receipts, unknowns, unresolved obligations, and validation `not_run` state.
+- If learning, GEPA, ReasoningBank, or candidate evolution matters, load
+  `learning-evolution`. Use canonical outcome/calibration and memory evidence;
+  treat `programmable_graph` evolve as proposal validation and keep the GEPA
+  and `theorem-evolve` lifecycle Rust-only.
+- If composed-agent invocation, Head Calls, A2A, ACP, or provider execution
+  matters, load `agent-interop`. Use `composed_agent_run` and durable
+  `stream_publish` / `stream_read` / `stream_ack` where callable, preserve
+  admitted identity and budget, and require receipts before claiming live
+  execution.
+- If coordination, durable streams, jobs, work graphs, spawning, readiness, or
+  catalog identity matters, load `coordination-operations`. Keep room records,
+  stream cursors, job state, and operational probes distinct.
+- If graph reads, algorithms, administrative graph writes, graph versions, or
+  storage mode matters, load `graph-storage`. Prefer typed GraphQL, preserve
+  mutation receipts, and keep caller-carried snapshots separate from live
+  graph state.
+- If an error, page, truncated result, retry, budget, or receipt crosses
+  capability families, load `agent-contracts`. Inspect every protocol/domain
+  layer and never synthesize a universal result contract.
+- If the user asks for satisfiability, constraint checking, or bounded pack
+  optimization, load `solvers` and use only `constraint.check` or
+  `constraint.optimize` through the dynamic gateway.
+- If the user asks for verified decision, consistency, reconstruction, repair,
+  or voice, load `verified-cognition`. Compose only real solver,
+  reconstruction, verification, and Plan surfaces; report the missing workflow
+  orchestrator or voice surface instead of inventing one.
+- If the user asks about programmable WASM, load `programmable-wasm`. Invoke an
+  installed export only through `wasm_plugin:<plugin_id>.<export>`; do not imply
+  the Rust-only lifecycle is remotely callable.
 - If the user asks for review or a second model's view, start with
   `peer_review`; do not convert that into implementation unless asked.
-- If a claim must be proven, checked, or adversarially verified, route through
-  the verified-cognition surface: `oracle` for one claim against graph
-  evidence, `verification_record`/`verification_receipt` for durable receipts,
-  and the `multihead_*` family (`multihead_run`, `multihead_task`,
-  `multihead_spawn_verify`, `multihead_submit_verify`, `multihead_review`) for
-  multi-head work-graph runs with independent verification.
-- If work should run in the background or on another head, use Dispatch:
-  `job_submit`/`job_list`/`job_note`/`job_archive` (local node), or
-  `spawn_session` for a room-visible spawned session.
+- If a single claim must be checked against graph evidence, use `oracle`; it
+  writes a learn_pattern receipt only in explicit write mode. For durable
+  proof, pair it with the `verification_*` receipt surface.
+- If work should run in the background or on another head, use Dispatch
+  (`job_submit` / `job_list` / `job_note` / `job_archive`) or `spawn_session`
+  for a room-visible spawned session. Both are local-node surfaces.
 - If the user asks to rebuild, port, or establish parity with an existing
   system, route to `reverse_engineer_*` (target_plan, slice, compose, port,
-  emit, validate) and `reconstruct`/`reconstruct_binary`.
-- If structured data must enter the graph, route to `datawave_ingest` for
-  intake and `resolve_ingest`/`resolve_entities`/`resolve_explain` for entity
-  resolution.
+  emit, validate) and `reconstruct` / `reconstruct_binary`.
 - If the task is design-system or UI-audit shaped, the Design Scout tools
   (`design_extract`, `design_audit`, `design_drift`, `design_report`,
-  `design_tokens`) are first-class; pair them with the design-engineering
-  skill.
-- At the start of Rust-shaped work, `skill_apply` the Rust skill-pack (local
-  node) so this head starts warm; `ensemble_select` chooses capability packs
-  under budget when several could serve.
+  `design_tokens`) are first-class; pair them with `design-engineering`.
+- At the start of Rust-shaped work, `skill_apply` the Rust skill-pack so this
+  head starts warm; `ensemble_select` chooses packs under budget when several
+  could serve. Both are local-node surfaces.
 - If the task is broad but actionable, use a short `theorize` pass, choose a
   default, and continue. Do not park in brainstorming.
 - If hooks already injected a useful context brief, use it. If it is missing,
@@ -115,6 +175,32 @@ Use these as abilities inside one run, not as competing products:
 Re-route whenever a material discovery changes the shape of the work, when a
 third workaround appears in the same layer, before overlapping edits, and before
 final claims.
+
+## Liveness: the Product Packet is the live inventory
+
+The family catalogs and this file teach what capabilities *mean*. They do not
+tell you what is reachable right now. Hooks inject a "Theorems Harness Product
+Packet" per session event carrying active and degraded capabilities, and that
+packet is the live inventory:
+
+- An active capability's directive and validation defaults are usable now.
+- A degraded capability (`remote_unavailable`, `no_manifest`, ...) must not be
+  taught, attempted, or silently worked around. Name the degradation in the
+  report and use the documented fallback if one exists.
+- When the packet and any document disagree, the packet wins.
+
+Two further liveness rules:
+
+- **Never teach a retired name.** `references/COMPATIBILITY.generated.md` is
+  the authority on removed names and their replacements; removed names are
+  documentation-only and must never re-enter routing prose or family catalogs.
+- **Surfaces differ by deployment.** The bundled remote node exposes a subset
+  of the local node. Memory writes (`encode`, `remember`, `relate`, `handoff`),
+  the plugin host (`skill_*`), pack selection (`ensemble_*`), Dispatch
+  (`job_*`), practice (`practice_*`), and `replay_last_run` are local-node
+  surfaces today. Treat a missing verb as a degraded capability: name it, do
+  not emulate it. Confirm with `tools/list` or `tool_search` rather than
+  assuming this list is current.
 
 ## Adaptive Workflow
 
@@ -136,7 +222,8 @@ final claims.
 
 - Primary command: `/harness`
 - Utility commands:
-  - `/coordinate` for cross-agent presence, mentions, waits, and handoffs.
+  - `/coordinate` for cross-agent presence, mentions, stream checkpoints, and
+    handoffs.
   - `/peer-review` for cross-frontier-model diff review before commit, PR, or
     launch-ready reporting.
   - `/encode` for feedback, solution, or postmortem memory.
@@ -153,6 +240,62 @@ run-to-run learning into the active Harness run.
 
 Compatibility commands such as `/execute` may remain installed, but new work
 should prefer `/harness` plus adaptive routing.
+
+## Focused capability guides
+
+Load these only when the task enters the family; they are the progressive
+detail layer rather than another global tool catalog:
+
+- `identity-bindings` plus `references/IDENTITY_CAPABILITY.md` for typed
+  `identityBindingStatus` / `identityBindingExplain`, flat
+  `identity_binding_status` / `identity_binding_explain`, and the admitted
+  identity/binding proof boundary.
+- `context-management` plus `references/CONTEXT_CAPABILITY.md` for
+  `contextStatus`, `contextExplain`, `refreshContext`, `invalidateContext`,
+  flat `context_status`, `context_explain`, `context_invalidate`, and
+  `harness_prepare`, including the incomplete PostToolUse/PreCompact epoch
+  wiring.
+- `commitments-policy` plus
+  `references/COMMITMENTS_POLICY_CAPABILITY.md` for remote
+  `writeCoordinationRecord`, `recordClaim`, `commitment_check`, and the
+  Rust-only canonical `assert_typed_claim`, typed commitment, and constitution
+  seams.
+- `graph-lisp` plus `references/GRAPH_LISP_CAPABILITY.md` for crate-local
+  `execute_capability`, bounded pure read/eval/diff/explain, deterministic
+  receipts, and the `external_executor_required` effect boundary.
+- `data-reconstruction` plus
+  `references/DATA_RECONSTRUCTION_CAPABILITY.md` for typed Data and instant-KG,
+  flat-only `datawave_ingest` and `resolve_ingest`, and
+  `reverseEngineerCompose` through `reverseEngineerPort` with source and
+  obligation discipline.
+- `learning-evolution` plus
+  `references/LEARNING_EVOLUTION_CAPABILITY.md` for canonical outcome evidence,
+  flat `programmable_graph` evolve validation, and the Rust-only GEPA,
+  ReasoningBank, and `theorem-evolve` boundaries.
+- `agent-interop` plus `references/AGENT_INTEROP_CAPABILITY.md` for flat
+  `composed_agent_run`, durable `head_call` streams, Head Call and ACP
+  WebSockets, and the unprojected A2A client/runtime membrane.
+- `coordination-operations` plus
+  `references/COORDINATION_OPERATIONS_CAPABILITY.md` for rooms, typed records,
+  streams, task-reference rooms, jobs, work graphs, session dispatch, and
+  operational discovery/readiness.
+- `graph-storage` plus `references/GRAPH_STORAGE_CAPABILITY.md` for GraphQL and
+  flat reads, algorithms, admin mutations, caller-carried graph versions,
+  resources, and the unprojected storage internals.
+- `agent-contracts` plus `references/AGENT_CONTRACTS_CAPABILITY.md` for the real
+  MCP/GraphQL error layers, family-specific pagination, result fetching,
+  idempotency, and receipt interpretation.
+- `solvers` plus `references/SOLVER_CAPABILITY.md` for the canonical
+  `tool_search` -> `describe` -> `invoke` flow over `constraint.check` and
+  `constraint.optimize`.
+- `programmable-wasm` plus
+  `references/PROGRAMMABLE_WASM_CAPABILITY.md` for installed app exports shaped
+  `wasm_plugin:<plugin_id>.<export>` and the honest Rust-only durable lifecycle
+  boundary.
+- `verified-cognition` plus
+  `references/VERIFIED_COGNITION_CAPABILITY.md` for safe composition of
+  `constraint.check`, reconstruction, verification receipts, and the Plan
+  lifecycle without a fictional workflow tool.
 
 ## Querying the multi-model store
 
@@ -195,149 +338,86 @@ a result set looks like it lost similarity ordering or dropped recall, that is
 the symptom of a ranker being treated as a filter. Report it as a bug, do not
 treat it as expected.
 
-## Core Verbs (Theorem MCP, curated)
+## Capability details
 
-This table is the curated core, not the inventory. The full surface is
-discovered at runtime (see Discovery Loop) and indexed in
-`references/TOOL_SURFACE.md` (generated). Never teach or attempt a verb that
-is absent from the connected server's `tools/list`.
+Do not maintain a second global tool catalog here. Discover the active MCP and
+GraphQL contracts, then load the focused family skill/reference selected above.
+The generated compact compatibility projection belongs to HCM-031.
 
-| Verb | Purpose |
-|---|---|
-| `tool_search` / `describe` / `invoke` | The discovery loop: ranked affordance search, on-demand schema materialization, and gated invocation (`dry_run=true` to plan without firing). |
-| `tool_result_fetch` | Fetch a byte slice from a tool result that exceeded the MCP boundary budget (the 16KB fetch-handle envelope). |
-| `harness_prepare` | Compose a native Theorem Context Brief from Ensemble selection, tenant memory recall, ambient code, and ambient RustyWeb evidence. |
-| `harness_run` | Return a named Harness run and its event ledger. |
-| `harness_append_transition` | Append a transition receipt to a run's durable event ledger. |
-| `harness_replay` | Replay a bounded page of durable transition and refusal events for one plan. |
-| `replay_last_run` | Select the latest eligible Harness run or an explicit run, replay its event ledger without side effects, and return typed integrity evidence. |
-| `fractal_expansion` | Queue live RustyRed fractal expansion; returns a pollable `run_id` by default, `wait=true` for a synchronous receipt. |
-| `compute_code` | Search, explain, recognize, context-pack, or explore code through the native CodeCrawler / code graph read path; `provider_search` reaches live GitHub/GitLab code search. |
-| `code_ingest` | Ingest, reindex, session-reingest, or record code-use receipts through the native CodeCrawler write path. |
-| `plan` | Create and operate durable graph-backed plans: create, add_task, refine, claim, transition, prove, spawn/submit verify, render, import, query, what_changed, analyze, converge, replay. |
-| `oracle` | Validate a claim against graph verification, records, and evidence; writes a learn_pattern receipt only in explicit write mode. |
-| `query_data` / `retrieve_memory` / `turn_start` / `evidence_bundle` | Data API membrane: records query, memory-oriented retrieval, turn-start work-queue packet, and cited handoff bundles. |
-| `self_note` / `self_revise` / `self_archive` / `self_recall_archive` | Manage typed agent memory. |
-| `encode` / `recall` / `remember` / `relate` | Memory writes and recall; continuity packs are written as `encode` with `kind=continuity_pack`, not a separate tool. |
-| `handoff` | Create a native cross-actor handoff memory document. |
-| `coordination_room` | Join, inspect, pause, resume, or stop durable room membership. |
-| `coordination_intent` | Announce status, summary, and `footprint` (files your hands are on); one live record per (room, head). |
-| `coordination_record` | Write a durable typed room record: `record_type` is `event`, `decision`, `tension`, or `reflection`. Reflections, decisions, and tensions are record types, not separate tools. |
-| `coordination_contribution` | Capture an agent contribution as a durable native coordination event record. |
-| `coordinate` | Append a coordination message and queue actor mentions. |
-| `mentions` | Load and consume pending mentions. There is no long-poll wait tool; publish with urgency and check at your next checkpoint. |
-| `presence` | Refresh, end, or read short-TTL actor presence. |
-| `stream_subscribe` / `stream_read` / `stream_publish` / `stream_ack` | Per-room event streams: subscribe once, read the cursor delta at turn-start, publish as you go; `urgency` ask/block with `target_actor` pings that head. |
-| `multihead_run` / `multihead_task` / `multihead_claim` / `multihead_next` / `multihead_patch` / `multihead_proof` / `multihead_spawn_verify` / `multihead_submit_verify` / `multihead_review` / `multihead_refine` | Native multi-head work-graph runs: task fan-out, claims, patches, proofs, and independent verification. |
-| `graphql_query` / `graphql_mutate` / `graphql_introspect` | The preferred typed API over the same store (see the top of this skill). |
+Use `references/CAPABILITY_CATALOG.generated.md` as the compact family index
+and `references/COMPATIBILITY.generated.md` for accepted compatibility names
+and removed aliases. Each focused family skill carries its own generated
+catalog beside `SKILL.md`; do not copy those rows back into this adaptive skill.
 
-## Discovery Loop
+### Preferred GraphQL code fields
 
-The server intentionally does not advertise every spoke tool schema upfront.
-For anything beyond the core verbs:
+Use `graphql_query` for `codeStatus`, `codeSearch`, `codeContext`,
+`codeExplain`, `codeSpec`, `codeDrift`, `codeFeatures`, and `codeObligations`.
+Use `graphql_mutate` for `ingestCodebase` and `reindexCodebase`. Introspect first
+when the current schema is not in context. Status and compiler fields return a
+typed repository revision claim; keep tenant, repository, generation, head SHA,
+evidence ids, and missing evidence attached to the result. See
+`references/CODE_CAPABILITY.md` for the exact GraphQL-to-flat mapping.
 
-1. `tool_search` with a task-shaped query returns ranked candidate
-   affordances (PPR over outcomes — the substrate learns which tools actually
-   work per task type).
-2. `describe` with the chosen `affordance_id` materializes its full input
-   schema on demand.
-3. `invoke` fires it through the persisted connector target; `dry_run=true`
-   plans without firing.
+### Preferred GraphQL memory fields
 
-Prefer this loop over guessing tool names from memory or from this document.
+Use `graphql_query` for `memory`, `memoryDoc`, `memoryArchive`, and nested
+`MemoryDoc.links`/`MemoryDoc.related`. Use `graphql_mutate` for
+`rememberMemory`, `reviseMemory`, `forgetMemory`, and `createHandoff`.
+`rememberMemory` without `input.outcome` lowers to `remember`; with an outcome
+it lowers to `encode`. Flat `recall`, `relate`, `self_recall_archive`,
+`self_revise`, `forget`, and `handoff` are compatibility paths. `observe`,
+`self_note`, `self_archive`, `retrieve_memory`, `turn_start`, and
+`evidence_bundle` remain distinct flat-only operations when advertised.
 
-## Liveness: the Product Packet
+Treat admission as the tenant/project authority. Keep `projectSlug`,
+`rankSignals`, `episodeProvenance`, and `episodeProvenanceContentAddress` with
+recalled evidence. Honor episode opt-out before capture, accept deterministic
+deduplication on replay/import, and keep a raw episode out of canonical practice
+until a same-scope clustered-outcome promotion receipt exists. See
+`references/MEMORY_CAPABILITY.md` for the exact mapping and guardrails.
 
-Hooks inject a "Theorems Harness Product Packet" into session events with
-active and degraded capabilities. That packet — not this file — is the live
-capability inventory:
+### Preferred GraphQL verification fields
 
-- An active capability's directive and validation defaults are usable now.
-- A degraded capability (`remote_unavailable`, `no_manifest`, ...) must not be
-  taught, attempted, or silently worked around: report the degradation and use
-  the documented fallback if one exists.
-- When the packet and this skill disagree, the packet wins.
+Use GraphQL mutation `recordVerification` to atomically record a canonical
+verification receipt, its support/attack evidence lineage, and any calibration
+delta. Use GraphQL queries `verificationReceipt`, `verificationExplain`,
+`verificationAllocate`, and `calibrationReliability` to read, explain, allocate,
+and inspect reliability. Flat compatibility uses `verification_record`,
+`verification_receipt`, `verification_explain`, `verification_allocate`, and
+`calibration_reliability`.
 
-## Deployment Surfaces
-
-The plugin's bundled server entry points at the remote node; a local node
-(`theorem-local`) exposes a larger surface. The two are subsets of one source
-catalog, pruned per deployment — so never assume a verb exists on the
-connected server without checking `tools/list` or running `tool_search`.
-As of 0.10.0 the memory-write verbs (`encode`, `remember`, `relate`,
-`handoff`), the plugin host (`skill_*`), pack selection (`ensemble_*`),
-Dispatch (`job_*`), practice (`practice_*`), and `replay_last_run` live on the
-local node only. Treat a missing verb as a degraded capability: name it in
-the report, do not emulate it.
-
-## Tool Surface Index (generated)
-
-Regenerate with `scripts/regen-routing.sh` against a live server or a
-`harness-capability-source-catalog` dump; `--check` fails on drift. The full
-per-tool index lives in `references/TOOL_SURFACE.md`.
-
-<!-- BEGIN GENERATED TOOL SURFACE (scripts/regen-routing.sh; do not hand-edit) -->
-
-server_version `live` | 187 tools | digest `f55203a9595800cf` |
-full index: `references/TOOL_SURFACE.md`
-
-- **code** (7): `code_compile_spec`, `code_extract_features`, `code_implementation_obligations`, `code_ingest`, `code_patterns_relevant`, `code_publish_spec`, `code_spec_drift`
-- **context** (3): `context_explain`, `context_invalidate`, `context_status`
-- **coordination** (5): `coordination_context`, `coordination_contribution`, `coordination_intent`, `coordination_record`, `coordination_room`
-- **core** (45): `browse_for_me`, `browse_with_me`, `calibration_reliability`, `checkpoint`, `commitment_check`, `commitment_retract`, `commitment_supersede`, `composed_agent_run`, `compute_code`, `coordinate`, `datawave_ingest`, `describe`, `encode`, `evidence_bundle`, `fold_semiring`, `forget`, `fractal_expansion`, `handoff`, `impact`, `invoke`, `mentions`, `observe`, `observe_web`, `oracle`, `plan`, `presence`, `programmable_graph`, `programmable_graph_apply`, `query_data`, `recall`, `reconstruct`, `reconstruct_binary`, `refine`, `reflect`, `relate`, `remember`, `replay_last_run`, `retrieve_memory`, `rustyweb_search_acquisition`, `source_calibration_record`, `spawn_session`, `turn_start`, `understand_code`, `upsert_note`, `why_derivation_trace`
-- **data_registry** (3): `data_registry_get`, `data_registry_list`, `data_registry_publish`
-- **design** (5): `design_audit`, `design_drift`, `design_extract`, `design_report`, `design_tokens`
-- **ensemble** (6): `ensemble_install`, `ensemble_list`, `ensemble_publish`, `ensemble_register`, `ensemble_select`, `ensemble_upgrade`
-- **epistemic** (3): `epistemic_compile_subgraph`, `epistemic_dirty_frontier`, `epistemic_shadow_ppr`
-- **graphql** (3): `graphql_introspect`, `graphql_mutate`, `graphql_query`
-- **harness** (4): `harness_append_transition`, `harness_prepare`, `harness_replay`, `harness_run`
-- **harness_kg** (6): `harness_kg_explain_edge`, `harness_kg_impact`, `harness_kg_ppr`, `harness_kg_related_objects`, `harness_kg_search`, `harness_kg_status`
-- **identity_binding** (2): `identity_binding_explain`, `identity_binding_status`
-- **job** (4): `job_archive`, `job_list`, `job_note`, `job_submit`
-- **memory** (5): `memory_dedup_report`, `memory_documents_dump`, `memory_similar_edges`, `memory_similarity_reindex`, `memory_vector_backfill`
-- **multihead** (10): `multihead_claim`, `multihead_next`, `multihead_patch`, `multihead_proof`, `multihead_refine`, `multihead_review`, `multihead_run`, `multihead_spawn_verify`, `multihead_submit_verify`, `multihead_task`
-- **practice** (3): `practice_close_receipt`, `practice_explain`, `practice_status`
-- **read** (3): `read_intents_for_room`, `read_messages_for_room`, `read_records_for_room`
-- **resolve** (3): `resolve_entities`, `resolve_explain`, `resolve_ingest`
-- **reverse_engineer** (7): `reverse_engineer_behavior_ir`, `reverse_engineer_compose`, `reverse_engineer_emit`, `reverse_engineer_port`, `reverse_engineer_slice`, `reverse_engineer_target_plan`, `reverse_engineer_validate`
-- **rustyred_thg** (11): `rustyred_thg_epistemic_neighbors`, `rustyred_thg_fulltext_search`, `rustyred_thg_graph_explain`, `rustyred_thg_graph_index_status`, `rustyred_thg_graph_neighbors`, `rustyred_thg_graph_query`, `rustyred_thg_graph_schema`, `rustyred_thg_index_spine`, `rustyred_thg_relational_query`, `rustyred_thg_vector_hybrid`, `rustyred_thg_vector_search`
-- **rustyred_thg_algorithm** (8): `rustyred_thg_algorithm_communities`, `rustyred_thg_algorithm_communities_inline`, `rustyred_thg_algorithm_components`, `rustyred_thg_algorithm_components_inline`, `rustyred_thg_algorithm_pagerank`, `rustyred_thg_algorithm_pagerank_inline`, `rustyred_thg_algorithm_ppr`, `rustyred_thg_algorithm_ppr_inline`
-- **rustyred_thg_graph_version** (6): `rustyred_thg_graph_version_checkout`, `rustyred_thg_graph_version_compile`, `rustyred_thg_graph_version_diff`, `rustyred_thg_graph_version_log`, `rustyred_thg_graph_version_merge`, `rustyred_thg_graph_version_ref`
-- **rustyred_thg_spatial** (2): `rustyred_thg_spatial_bbox`, `rustyred_thg_spatial_radius`
-- **rustyred_thg_symbolic** (3): `rustyred_thg_symbolic_datalog_derive`, `rustyred_thg_symbolic_probabilistic_expected_value`, `rustyred_thg_symbolic_probabilistic_source_reliability`
-- **self** (4): `self_archive`, `self_note`, `self_recall_archive`, `self_revise`
-- **skill** (4): `skill_apply`, `skill_get`, `skill_list`, `skill_publish`
-- **stream** (5): `stream_ack`, `stream_publish`, `stream_read`, `stream_subscribe`, `stream_unsubscribe`
-- **tool** (2): `tool_result_fetch`, `tool_search`
-- **typed_commitment** (5): `typed_commitment_affirm`, `typed_commitment_explain`, `typed_commitment_read`, `typed_commitment_retract`, `typed_commitment_supersede`
-- **verification** (7): `verification_allocate`, `verification_explain`, `verification_frontier_receipt`, `verification_frontier_record`, `verification_obligation_discharge`, `verification_receipt`, `verification_record`
-- **web** (3): `web_consume`, `web_query`, `web_search_graph`
-
-<!-- END GENERATED TOOL SURFACE -->
+Admitted tenant, actor, and binding claims are authoritative. Authenticated
+actor and binding overwrite nested verifier self-report; head/model strings
+remain reported runtime metadata, not signed identity. Confidence alone is not
+proof, `inconclusive` does not update calibration, and a reliability
+`admission_tier` is evidence weighting rather than authentication or action
+authorization. See `references/VERIFICATION_CAPABILITY.md` for the exact input,
+replay, graph-version, allocation, and reporting contract.
 
 ## Coordination Rule
 
 The heads are one agent with several hands (`codex`, `claude-code`, `claude-ai`),
 not separate workers dividing the repo. Coordinate as a unit:
 
-- Read the room (intents, reflections, open tensions) and drain mentions at
-  turn-start, before planning edits.
+- Read the room, intents, durable records, and mentions at turn-start, before
+  planning edits.
 - Write `coordination_intent` as an announcement: what you are doing now, which
   files or concepts your hands are on, and where semantic overlap may exist. It
   is not a lock.
 - When your work semantically overlaps another head's work, build on its edit
   rather than yielding or waiting; held, not clobbered. A real disagreement is a
-  tension record (`coordination_record` with `record_type: "tension"`) you
-  write and work around, not a silent overwrite.
+  `coordination_record` with `record_type: "tension"` that you work around,
+  not a silent overwrite.
 - Send `coordinate` with an `@actor` only for a block or a fork that changes the
   next action. Ordinary progress goes in your announcement summary.
-- Close your announcement at turn-end and write a reflection record (and a
-  decision record for any architectural choice) via `coordination_record` so
-  the next head resumes cold.
+- Close your announcement at turn-end. Use `coordination_record` with
+  `record_type: "reflection"` for the handoff and `record_type: "decision"`
+  for a load-bearing choice.
 
 The durable model is room digest plus interrupt mailbox: membership, intents,
-reflections, decisions, tensions, events, continuity packs, and pending mentions
-survive head sleep; short-TTL presence only says who is fresh. Full protocol:
+typed records, events, stream cursors, and pending mentions survive head sleep;
+short-TTL presence only says who is fresh. Full protocol:
 `skills/harness-coordinate/SKILL.md`.
 
 Ambient coordination now flows over per-room streams. Subscribe once with

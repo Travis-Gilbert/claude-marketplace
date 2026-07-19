@@ -123,6 +123,10 @@ cd codex-plugins
 
 The sync script handles three things: symlinking plugin directories into the Claude Code marketplace path (`~/.claude/plugins/marketplaces/local-desktop-app-uploads/`), registering them in `installed_plugins.json`, and enabling them in `settings.json`. If the enablement step fails, manually add `"<plugin-name>@local-desktop-app-uploads": true` to `enabledPlugins` in `~/.claude/settings.json`.
 
+Pass `--preserve-user-config` before a plugin name to sync its marketplace link
+and registry entry without editing `settings.json`. Use that mode when local MCP
+overrides or enablement policy are user-owned.
+
 After syncing, populate source references for any plugin you plan to use:
 
 ```bash

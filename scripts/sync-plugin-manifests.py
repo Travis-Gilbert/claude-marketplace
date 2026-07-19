@@ -16,6 +16,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from plugin_release import contract as release_contract
+from plugin_release import tree_receipt
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE_PATH = ROOT / ".claude-plugin" / "marketplace.json"
@@ -55,7 +58,13 @@ def main() -> int:
 
         for host_name, host in spec["hosts"].items():
             output = plugin_dir / host["output"]
-            rendered = render_host_manifest(common, host["manifest"])
+            rendered = render_host_manifest(
+                common,
+                host["manifest"],
+                mcp_servers=spec["mcpServers"]
+                if host.get("include_mcp_servers")
+                else None,
+            )
             rendered_text = json_text(rendered)
             if output.exists() and output.read_text(encoding="utf-8") == rendered_text:
                 continue
@@ -67,10 +76,27 @@ def main() -> int:
                 print(f"updated {output.relative_to(ROOT)} ({host_name})")
                 changed = True
 
-        marketplace_changed = sync_marketplace_version(
+        mcp_output = plugin_dir / ".mcp.json"
+        mcp_text = json_text({"mcpServers": spec["mcpServers"]})
+        if (
+            not mcp_output.exists()
+            or mcp_output.read_text(encoding="utf-8") != mcp_text
+        ):
+            if args.check:
+                out_of_date.append(mcp_output)
+            else:
+                mcp_output.write_text(mcp_text, encoding="utf-8")
+                print(f"updated {mcp_output.relative_to(ROOT)} (shared MCP)")
+                changed = True
+
+        artifact_hash = tree_receipt(plugin_dir, release_contract(plugin_dir))[
+            "artifact_content_sha256"
+        ]
+        marketplace_changed = sync_marketplace_release(
             marketplace,
             plugin_name=plugin_name,
             version=common["version"],
+            artifact_hash=artifact_hash,
         )
         if marketplace_changed and args.check:
             out_of_date.append(MARKETPLACE_PATH)
@@ -119,10 +145,25 @@ def validate_spec(spec: dict[str, Any], path: Path) -> None:
         raise SystemExit(f"{path}: schema_version must be 1")
     plugin = spec.get("plugin")
     hosts = spec.get("hosts")
+    mcp_servers = spec.get("mcpServers")
+    release = spec.get("release")
     if not isinstance(plugin, dict):
         raise SystemExit(f"{path}: plugin must be an object")
     if not isinstance(hosts, dict) or not hosts:
         raise SystemExit(f"{path}: hosts must be a non-empty object")
+    if not isinstance(mcp_servers, dict) or not mcp_servers:
+        raise SystemExit(f"{path}: mcpServers must be a non-empty object")
+    if not isinstance(release, dict) or not isinstance(release.get("include"), list):
+        raise SystemExit(f"{path}: release.include must be a list")
+    if not release["include"]:
+        raise SystemExit(f"{path}: release.include must not be empty")
+    for item in release["include"]:
+        if not isinstance(item, str) or not item.strip():
+            raise SystemExit(
+                f"{path}: release.include entries must be non-empty strings"
+            )
+        if item.startswith("/") or ".." in Path(item).parts:
+            raise SystemExit(f"{path}: release.include entries must stay inside plugin")
 
     for field in ("name", "version", "description"):
         if not isinstance(plugin.get(field), str) or not plugin[field].strip():
@@ -134,9 +175,13 @@ def validate_spec(spec: dict[str, Any], path: Path) -> None:
         output = host.get("output")
         manifest = host.get("manifest")
         if not isinstance(output, str) or not output.endswith("plugin.json"):
-            raise SystemExit(f"{path}: hosts.{host_name}.output must target plugin.json")
+            raise SystemExit(
+                f"{path}: hosts.{host_name}.output must target plugin.json"
+            )
         if output.startswith("/") or ".." in Path(output).parts:
-            raise SystemExit(f"{path}: hosts.{host_name}.output must stay inside plugin")
+            raise SystemExit(
+                f"{path}: hosts.{host_name}.output must stay inside plugin"
+            )
         if not isinstance(manifest, dict):
             raise SystemExit(f"{path}: hosts.{host_name}.manifest must be an object")
 
@@ -144,8 +189,12 @@ def validate_spec(spec: dict[str, Any], path: Path) -> None:
 def render_host_manifest(
     common: dict[str, Any],
     host_manifest: dict[str, Any],
+    *,
+    mcp_servers: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rendered = deepcopy(common)
+    if mcp_servers is not None:
+        rendered["mcpServers"] = deepcopy(mcp_servers)
     deep_update(rendered, deepcopy(host_manifest))
     return rendered
 
@@ -158,11 +207,12 @@ def deep_update(base: dict[str, Any], overlay: dict[str, Any]) -> None:
             base[key] = value
 
 
-def sync_marketplace_version(
+def sync_marketplace_release(
     marketplace: dict[str, Any],
     *,
     plugin_name: str,
     version: str,
+    artifact_hash: str,
 ) -> bool:
     plugins = marketplace.get("plugins")
     if not isinstance(plugins, list):
@@ -170,10 +220,31 @@ def sync_marketplace_version(
     for entry in plugins:
         if entry.get("name") != plugin_name:
             continue
-        if entry.get("version") == version:
-            return False
-        entry["version"] = version
-        return True
+        changed = False
+        if entry.get("version") != version:
+            entry["version"] = version
+            changed = True
+        if "artifactContentHash" in entry:
+            del entry["artifactContentHash"]
+            changed = True
+        expected_keyword = f"artifact-sha256:{artifact_hash}"
+        keywords = entry.get("keywords", [])
+        if not isinstance(keywords, list):
+            raise SystemExit(
+                f"{MARKETPLACE_PATH}: keywords for {plugin_name} must be a list"
+            )
+        expected_keywords = sorted(
+            [
+                keyword
+                for keyword in keywords
+                if not str(keyword).startswith("artifact-sha256:")
+            ]
+            + [expected_keyword]
+        )
+        if keywords != expected_keywords:
+            entry["keywords"] = expected_keywords
+            changed = True
+        return changed
     raise SystemExit(f"{MARKETPLACE_PATH}: missing marketplace entry for {plugin_name}")
 
 

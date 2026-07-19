@@ -64,7 +64,7 @@ if theorem_code_context_is_managed; then
 elif [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
   origin_url=$(git -C "$repo_root" remote get-url origin 2>/dev/null || printf '')
   head_now=$(theorem_git_head "$repo_root")
-  repo_id="$repo_label"
+  repo_id=$(theorem_code_repo_id "$repo_root" "$origin_url")
   raw_session_id=$(theorem_jq "$input" '.session_id')
 
   if [[ -z "$origin_url" || -z "$head_now" ]]; then
@@ -76,7 +76,7 @@ elif [[ -n "$tenant_id" && "${THEOREM_CODE_KG_AUTO_INGEST:-1}" == "1" ]]; then
     status_payload=$(printf '%s' "$status_response" | theorem_code_payload || printf '{}')
     status_known=$(printf '%s' "$status_payload" | jq -r 'has("indexed")' 2>/dev/null || printf 'false')
     indexed=$(printf '%s' "$status_payload" | jq -r 'if .indexed == true then "true" else "false" end' 2>/dev/null || printf 'false')
-    indexed_head=$(printf '%s' "$status_payload" | jq -r '.head_sha // .headSha // empty' 2>/dev/null || printf '')
+    indexed_head=$(printf '%s' "$status_payload" | jq -r '.head_sha // .headSha // .manifest.head_sha // .manifest.headSha // empty' 2>/dev/null || printf '')
 
     op=""
     if [[ "$status_known" != "true" ]]; then

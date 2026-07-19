@@ -19,6 +19,12 @@
           },
           {
             "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/ambient-health-hook.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking ambient harness delivery"
+          },
+          {
+            "type": "command",
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/sessionstart-codebase.sh\"",
             "timeout": 15,
             "statusMessage": "Loading codebase context"
@@ -52,6 +58,12 @@
             "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/prepare-context.sh\"",
             "timeout": 30,
             "statusMessage": "Preparing theorem context"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash \"${PLUGIN_ROOT}/scripts/ambient-health-hook.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking ambient harness delivery"
           },
           {
             "type": "command",

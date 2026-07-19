@@ -60,7 +60,7 @@
     "defaultPrompt": [
       "Use Theorem's Harness for planning, implementation, debugging, review, validation, coordination, memory, and reports.",
       "Treat /harness as opt-in routing, not a forced mode. Pick the best capabilities and keep moving unless blocked.",
-      "Read the injected Product Packet for live/degraded capabilities; for tools beyond the curated core use tool_search -> describe -> invoke.",
+      "Read the injected Product Packet for live and degraded capabilities; for tools outside the taught families use tool_search -> describe -> invoke.",
       "Prefer Harness GraphQL tools when available; use legacy flat tools only for fallback or compatibility diagnosis.",
       "For complex planning handoffs, use /harness mode=plan handoff=spark and keep planner review in-thread.",
       "For multi-head work, announce in the shared room, state footprint, and resolve semantic-overlap tensions there.",

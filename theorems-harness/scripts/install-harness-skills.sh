@@ -26,34 +26,47 @@ core_skills=(
 )
 
 full_skills=(
+    "agent-contracts"
+    "agent-interop"
     "ambition"
     "browser-web"
     "claudeai-session-writer"
     "compute_code"
+    "commitments-policy"
+    "coordination-operations"
+    "context-management"
     "curiosity"
+    "data-reconstruction"
     "design-engineering"
     "dispatch"
     "encode"
     "execute"
     "graph-version"
+    "graph-storage"
+    "graph-lisp"
     "graph_theorem"
     "harness-coordinate"
+    "identity-bindings"
+    "learning-evolution"
     "peer-review"
     "planning-theorem"
     "practice-system"
+    "programmable-wasm"
     "replay-last-run"
     "research"
     "rust-engineering"
     "session-offload"
+    "solvers"
     "surface-idea"
     "symbolic"
     "theorems-harness"
     "theorize"
+    "verified-cognition"
     "writing-engineering"
 )
 
 # These names were installed by earlier Harness releases but are intentionally
-# absent from 0.9.0. Hosts discover skills by directory, so leaving the old
+# absent from 0.9.x. Hosts discover skills by directory, so leaving the old
 # directories behind would keep retired interfaces callable after an upgrade.
 retired_skills=(
     "code_theorem"

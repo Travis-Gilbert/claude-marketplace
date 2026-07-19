@@ -1,9 +1,11 @@
 ---
 name: compute_code
-description: Use this skill when the user wants native code discovery, code graph search, or graph-structural code ranking. Prefer the native CodeCrawler-backed `compute_code` MCP tool for reads and `code_ingest` for ingest/reindex/session overlays. Fall back to the RustyRed inline graph algorithm MCP tools only when the caller already has an adjacency map or needs pure graph math. User-invocable as `/compute_code`.
+description: Use this skill for native code ingest, status, search, context, explanation, specification, drift, feature, or implementation-obligation work. Prefer the typed Harness GraphQL code fields; use the consolidated CodeCrawler flat tools as compatibility fallbacks. Use RustyRed inline graph algorithms only for supplied adjacency or pure graph math. User-invocable as `/compute_code`.
 ---
 
 # compute_code
+
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
 
 Routing skill for native Theorem code discovery.
 
@@ -35,12 +37,15 @@ a fixture tenant.
 
 ## The command is the research surface
 
-`/compute_code` (and the `compute_code` MCP tool) survives as the **explicit
-research** surface: search/explain/explore across tenants and repos, inspect
-indexed inventory, or run explicit graph math. It no longer carries the ambient
-responsibility. Fresh sessions should see one read tool, `compute_code`, and one
-write tool, `code_ingest`; the old `code_search` name is a dispatch-compatible
-alias for existing callers and receipts, not an advertised tool.
+`/compute_code` survives as the **explicit research and compiler** surface:
+search/explain/explore across tenants and repos, inspect indexed inventory,
+compile revision-bound specification artifacts, or run explicit graph math. It
+no longer carries the ambient responsibility. Prefer the GraphQL code fields.
+On the flat fallback, `compute_code` owns CodeCrawler reads, `code_ingest` owns
+ingest/reindex writes, and the four `code_*` compiler tools own specification,
+drift, feature, and obligation reads. The old `code_search` name is a
+dispatch-compatible alias for existing callers and receipts, not an advertised
+tool.
 
 Use the older inline graph algorithms only as a fallback when you already have
 an adjacency map in hand or when the task is explicitly about centrality,
@@ -57,6 +62,9 @@ Good fits:
 - "Search the code graph for GraphStore persistence"
 - "Explore symbols around this file or node"
 - "Refresh this repo in the native code graph" (route through `code_ingest`)
+- "Compile the current code specification and show missing evidence"
+- "What drifted from the preserved specification?"
+- "Extract connection features and implementation obligations for this change"
 - "Rank this supplied adjacency by importance"
 - "Cluster these supplied files by coupling"
 - The agent has built an adjacency map (from tree-sitter, imports, calls) and needs to compute over it
@@ -67,16 +75,37 @@ Not a fit:
 - "Explain this exact open function" when the file is already in context → use `Read`
 - Adjacency > 100,000 edges → use tenant-backed graph compute after ingestion
 
-## Preferred MCP path: native CodeCrawler
+## Preferred path: Harness GraphQL
 
-Call the MCP tool named `compute_code` for read operations. Call `code_ingest`
-for ingest, reindex, session reingest, and use receipts.
+When `graphql_query`, `graphql_mutate`, and `graphql_introspect` are available,
+use them before flat tools. Introspect when the schema is not already in
+context, send reads through `graphql_query`, and send ingest/reindex through
+`graphql_mutate`.
+
+| Intent | GraphQL field |
+|---|---|
+| Ingest / reindex | mutation `ingestCodebase` / `reindexCodebase` |
+| Status / search / context / explain | query `codeStatus` / `codeSearch` / `codeContext` / `codeExplain` |
+| Specification / drift / features / obligations | query `codeSpec` / `codeDrift` / `codeFeatures` / `codeObligations` |
+
+`codeStatus`, `codeSpec`, `codeDrift`, `codeFeatures`, and `codeObligations`
+return a typed `CodeDomainResult`. Preserve and compare its `revision` claim:
+tenant, repository, generation, head SHA, evidence ids, and missing evidence.
+Never combine compiler artifacts across mismatched revisions.
+
+## Flat MCP compatibility path
+
+Use flat tools only when GraphQL is unavailable or is itself under diagnosis.
+Call `compute_code` for CodeCrawler read operations and `code_ingest` for
+ingest, reindex, session reingest, and use receipts. There is no standalone
+flat context tool: use `compute_code` operation `context`.
 
 Operation routing:
 
 | Intent shape | Operation | Notes |
 |---|---|---|
 | Find symbols/files by topic or name | `search` | Default operation. Use `query`, optional `repo_id`, `file_path`, `path_prefix`, `kinds`, `limit`. |
+| Confirm indexed revision | `kg_status` | Use `repo`; read tenant/repo/generation/SHA before trusting freshness. |
 | Explain a symbol or result | `explain` | Use after search, or directly with `query`/`node_id`. |
 | Expand surrounding source context | `context` | Use `node_id`, `file_path`, and optional `max_chars`. |
 | Extract symbols from inline text or a file | `recognize` | Use `text` or `file_path`. |
@@ -92,6 +121,16 @@ Write operations use `code_ingest`:
 | Overlay local session edits | `session_reingest` | Flushes the session delta queue into the merged code graph. |
 | Record tool-use outcome | `record_use_receipt` | Learning receipt for code tool use. |
 
+Compiler reads use their real flat tools rather than invented `compute_code`
+operations:
+
+| Intent | Flat tool |
+|---|---|
+| Compile current specification | `code_compile_spec` |
+| Compare specification drift | `code_spec_drift` |
+| Extract connection features | `code_extract_features` |
+| Compile implementation obligations | `code_implementation_obligations` |
+
 Minimal search call:
 
 ```json
@@ -102,6 +141,9 @@ Minimal search call:
   "limit": 10
 }
 ```
+
+The equivalent GraphQL fields are documented with signatures and examples in
+`references/CODE_CAPABILITY.md`.
 
 ## Ingest reality (read before ingesting)
 
@@ -175,15 +217,15 @@ pointing to the tenant-backed counterpart.
 
 ## Standard flow
 
-1. **Choose native first.** If the user asks for code discovery, code graph
-   search, symbol context, explanation, or code inventory, call the MCP
-   `compute_code` tool.
+1. **Choose GraphQL first.** If the user asks for code ingest, status,
+   discovery, context, explanation, specification, drift, features, or
+   obligations, use the matching typed GraphQL code field.
 
-2. **Choose the operation.** Default to `search`. Use `explain`, `context`,
-   `recognize`, or `explore` when the user's wording asks for those directly.
-   Use `code_ingest` with `ingest` or `reindex` when the task needs a fresh code
-   graph. The runtime keeps bounded fetch and file budgets, but indexing a
-   public or local codebase is not a separate permission ceremony.
+2. **Choose the flat fallback only when needed.** Default CodeCrawler reads to
+   `compute_code` operation `search`; use `kg_status`, `explain`, `context`,
+   `recognize`, or `explore` for those intents. Use `code_ingest` with `ingest`
+   or `reindex` for a fresh graph. Use the named compiler tools for spec, drift,
+   features, and obligations.
 
 3. **Fallback only for explicit adjacency.** If the task supplies an adjacency
    or asks for centrality/components/communities over a graph, route through the
@@ -193,8 +235,9 @@ pointing to the tenant-backed counterpart.
    If > 100,000, surface the tenant-backed path instead.
 
 5. **Surface results with provenance.** State whether the result came from
-   native CodeCrawler or from an inline graph algorithm. Include the operation,
-   query/seed, top-K, and any receipt or graph evidence the tool returned.
+   GraphQL, flat CodeCrawler, a code compiler tool, or an inline graph
+   algorithm. Include the operation/field, query or seed, repository revision,
+   top-K where relevant, and any receipt, missing evidence, or graph evidence.
 
 ## Orchestrate integration
 
@@ -232,11 +275,14 @@ positives.
 ## Output shape
 
 Return:
-- **Route chosen** (`compute_code`/CodeCrawler or inline algorithm) plus a
+- **Route chosen** (GraphQL code field, flat CodeCrawler/compiler tool, or
+  inline algorithm) plus a
   one-line justification.
 - **Ranked results** (use top_k by default, typically 10).
-- **Operation** (`search`, `explain`, `context`, etc.) or **algorithm** (if inline).
+- **Field/operation** (`codeSearch`, `search`, `codeSpec`, etc.) or
+  **algorithm** (if inline).
 - **Seed** (if PPR) or **query/node_id** (if CodeCrawler).
+- **Revision provenance** for status/spec/drift/features/obligations.
 - **Pointer to underlying tool** if the caller wants to drill in.
 
 Do NOT return:
@@ -254,6 +300,7 @@ Do NOT return:
 
 ## References
 
+- Canonical GraphQL-to-flat mapping: `references/CODE_CAPABILITY.md`.
 - The four inline MCP tools and their full contract:
   `rustyredcore_THG/crates/rustyred-thg-mcp/src/lib.rs:1381` onward.
 - Plan and report:

@@ -1,0 +1,14 @@
+{
+  "mutation": {
+    "kind": "add_entry",
+    "family": "coordination",
+    "entry": {
+      "surface": "flat_mcp",
+      "name": "fictional_coordination_tool",
+      "guidance": "must refuse",
+      "maturity": "fictional",
+      "live_status": "missing",
+      "schema": "none"
+    }
+  }
+}

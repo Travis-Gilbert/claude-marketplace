@@ -129,6 +129,31 @@ theorem_repo_label() {
   basename "$repo_root"
 }
 
+# Stable code-graph identity follows the origin repository, not the current
+# checkout directory. Worktree names are intentionally disposable and would
+# otherwise create a fresh graph every time an agent enters a new worktree.
+theorem_code_repo_id() {
+  local repo_root="$1"
+  local origin_url="${2:-}"
+  local slug=""
+
+  if [ -n "$origin_url" ]; then
+    slug="${origin_url%/}"
+    slug="${slug%.git}"
+    case "$slug" in
+      *://*)
+        slug="${slug#*://}"
+        slug="${slug#*/}"
+        ;;
+      *:*) slug="${slug#*:}" ;;
+    esac
+    slug="${slug#/}"
+    slug="${slug%/}"
+  fi
+  [ -n "$slug" ] || slug=$(theorem_repo_label "$repo_root")
+  printf 'repo:%s' "$slug"
+}
+
 theorem_git_branch() {
   local repo_root="$1"
   git -C "$repo_root" rev-parse --abbrev-ref HEAD 2>/dev/null || printf ''
@@ -149,6 +174,7 @@ theorem_changed_files_json() {
   files_json=$(
     git -C "$repo_root" status --porcelain 2>/dev/null \
       | awk '{print $NF}' \
+      | awk '$0 !~ /^\.theorem(\/|$)/' \
       | jq -R . \
       | jq -s '.[0:50]' 2>/dev/null
   ) || files_json='[]'
@@ -191,6 +217,197 @@ theorem_set_run_id() {
   local run_dir="$THEOREM_STATE_DIR/runs"
   mkdir -p "$run_dir"
   printf '%s' "$run_id" > "$run_dir/${sid//[\/:]/_}.run_id"
+}
+
+theorem_session_key() {
+  local sid="$1"
+  printf '%s' "$sid" | shasum -a 256 | awk '{print substr($1, 1, 24)}'
+}
+
+# Durable, session-scoped ambient queue. Hook processes enqueue work and return;
+# one short-lived worker drains calls by lifecycle phase and durable enqueue
+# sequence. The request key is both the local dedupe key and, for harness
+# transitions, the server idempotency key.
+# Local receipts only prove transport acknowledgement. Runtime effects remain
+# observable through their real MCP/read surfaces.
+theorem_ambient_dir() {
+  local cwd="$1"
+  local sid="$2"
+  printf '%s/ambient/%s' "$(theorem_state_dir "$cwd")" "$(theorem_session_key "$sid")"
+}
+
+theorem_ambient_status_file() {
+  local cwd="$1"
+  local sid="$2"
+  printf '%s/status.json' "$(theorem_ambient_dir "$cwd" "$sid")"
+}
+
+theorem_ambient_refresh_local_status() {
+  local cwd="$1"
+  local sid="$2"
+  local state="${3:-ready}"
+  local detail="${4:-}"
+  local ambient_dir queue_dir receipt_dir dead_letter_dir pending acknowledged dead_letter status_file tmp_file run_id
+  ambient_dir=$(theorem_ambient_dir "$cwd" "$sid")
+  queue_dir="$ambient_dir/queue"
+  receipt_dir="$ambient_dir/receipts"
+  dead_letter_dir="$ambient_dir/dead-letter"
+  mkdir -p "$queue_dir" "$receipt_dir" "$dead_letter_dir" 2>/dev/null || return 1
+  pending=$(find "$queue_dir" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  acknowledged=$(find "$receipt_dir" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  dead_letter=$(find "$dead_letter_dir" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "${dead_letter:-0}" -gt 0 ] && [ "$state" = "ready" ]; then
+    state="degraded"
+    detail="${dead_letter} ambient call(s) require dead-letter inspection"
+  fi
+  status_file=$(theorem_ambient_status_file "$cwd" "$sid")
+  run_id=$(theorem_run_id "$sid" 2>/dev/null || printf '')
+  tmp_file="$status_file.tmp.$$"
+  jq -n \
+    --arg state "$state" \
+    --arg detail "$detail" \
+    --arg session_id "$sid" \
+    --arg run_id "$run_id" \
+    --arg updated_at "$(theorem_now_iso)" \
+    --argjson pending "${pending:-0}" \
+    --argjson acknowledged "${acknowledged:-0}" \
+    --argjson dead_letter "${dead_letter:-0}" \
+    '{
+      schema_version: 1,
+      state: $state,
+      degraded: ($state == "degraded"),
+      detail: $detail,
+      session_id: $session_id,
+      run_id: $run_id,
+      pending_calls: $pending,
+      acknowledged_calls: $acknowledged,
+      dead_letter_calls: $dead_letter,
+      updated_at: $updated_at
+    }' > "$tmp_file" || return 1
+  mv "$tmp_file" "$status_file"
+}
+
+theorem_ambient_next_sequence() {
+  local ambient_dir="$1"
+  local lock_dir="$ambient_dir/enqueue.lock"
+  local counter_file="$ambient_dir/enqueue-sequence"
+  local attempt=0 current=0 next tmp_file owner
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    owner=$(cat "$lock_dir/pid" 2>/dev/null || printf '')
+    case "$owner" in
+      ''|*[!0-9]*) ;;
+      *)
+        if ! kill -0 "$owner" 2>/dev/null; then
+          rm -rf "$lock_dir" 2>/dev/null || true
+          continue
+        fi
+        ;;
+    esac
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 100 ] || return 1
+    sleep 0.01
+  done
+  printf '%s\n' "$$" > "$lock_dir/pid"
+  if [ -f "$counter_file" ]; then
+    current=$(cat "$counter_file" 2>/dev/null || printf '0')
+  fi
+  case "$current" in ''|*[!0-9]*) current=0 ;; esac
+  next=$((current + 1))
+  tmp_file="$counter_file.tmp.$$"
+  printf '%s\n' "$next" > "$tmp_file" || { rm -rf "$lock_dir"; return 1; }
+  mv "$tmp_file" "$counter_file" || { rm -rf "$lock_dir"; return 1; }
+  rm -rf "$lock_dir"
+  printf '%012d' "$next"
+}
+
+theorem_ambient_spawn_drain() {
+  local cwd="$1"
+  local sid="$2"
+  local root
+  root=$(theorem_plugin_root)
+  if [ "${THEOREM_AMBIENT_SYNC:-0}" = "1" ]; then
+    "$root/scripts/ambient-drain.sh" --cwd "$cwd" --session "$sid"
+    return
+  fi
+  (
+    "$root/scripts/ambient-drain.sh" --cwd "$cwd" --session "$sid" >/dev/null 2>&1 || true
+  ) &
+}
+
+theorem_ambient_queue_call() {
+  local cwd="$1"
+  local sid="$2"
+  local order="$3"
+  local capability="$4"
+  local tool="$5"
+  local args="$6"
+  local request_key="$7"
+  local ambient_dir queue_dir receipt_dir digest sequence queue_file receipt_file tmp_file existing_queue queued_at
+  ambient_dir=$(theorem_ambient_dir "$cwd" "$sid")
+  queue_dir="$ambient_dir/queue"
+  receipt_dir="$ambient_dir/receipts"
+  mkdir -p "$queue_dir" "$receipt_dir" 2>/dev/null || return 1
+  digest=$(printf '%s' "$request_key" | shasum -a 256 | awk '{print $1}') || return 1
+  receipt_file="$receipt_dir/${digest}.json"
+  existing_queue=$(find "$queue_dir" -maxdepth 1 -type f -name "*-${digest}.json" -print -quit 2>/dev/null || printf '')
+  if [ -f "$receipt_file" ] || [ -n "$existing_queue" ]; then
+    theorem_ambient_spawn_drain "$cwd" "$sid"
+    return 0
+  fi
+  sequence=$(theorem_ambient_next_sequence "$ambient_dir") || return 1
+  queue_file="$queue_dir/${order}-${sequence}-${digest}.json"
+  tmp_file="$queue_file.tmp.$$"
+  queued_at=$(theorem_now_iso)
+  jq -n \
+    --arg capability "$capability" \
+    --arg tool "$tool" \
+    --arg request_key "$request_key" \
+    --arg queued_at "$queued_at" \
+    --arg order "$order" \
+    --argjson sequence "$((10#$sequence))" \
+    --argjson arguments "$args" \
+    '{
+      schema_version: 1,
+      capability: $capability,
+      tool: $tool,
+      request_key: $request_key,
+      arguments: $arguments,
+      order: $order,
+      sequence: $sequence,
+      attempts: 0,
+      queued_at: $queued_at
+    }' > "$tmp_file" || return 1
+  mv "$tmp_file" "$queue_file"
+  theorem_ambient_refresh_local_status "$cwd" "$sid" queued "ambient call queued for asynchronous delivery" || true
+  theorem_ambient_spawn_drain "$cwd" "$sid"
+}
+
+theorem_ambient_queue_transition() {
+  local cwd="$1"
+  local sid="$2"
+  local order="$3"
+  local run_id="$4"
+  local event_type="$5"
+  local actor="$6"
+  local payload="$7"
+  local request_key="$8"
+  local args
+  args=$(jq -n \
+    --arg run_id "$run_id" \
+    --arg event_type "$event_type" \
+    --arg actor "$actor" \
+    --arg idempotency_key "$request_key" \
+    --argjson payload "$payload" \
+    '{
+      run_id: $run_id,
+      type: $event_type,
+      actor: $actor,
+      payload: $payload,
+      idempotency_key: $idempotency_key
+    }') || return 1
+  theorem_ambient_queue_call \
+    "$cwd" "$sid" "$order" "run_lifecycle" \
+    "harness_append_transition" "$args" "$request_key"
 }
 
 # Inject the resolved tenant into a native-call args object when the caller
@@ -247,7 +464,14 @@ theorem_native_json() {
   local args="${2-}"
   local response
   response=$(theorem_native_call "$tool" "$args") || return 1
-  printf '%s' "$response" | jq -c '
+  if ! printf '%s' "$response" | jq -e '
+    type == "object" and
+    (.error | not) and
+    (.result.isError? != true)
+  ' >/dev/null 2>&1; then
+    return 1
+  fi
+  printf '%s' "$response" | jq -ce '
     if .error then empty
     elif (.result.structuredContent? // null) != null then .result.structuredContent
     elif (.result.content[0].text? // null) != null then (.result.content[0].text | try fromjson catch .)

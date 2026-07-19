@@ -25,14 +25,15 @@ For a task that will also modify files, validate, or report, use `/harness`.
 ## Tool Preference
 
 1. Prefer `fractal_expansion` with the query and any seeds. It queues the
-   expansion and returns a pollable `run_id` by default; pass `wait=true` for
-   a synchronous diagnostic receipt.
-2. For code-specific discovery, run `compute_code` first (operation `search`),
-   then drill into the most relevant symbol with `compute_code` operation
-   `context` or `explore`.
-3. If `fractal_expansion` is unavailable, fall back to the full Theseus
-   search or GraphRAG tool available in the host and surface that the direct
-   Harness path was unavailable.
+   expansion and returns a pollable `run_id` by default; pass `wait=true` for a
+   synchronous diagnostic receipt.
+2. For code-specific discovery, prefer GraphQL `codeSearch`, then
+   `codeContext` or `codeExplain` on the most relevant symbol. If GraphQL is
+   unavailable, call `compute_code` with operation `search`, followed by the
+   same tool with operation `context` or `explain`.
+3. If `fractal_expansion` is unavailable, fall back to the full Theseus search
+   or GraphRAG tool available in the host and surface that the direct Harness
+   path was unavailable.
 4. For raw seed-PK PPR, use `rustyred_thg_algorithm_ppr` (or the `_inline`
    variant over a supplied adjacency) directly.
 

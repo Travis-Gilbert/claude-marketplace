@@ -1,0 +1,14 @@
+{
+  "mutation": {
+    "kind": "add_entry",
+    "family": "solvers",
+    "entry": {
+      "surface": "dynamic",
+      "name": "constraint.teleport",
+      "guidance": "must refuse",
+      "maturity": "unregistered",
+      "live_status": "missing",
+      "schema": "none"
+    }
+  }
+}

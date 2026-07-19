@@ -5,6 +5,8 @@ description: The Harness memory-write capability. Use when the user runs /encode
 
 # Encode
 
+Generated surface map: [capability catalog](./CAPABILITIES.generated.md).
+
 Encode writes feedback, solutions, postmortems, decisions, preferences, and
 continuity packs into the shared Theorem harness memory substrate. It is both
 a user command (`/encode`) and an agent-owned primitive: an agent may trigger
@@ -38,18 +40,22 @@ without a "why," or bug-shaped findings that should flow through peer review.
 
 ## Tool Preference
 
-Prefer the `encode` MCP verb. Shape:
+Prefer GraphQL mutation `rememberMemory(input)` with `input.outcome` when
+`graphql_mutate` is available. That is the typed encode path; plain
+`rememberMemory` without an outcome is ordinary remember. Preserve the returned
+document id, `projectSlug`, and provenance.
+
+Use the flat `encode` MCP verb only when GraphQL is unavailable or while
+diagnosing flat compatibility. Shape:
 
 ```json
 {
-  "kind": "solution | postmortem | feedback | decision | continuity_pack | preference | encode",
+  "kind": "solution | postmortem | feedback | encode",
   "outcome": "positive | negative | mixed | neutral",
   "content": "Self-contained lesson, postmortem, or continuity pack.",
   "reason": "Why this should shape future behavior.",
   "tags": ["repo-or-domain", "short-topic"],
-  "auto_triggered": true,
-  "training_weight": 1.0,
-  "training_target": "personal_b | cohort_a | none"
+  "auto_triggered": true
 }
 ```
 
@@ -57,13 +63,13 @@ Parse user-facing shortcuts:
 
 | User input | Meaning |
 |---|---|
-| `/encode positive ...` | Positive feedback, default `training_weight=1.0`. |
-| `/encode negative ...` | Negative feedback, default `training_weight=1.0`. |
-| `/encode preference "..."` | Preference memory, default `training_target=personal_b`. |
+| `/encode positive ...` | `outcome=positive`, default `signal=pinned`. |
+| `/encode negative ...` | `outcome=negative`, default `signal=contradicted`. |
+| `/encode preference "..."` | GraphQL `kind=preference`; on flat-only servers use `kind=feedback` plus a `preference` tag. |
 
-Use `training_target=none` when the note should be recallable but should not
-feed LoRA / federated training. Use `training_target=cohort_a` only when the
-user clearly wants the signal to participate in cohort-level aggregation.
+Do not promise a training or federation action from Encode. The public memory
+surface records memory fitness and outcome evidence; later promotion or training
+requires its own registered, receipted capability.
 
 Fallbacks if `encode` is unavailable:
 
@@ -71,6 +77,12 @@ Fallbacks if `encode` is unavailable:
 2. Memory-fitness signals: `pinned` for high-confidence positive lessons;
    `reused` for verified solutions; `contradicted` for harmful prior
    behavior; `cited` for neutral postmortems that should remain findable.
+
+Do not route an opted-out episode through Encode. Honor the canonical episode
+opt-out marker and the admitted tenant/project boundary. Do not invent a manual
+episode-capture or retro-import tool; those are ambient/runtime paths. Read
+`../../references/MEMORY_CAPABILITY.md` for the complete GraphQL-to-flat map,
+episode provenance fields, deduplication/reentrancy rules, and promotion gate.
 
 ## Outcome And Signal
 
@@ -120,11 +132,10 @@ report; encode quietly and mention it in the final summary.
 
 ## Output
 
-Report the saved `doc_id`, `kind`, `outcome`, `signal`, and whether the write
-was auto-triggered. Include `training_target` and `training_weight` when they
-differ from defaults. If the tool was unavailable, report the fallback path
-used. Keep it to a single line in normal reports; a full encode block belongs
-only in postmortem reports.
+Report the saved `doc_id`, `kind`, `outcome`, `signal`, admitted project, and
+whether the write was auto-triggered. If the tool was unavailable, report the
+fallback path used. Keep it to a single line in normal reports; a full encode
+block belongs only in postmortem reports.
 
 ## Anti-Patterns
 
@@ -136,4 +147,7 @@ only in postmortem reports.
 - Encoding secrets, tokens, or raw API responses.
 - Forgetting to set `kind=continuity_pack` when the memory's job is to boot
   the next session.
-- Setting `training_target=cohort_a` without explicit user blessing.
+- Claiming that a memory write trained or federated a model without a separate
+  registered capability and receipt.
+- Promoting one encoded anecdote into a canonical practice without the required
+  same-scope clustered outcome evidence and committed promotion receipt.

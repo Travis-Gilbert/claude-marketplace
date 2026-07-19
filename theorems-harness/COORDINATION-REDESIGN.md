@@ -92,8 +92,8 @@ For multi-agent work, coordination is a lightweight safety layer:
 - Subscribe to the shared repo/task channel and consume pending interrupts.
 - Send `coordinate` messages with stable `@actor` mentions only for interrupts,
   review requests, or asks that affect the next immediate action.
-- Write `coordination_reflection`, `coordination_decision`, or
-  `coordination_tension` when the next agent should inherit working memory,
+- Write `coordination_record` with `record_type` set to `reflection`,
+  `decision`, or `tension` when the next agent should inherit working memory,
   rationale, or a visible disagreement.
 - Wait briefly only when a response is useful now.
 - Prefer shared goals and file-level claims over rigid global lane ownership.
@@ -113,11 +113,12 @@ not separate workers dividing the repo. Coordinate as a unit:
   files your hands are on, for peers to build on. It is not a lock.
 - When your work meets another head's footprint, build on its edit rather than
   yielding or waiting; held, not clobbered. A real disagreement is a
-  `coordination_tension` you record and work around, not a silent overwrite.
+  `coordination_record` tension you record and work around, not a silent
+  overwrite.
 - Send `coordinate` with an `@actor` only for a block or a fork that changes the
   next action. Ordinary progress goes in your footprint summary.
-- Close your footprint at turn-end and write a `coordination_reflection` (and a
-  `coordination_decision` for any architectural choice) so the next head resumes
+- Close your footprint at turn-end and write a `coordination_record` reflection
+  (and a decision record for any architectural choice) so the next head resumes
   cold.
 
 The durable model is room digest plus interrupt mailbox: membership, intents,

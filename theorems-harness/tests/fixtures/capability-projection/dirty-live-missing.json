@@ -1,0 +1,9 @@
+{
+  "mutation": {
+    "kind": "set_entry_field",
+    "family": "coordination",
+    "name": "job_submit",
+    "field": "live_required",
+    "value": true
+  }
+}

@@ -40,8 +40,7 @@ metadata, not in the user-facing summary.
 At the end of a multi-agent task, run this skill automatically before final
 commit or launch-ready reporting when any of these signals are present:
 
-- `coordinate`, `mentions`, or the coordination streams were used during the
-  task.
+- `coordinate`, `mentions`, or `stream_read` were used during the task.
 - The task instructions mention multiple agents, Claude Code, Codex, or
   Claude.ai working together.
 - The diff includes files another active head touched, reviewed, or generated.
@@ -105,20 +104,19 @@ tree.
 }
 ```
 
-5. Wait briefly only if a response is useful now:
+5. Check for a response at a bounded checkpoint:
 
 ```json
 {
   "actor": "codex",
   "consume": true,
-  "timeout_seconds": 30,
-  "interval_seconds": 1,
   "limit": 20
 }
 ```
 
-Use 30 seconds for normal work, up to 120 seconds only when the commit or PR is
-waiting on the peer.
+If the review travels through a durable topic, use `stream_read` with the
+returned actor/topic cursor instead. Neither call is host push or a long-poll;
+leave the review pending when the peer has not responded.
 
 6. Review the peer's diff with code-review posture:
 

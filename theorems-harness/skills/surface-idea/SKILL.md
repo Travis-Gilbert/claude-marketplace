@@ -85,12 +85,9 @@ Each idea atom is encoded with:
     "idea",
     "surfaced",
     "source-task:<task_id_or_run_id>",
-    "surfaced-from:<actor_id>",
-    "training_target:none"
+    "surfaced-from:<actor_id>"
   ],
   "metadata": {
-    "training_weight": 1.0,
-    "training_target": "none",
     "auto_surfaced": true,
     "confidence": "high" | "medium" | "low",
     "source_marker": "<the phrase that triggered detection, if auto>"
@@ -98,10 +95,10 @@ Each idea atom is encoded with:
 }
 ```
 
-Note `training_target: none` by default. Ideas are observation memory,
-not training signal. If the user explicitly blesses an idea (`/encode`
-in response to the idea, or "yes encode that" in chat), the
-`training_target` upgrades to `personal_b` per the LoRA spec.
+Ideas are observation memory, not training signal. If the user explicitly
+blesses an idea (`/encode` in response to the idea, or "yes encode that" in
+chat), record a linked feedback or decision memory. Do not imply that this
+automatically trains a model.
 
 ## Output discipline
 
@@ -140,8 +137,8 @@ future run would have to re-invent the capture mechanism. With this
 skill, the same four ideas would have been auto-encoded at end of
 run with `confidence: high` (each had a clear "we should also X
 because Y" structure and explicit grounding in the work just done).
-The user's `/encode` would then upgrade `training_target` from `none`
-to `personal_b` to feed the training pipeline.
+The user's `/encode` would then add a linked, explicit feedback memory without
+rewriting the original observation episode.
 
 ## Guardrails
 
