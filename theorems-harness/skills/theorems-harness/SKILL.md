@@ -155,6 +155,15 @@ Use these as abilities inside one run, not as competing products:
 - If a single claim must be checked against graph evidence, use `oracle`; it
   writes a learn_pattern receipt only in explicit write mode. For durable
   proof, pair it with the `verification_*` receipt surface.
+- If the work is a multi-head work graph rather than a single plan's task
+  lifecycle, use the `multihead_*` family: `multihead_run` / `multihead_task`
+  to open and shape it, `multihead_claim` / `multihead_next` to take work,
+  `multihead_patch` / `multihead_proof` to submit, and `multihead_review` /
+  `multihead_refine` for the review pass. Independent verification rides
+  `multihead_spawn_verify` / `multihead_submit_verify`, with the verify sibling
+  assigned to someone other than the author — the same separation the plan
+  lifecycle above requires. In read-only mode only `action=status` is
+  available.
 - If work should run in the background or on another head, use Dispatch
   (`job_submit` / `job_list` / `job_note` / `job_archive`) or `spawn_session`
   for a room-visible spawned session. Both are local-node surfaces.
