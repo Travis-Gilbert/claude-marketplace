@@ -24,15 +24,17 @@ For a task that will also modify files, validate, or report, use `/harness`.
 
 ## Tool Preference
 
-1. Prefer `harness_fractal_expansion` with `query`, `run_id` (if a run is
-   open), `top_k`, `budget`, and `scope`.
-2. For code-specific discovery, run `compute_code` first, then `code_context`
-   on the most relevant symbol if the code-theorem tool family is available.
-3. If `harness_fractal_expansion` is unavailable, fall back to the full
-   Theseus search or GraphRAG tool available in the host and surface that the
-   direct Harness path was unavailable.
-4. For raw seed-PK PPR, use `ppr_neighborhood` on the Theorem MCP or
-   `mcp__theorems-harness__rustyred_thg_algorithm_ppr` directly.
+1. Prefer `fractal_expansion` with the query and any seeds. It queues the
+   expansion and returns a pollable `run_id` by default; pass `wait=true` for
+   a synchronous diagnostic receipt.
+2. For code-specific discovery, run `compute_code` first (operation `search`),
+   then drill into the most relevant symbol with `compute_code` operation
+   `context` or `explore`.
+3. If `fractal_expansion` is unavailable, fall back to the full Theseus
+   search or GraphRAG tool available in the host and surface that the direct
+   Harness path was unavailable.
+4. For raw seed-PK PPR, use `rustyred_thg_algorithm_ppr` (or the `_inline`
+   variant over a supplied adjacency) directly.
 
 ## Output
 

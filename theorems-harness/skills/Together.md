@@ -34,8 +34,8 @@ anyone was waiting.
 | Room | `coordination_room` | Durable membership and the task. `status` to read, `start` / `join` to enter. |
 | Presence | `presence` | Short-TTL liveness. Who is fresh right now. |
 | Interrupt | `coordinate` + `mentions` | The block and fork channel. A specific head must see this now: something is broken, or a real disagreement changes the next step. Not the default channel. |
-| Fork | `coordination_tension` | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
-| Memory | `coordination_reflection` / `coordination_decision` | Turn-end working memory and architectural choices the next head inherits. |
+| Fork | `coordination_record` (`record_type: "tension"`) | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
+| Memory | `coordination_record` (`record_type: "reflection"` / `"decision"`) | Turn-end working memory and architectural choices the next head inherits. |
 
 ## The turn, in four beats
 
@@ -61,29 +61,31 @@ This replaces stating a lane and replaces asking "can I take X".
   "room_id": "harness-plugin-rebuild",
   "status": "working",
   "summary": "Rewriting harness-coordinate to the unit model.",
-  "claimed_files": ["theorems-harness/skills/harness-coordinate/SKILL.md"],
+  "footprint": ["theorems-harness/skills/harness-coordinate/SKILL.md"],
   "expected_completion": "this session"
 }
 ```
 
-(`claimed_files` is the tool's field name. Read it as "files my hands are on now,"
-not a lock.)
+(`footprint` means "files my hands are on now," not a lock. The tool still
+accepts the legacy `claimed_files` name.)
 
 **3. Work, and co-edit on overlap.** Do the work. If your read in beat 1 shows
 another head's footprint on a file you also need, that is not a stop sign, it is
 the parent revision. Read its footprint and read the file on disk, then build your
 change on top of what is there. Held, not clobbered: you extend the latest state,
 you do not revert it to make room for yours. If you think its edit is wrong, that
-is a fork, not a license to silently overwrite: write a `coordination_tension`
-with what you saw and your alternative, and keep moving. The scratchpad is the
+is a fork, not a license to silently overwrite: write a tension record
+(`coordination_record`, `record_type: "tension"`) with what you saw and your
+alternative, and keep moving. The scratchpad is the
 model for this. Many heads append revisions to one document, each on the parent
 before it.
 
 **4. Close your footprint.** Rewrite your intent with `status: "done"` or
 `"paused"`, and put the handoff in the summary: what changed, what is true now,
-what the next step is. Write a `coordination_reflection` (what you are tracking,
-assuming, leaving open) and a `coordination_decision` for any real architectural
-choice, so the next turn of either head resumes cold with no catch-up.
+what the next step is. Write a reflection record (what you are tracking,
+assuming, leaving open) and a decision record for any real architectural
+choice — both via `coordination_record` — so the next turn of either head
+resumes cold with no catch-up.
 
 ```json
 {
@@ -91,7 +93,7 @@ choice, so the next turn of either head resumes cold with no catch-up.
   "room_id": "harness-plugin-rebuild",
   "status": "done",
   "summary": "Coordinate skill rewritten to the unit model. Open: spine and execute word-level flips. Redline at COORDINATION-REDESIGN.md.",
-  "claimed_files": [],
+  "footprint": [],
   "expected_completion": "handoff complete"
 }
 ```
@@ -106,15 +108,16 @@ head must stop. Two cases:
 
 - **Block.** Something is broken and the other head should stop or wait.
   `coordinate` with `urgency: "block"` and an `@actor`.
-- **Fork.** You disagree with a structural choice. Write the
-  `coordination_tension`, and add a `coordinate` with `urgency: "ask"` only if a
-  specific head should see it now.
+- **Fork.** You disagree with a structural choice. Write the tension record,
+  and add a `coordinate` with `urgency: "ask"` only if a specific head should
+  see it now.
 
 Ordinary progress (a file landed, a test passed) needs no mention. Update your
 footprint summary; the other head reads it next turn. Do not wait just because you
 sent a mention: send it, keep working the non-blocked slice, read the reply at
-your next checkpoint. Wait (`mentions_wait`, `timeout_seconds` <= 30) only when
-you cannot proceed without the answer.
+your next checkpoint. There is no long-poll wait tool; when you truly cannot
+proceed without the answer, say so in the ask and check `mentions` at your next
+natural stopping point.
 
 ## Reaching a specific dirty checkout
 
@@ -127,11 +130,12 @@ needs only the room.
 
 ## Reality of "real time"
 
-`mentions_wait` is long-polling, not host push. It feels like a ping when a live
-head calls it at a checkpoint, but it cannot wake a suspended turn by itself, and
-it holds an MCP thread until it returns. Keep waits short and prefer checkpoints
-over listeners. The wake courier (`theorem-receiver` wake mode) only spawns asleep
-heads; a live head drains its own wakes. Frequency over fences.
+There is no long-polling wait tool and no host push into a suspended turn.
+Delivery is checkpoint-shaped: a mention with urgency ask or block lands on the
+target head's mention and wake path, the wake courier (`theorem-receiver` wake
+mode) spawns asleep heads, and a live head drains its own wakes by reading
+`mentions` at its next checkpoint. Prefer checkpoints over listeners.
+Frequency over fences.
 
 ## Output discipline
 

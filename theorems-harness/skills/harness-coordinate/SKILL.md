@@ -36,7 +36,8 @@ catches an edit that merges cleanly and still disagrees at runtime: you change a
 function's contract in your worktree while the other head writes a caller in theirs,
 both land, both merge as text, and the program is now wrong. The semantic-overlap
 check runs over the code graph. When your announced footprint and a peer's touch
-structurally coupled code, the substrate emits a `coordination_tension`. Read those
+structurally coupled code, the substrate emits a tension record
+(`coordination_record` with `record_type: "tension"`). Read those
 tensions before you decide your edit is safe. Isolation is commodity (every 2026
 agent tool ships worktrees); semantic-overlap detection over a code graph is not, so
 it is the guard you lead with.
@@ -57,11 +58,11 @@ it is the guard you lead with.
 | Presence | `presence` | Short-TTL liveness. Who is fresh right now. |
 | Interrupt | `coordinate` + `mentions` | The block and fork channel. A specific head must see this now: something is broken, or a real disagreement changes the next step. Not the default channel. |
 | Stream | `stream_subscribe` / `stream_read` / `stream_publish` | The ambient event flow. Subscribe once per room, read the cursor delta at turn-start, publish events as you go. The passive replacement for polling the room each turn. |
-| Semantic overlap | code-graph overlap check -> `coordination_tension` | The headline guard. When your announced footprint and a peer's touch structurally coupled code, the substrate raises a tension; read it before you commit to your edit, because it catches runtime disagreement a clean text merge hides. |
-| Fork | `coordination_tension` | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
+| Semantic overlap | code-graph overlap check -> tension record | The headline guard. When your announced footprint and a peer's touch structurally coupled code, the substrate raises a tension record; read it before you commit to your edit, because it catches runtime disagreement a clean text merge hides. |
+| Fork | `coordination_record` (`record_type: "tension"`) | A durable record of a structural disagreement. Surface it and keep working; it does not block the disagreed-with work. |
 | Reconciliation | `multihead_patch` / lease-like records | Isolated mechanics for concrete patch review, proof, and merge reconciliation after overlap is understood. They are not the headline coordination model and not a way to reserve files. |
 | Plan fan-out | `plan claim` / `multihead_next` with `plan_id` | When a durable Plan backs the work, heads claim tasks from the plan, not from a coordination record, and `plan_id` scopes routing to that plan's task subgraph. The room injects a bound plan digest automatically — reference the plan by id/digest and never re-encode its content into records, messages, or reflections. |
-| Memory | `coordination_reflection` / `coordination_decision` | Turn-end working memory and architectural choices the next head inherits. |
+| Memory | `coordination_record` (`record_type: "reflection"` / `"decision"`) | Turn-end working memory and architectural choices the next head inherits. |
 
 ## Transport: streams carry the ambient flow
 
@@ -138,13 +139,13 @@ replaces asking "can I take X".
   "room_id": "harness-plugin-rebuild",
   "status": "working",
   "summary": "Rewriting harness-coordinate to the announce-over-room model; semantic overlap is the headline check.",
-  "claimed_files": ["theorems-harness/skills/harness-coordinate/SKILL.md"],
+  "footprint": ["theorems-harness/skills/harness-coordinate/SKILL.md"],
   "expected_completion": "this session"
 }
 ```
 
-(`claimed_files` is the legacy tool field name. Read it as "files my hands are
-on now," not a lock.)
+(`footprint` means "files my hands are on now," not a lock. The tool still
+accepts the legacy `claimed_files` name.)
 
 **3. Work in isolation, watch the guard.** Do the work in your own worktree or
 environment. Watch for semantic-overlap tensions: when your footprint and a peer's
@@ -152,16 +153,17 @@ touch structurally coupled code, the check fires, and that is the signal to read
 their work before you commit to your edit. When a peer's *completed* edit lands on
 code you also need, build on it rather than redoing it or reverting it; held, not
 clobbered. If you think their edit is wrong, that is a fork, not a license to
-overwrite: write a `coordination_tension` with what you saw and your alternative,
+overwrite: write a tension record with what you saw and your alternative,
 and keep moving. Patch, proof, and lease mechanics are how two isolated trees
 reconcile a concrete artifact; reach for them when there is something to review or
 merge, not to reserve a file.
 
 **4. Close your announcement.** Rewrite your intent with `status: "done"` or
 `"paused"`, and put the handoff in the summary: what changed, what is true now,
-what the next step is. Write a `coordination_reflection` (what you are tracking,
-assuming, leaving open) and a `coordination_decision` for any real architectural
-choice, so the next turn of either head resumes cold with no catch-up.
+what the next step is. Write a reflection record (what you are tracking,
+assuming, leaving open) and a decision record for any real architectural
+choice — both via `coordination_record` — so the next turn of either head
+resumes cold with no catch-up.
 
 ```json
 {
@@ -169,7 +171,7 @@ choice, so the next turn of either head resumes cold with no catch-up.
   "room_id": "harness-plugin-rebuild",
   "status": "done",
   "summary": "Coordinate skill rewritten to announce-over-room. Open: verify prompt injection and patch any stale references.",
-  "claimed_files": [],
+  "footprint": [],
   "expected_completion": "handoff complete"
 }
 ```
@@ -200,15 +202,16 @@ head must stop. Two cases:
 
 - **Block.** Something is broken and the other head should stop or wait.
   `coordinate` with `urgency: "block"` and an `@actor`.
-- **Fork.** You disagree with a structural choice. Write the
-  `coordination_tension`, and add a `coordinate` with `urgency: "ask"` only if a
-  specific head should see it now.
+- **Fork.** You disagree with a structural choice. Write the tension record,
+  and add a `coordinate` with `urgency: "ask"` only if a specific head should
+  see it now.
 
 Ordinary progress (a file landed, a test passed) needs no mention. Update your
 announcement summary; the other head reads it next turn. Do not wait just because
 you sent a mention: send it, keep working the non-blocked slice, read the reply at
-your next checkpoint. Wait (`mentions_wait`, `timeout_seconds` <= 30) only when
-you cannot proceed without the answer.
+your next checkpoint. There is no long-poll wait tool; when you truly cannot
+proceed without the answer, say so in the ask and check `mentions` /
+`stream_read` at your next natural stopping point.
 
 ## Reaching a specific dirty checkout
 
@@ -221,14 +224,13 @@ needs only the room.
 
 ## Reality of "real time"
 
-`mentions_wait` is long-polling, not host push. It feels like a ping when a live
-head calls it at a checkpoint, but it cannot wake a suspended turn by itself, and
-it holds an MCP thread until it returns. Keep waits short and prefer checkpoints
-over listeners. The wake courier (`theorem-receiver` wake mode) only spawns asleep
-heads; a live head drains its own wakes. Frequency over fences. A subscribed
-head reads the cursor delta at its next checkpoint, so most coordination needs no
-wait at all. Reserve `mentions_wait` for the case where you cannot proceed
-without the answer, and let everything else arrive on the next `stream_read`.
+There is no long-polling wait tool and no host push into a suspended turn.
+Delivery is checkpoint-shaped: a `stream_publish` with urgency ask or block and
+a `target_actor` lands on that head's mention and wake path, the wake courier
+(`theorem-receiver` wake mode) spawns asleep heads, and a live head drains its
+own wakes by reading `mentions` and the `stream_read` cursor delta at its next
+checkpoint. Prefer checkpoints over listeners: most coordination needs no wait
+at all, and everything else arrives on the next `stream_read`.
 
 ## Output discipline
 

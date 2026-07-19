@@ -96,4 +96,4 @@ The native MCP requires a Bearer token for authenticated writes. The MCP client 
 
 ## Native dispatch reference
 
-PPR specifically (`rustyred_thg_algorithm_ppr`) is hot: its 50-400x speed advantage over Python comes from the Rust ACL local-push implementation. If you see Theorem-MCP tools' `harness_fractal_expansion` logging the FALLBACK warning, the Python wheel is missing in that container; this skill's direct-to-rust path doesn't suffer that bug because there's no Python in the loop.
+PPR specifically (`rustyred_thg_algorithm_ppr`) is hot: its 50-400x speed advantage over Python comes from the Rust ACL local-push implementation. If you see Theorem-MCP tools' `fractal_expansion` logging the FALLBACK warning, the Python wheel is missing in that container; this skill's direct-to-rust path doesn't suffer that bug because there's no Python in the loop.

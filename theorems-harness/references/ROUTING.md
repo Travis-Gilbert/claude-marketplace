@@ -47,8 +47,10 @@ context refresh, or memory when the work demands it.
 ## Adaptive Algorithm
 
 1. Start with `observe`.
-2. Use `harness_route` if available; otherwise apply this file and the
-   `theorems-harness` skill directly.
+2. Read the injected Product Packet for live/degraded capabilities; apply this
+   file and the `theorems-harness` skill directly. For tools beyond the
+   curated core, use the discovery loop (`tool_search` -> `describe` ->
+   `invoke`) instead of guessing names.
 3. Add capabilities from task signals:
    - another agent, Claude, Codex, ping, handoff, overlap -> `coordinate`
    - plan, spec, migration, checklist, roadmap -> `plan`
@@ -59,6 +61,20 @@ context refresh, or memory when the work demands it.
      `compile_context`
    - review, PR, diff, audit -> `peer_review`
    - remember, encode, postmortem, lesson -> `remember`
+   - prove, verify claim, adversarial check -> `validate` via `oracle`,
+     `verification_record`/`verification_receipt`, and the `multihead_*`
+     verify family
+   - background work, queue, dispatch, another head runs it -> Dispatch
+     (`job_submit`/`job_list`) or `spawn_session`
+   - rebuild, port, parity, reverse engineer -> `reverse_engineer_*`,
+     `reconstruct`, `reconstruct_binary`
+   - ingest data, load records, entity resolution -> `datawave_ingest`,
+     `resolve_ingest`/`resolve_entities`
+   - design audit, tokens, UI drift -> `design_extract`/`design_audit`/
+     `design_drift`/`design_report`/`design_tokens` plus the
+     design-engineering skill
+   - Rust-shaped work -> `skill_apply` the Rust skill-pack at entry (local
+     node); `ensemble_select` when several packs could serve
 4. If no concrete action emerges, run a short `theorize` pass, choose a default,
    and continue.
 5. Route again after material discoveries, before overlapping edits, after
@@ -116,16 +132,12 @@ Use `codex-sdk-harness-product` when work references:
 - `ContextArtifact`
 - TypeScript/Python SDK parity
 
-Use `redis-harness-operator` for Redis-backed harness runs/events/cache,
-semantic cache, ContextArtifact cache behavior, replay/fork/compare/patch,
-local Redis fallback, and operational-state boundaries.
-
-Use `redis-product-safety` for `thg-product-server`, tenant routes under
-`/v1/tenants/{tenant_id}/`, `TheoremHotGraphClient`, THG auth/env/deploy gates,
-RESP/Valkey facade behavior, OpenAPI, metrics, CORS, and product smoke tests.
-
-Treat these specialists as read-only context by default unless the parent has
-assigned write-scoped work.
+Treat this specialist as read-only context by default unless the parent has
+assigned write-scoped work. (The former `redis-harness-operator` and
+`redis-product-safety` escalations are retired: those agents are not installed
+in this plugin. Route Redis/THG-product operational questions through the
+`epistemic-graphrag-specialist` or `codex-sdk-harness-product` read-only
+briefs, or handle them inline.)
 
 ## Harness Event Mapping
 

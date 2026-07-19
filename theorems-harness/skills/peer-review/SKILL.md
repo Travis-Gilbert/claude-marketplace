@@ -40,7 +40,8 @@ metadata, not in the user-facing summary.
 At the end of a multi-agent task, run this skill automatically before final
 commit or launch-ready reporting when any of these signals are present:
 
-- `coordinate`, `mentions`, or `mentions_wait` were used during the task.
+- `coordinate`, `mentions`, or the coordination streams were used during the
+  task.
 - The task instructions mention multiple agents, Claude Code, Codex, or
   Claude.ai working together.
 - The diff includes files another active head touched, reviewed, or generated.

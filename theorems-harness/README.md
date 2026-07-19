@@ -104,7 +104,7 @@ memory") and include the wire-level identifier only when it matters.
 - Graph and reasoning: `rustyred_thg_graph_*`, `rustyred_thg_algorithm_*`, `rustyred_thg_symbolic_*`, and graph-version tools.
 - Web: `rustyweb_search_acquisition`, `browse_for_me`, `browse_with_me`, `web_consume`
 - Skill packs: `skill_list`, `skill_get`, `skill_publish`, `skill_apply`
-- Coordination: `coordination_room`, `coordination_intent`, `write_intent`, `read_intents_for_room`, `coordination_reflection`, `coordination_decision`, `coordination_tension`, `coordinate`, `mentions`, `mentions_wait`, `presence`, `subscribe`, `continuity_pack`
+- Coordination: `coordination_room`, `coordination_intent`, `read_intents_for_room`, `coordination_record` (record_type: event/decision/tension/reflection), `coordination_contribution`, `coordinate`, `mentions`, `presence`, `stream_subscribe`, `stream_read`, `stream_publish`, `stream_ack`
 - Multi-head substrate: `multihead_run`, `multihead_task`, `multihead_claim`, `multihead_patch`, `multihead_proof`, `multihead_review`
 - Memory and learning: `recall`, `remember`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 
@@ -192,7 +192,30 @@ plugin_hooks = true
 - `harness_append_transition` (append run lifecycle events)
 - `harness_run` (read run event ledgers)
 - `compute_code` and `code_ingest` (read code graph context and ingest/reindex when needed)
-- `coordination_room`, `coordination_intent`, `coordination_record`, `coordination_reflection`, `coordinate`, `mentions`, `presence`
+- `coordination_room`, `coordination_intent`, `coordination_record`, `coordinate`, `mentions`, `presence`
 - `remember`, `recall`, `relate`, `self_note`, `self_revise`, `self_archive`, `self_recall_archive`, `encode`
 
 Failure semantics: every hook fails open. Backend 500, missing jq, malformed responses all result in `{"continue": true}` so the user's session never breaks because the plugin had a bad day.
+
+## Regenerating the tool surface
+
+The server is the source of truth for tool names: `rustyred-thg-mcp` exposes
+`harness_capability_source_catalog` and a dump binary, and its doc comment is
+explicit that "no parallel name or field catalog is maintained." This plugin
+therefore generates its tool-surface index instead of hand-writing it:
+
+```sh
+# from a Theorem checkout (full source catalog)
+scripts/regen-routing.sh --cargo /path/to/Theorem/rustyredcore_THG
+
+# or from a live server (tools/list; token from $THEOREM_HARNESS_API_TOKEN)
+scripts/regen-routing.sh --url https://<server>/mcp
+
+# CI / pre-bump drift gate
+scripts/regen-routing.sh --from-file catalog.json --check
+```
+
+It rewrites `references/TOOL_SURFACE.md` and the generated block in
+`skills/theorems-harness/SKILL.md`. Run `--check` before every version bump; a
+bump must not ship with drift. Behavior prose (routing, coordination protocol,
+output discipline) stays hand-written — only the inventory is generated.
