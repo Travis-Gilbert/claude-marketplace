@@ -192,8 +192,10 @@ The template is a tool, not a contract. Use only the sections the work needs.
 
 - Ambiguity or option pressure → `/harness mode=theorize` briefly, then back.
 - SDK harness product questions → `codex-sdk-harness-product`.
-- Redis/THG/product-state questions → `redis-harness-operator` /
-  `redis-product-safety`.
+- Redis/THG/product-state questions → `epistemic-graphrag-specialist` or
+  `codex-sdk-harness-product`, or handle them inline. (The former
+  `redis-harness-operator` / `redis-product-safety` agents are retired and not
+  installed.)
 - Implementation → `/harness mode=execute`, with the plan id as input.
 
 ## Anti-Patterns

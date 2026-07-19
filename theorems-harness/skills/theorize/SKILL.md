@@ -79,8 +79,10 @@ The template is a tool, not a contract. Use only the sections the work needs.
 
 - SDK harness product questions → `codex-sdk-harness-product` before
   concluding.
-- Redis/THG/product-state questions → `redis-harness-operator` /
-  `redis-product-safety` before locking.
+- Redis/THG/product-state questions → `epistemic-graphrag-specialist` or
+  `codex-sdk-harness-product` before locking, or handle them inline. (The
+  former `redis-harness-operator` / `redis-product-safety` agents are retired
+  and not installed.)
 - Once decisions are resolved → `/harness mode=plan` or
   `/harness mode=execute` with the brief as input.
 - If the topic is "what should I look at" rather than "what should I do" →
