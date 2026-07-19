@@ -465,3 +465,8 @@ It writes only `references/TOOL_SURFACE.md` — drift evidence, never a second
 teaching catalog, and never a skill. Run `--check` before a version bump. A
 real skew is expected whenever the running node predates or postdates the
 pinned snapshot; read the diff before assuming it is noise.
+
+`--check` needs a server or a dump, so it cannot run offline. The parts that
+can are enforced by `tests/tool-surface-snapshot.sh`, which runs in the normal
+suite: it catches a hand-edited snapshot (declared tool count vs. actual rows)
+and fails if the generator ever regains the ability to write into a skill.
